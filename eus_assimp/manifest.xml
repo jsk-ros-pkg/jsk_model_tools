@@ -1,0 +1,16 @@
+<package>
+  <description brief="eus_assimp">
+
+    Using assimp library on EusLisp
+
+  </description>
+  <author>Yohei Kakiuchi (youhei@jsk.t.u-tokyo.ac.jp)</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/eus_assimp</url>
+
+  <depend package="roseus" />
+  <depend package="assimp_devel" />
+</package>
+
+

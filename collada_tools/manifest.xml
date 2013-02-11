@@ -4,7 +4,7 @@
     Tools for using collada file in gazebo, ...
 
   </description>
-  <author>Yohei Kakiuchi</author>
+  <author>Yohei Kakiuchi (youhei@jsk.t.u-tokyo.ac.jp)</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/collada_tools</url>
