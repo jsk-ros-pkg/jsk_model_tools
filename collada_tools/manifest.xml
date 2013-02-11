@@ -1,0 +1,27 @@
+<package>
+  <description brief="collada_tools">
+
+    Tools for using collada file in gazebo, ...
+
+  </description>
+  <author>Yohei Kakiuchi</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/collada_tools</url>
+
+  <depend package="rospy"/>
+  <depend package="sensor_msgs"/>
+  <depend package="actionlib"/>
+  <depend package="actionlib_msgs"/>
+  <depend package="pr2_controllers_msgs"/>
+
+  <depend package="tf"/>
+
+  <depend package="urdf"/>
+  <depend package="urdf_parser"/>
+  <depend package="collada_parser"/>
+  <depend package="colladadom"/>
+
+  <!-- jsk ros pkg -->
+  <depend package="assimp_devel"/>
+</package>

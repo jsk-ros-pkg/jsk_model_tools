@@ -1,0 +1,119 @@
+[1;31mset ROS_IP and ROS_HOSTNAME to 133.11.216.34[m
+[1;31mset ROS_MASTER_URI to http://pr1012:11311[m
+Index: include/gazebo/gazebo_ros_api_plugin.h
+===================================================================
+--- include/gazebo/gazebo_ros_api_plugin.h	(リビジョン 40248)
++++ include/gazebo/gazebo_ros_api_plugin.h	(作業コピー)
+@@ -326,6 +326,7 @@
+ 
+     /// \brief utilites for checking incoming string URDF/XML/Param
+     bool IsURDF(std::string model_xml);
++    bool IsCOLLADA(std::string model_xml);
+     bool IsGazeboModelXML(std::string model_xml);
+     bool IsSDF(std::string model_xml);
+     void LoadGazeboRosApiPlugin(std::string _worldName);
+Index: src/urdf2gazebo.cpp
+===================================================================
+--- src/urdf2gazebo.cpp	(リビジョン 40248)
++++ src/urdf2gazebo.cpp	(作業コピー)
+@@ -264,7 +264,21 @@
+ {
+   ROS_DEBUG("parsing gazebo extension");
+   TiXmlElement* robot_xml = urdf_in.FirstChildElement("robot");
++  if ( ! robot_xml ) { // collada
++    TiXmlElement* collada_xml = urdf_in.FirstChildElement("COLLADA");
++    // search for <extra type="physics" name="gazebo">
++    if ( collada_xml ) {
++      TiXmlElement* physics_xml = collada_xml->FirstChildElement("extra");
++      while ( physics_xml && strcmp(physics_xml->Attribute("type"),"physics") != 0 ) {
++        physics_xml = physics_xml->NextSiblingElement();
++      }
++      robot_xml = physics_xml->FirstChildElement("technique");
++    }
++  }
+ 
++  if ( ! robot_xml ) {
++    ROS_INFO("failed to parse gazebo extension for robot");
++  }
+   // Get all Gazebo extension elements, put everything in this->gazebo_extensions_ map, containing a key string (link/joint name) and values
+   for (TiXmlElement* gazebo_xml = robot_xml->FirstChildElement("gazebo"); gazebo_xml; gazebo_xml = gazebo_xml->NextSiblingElement("gazebo"))
+   {
+@@ -1740,6 +1754,9 @@
+               fullname = package_path + fullname;
+             }
+ 
++            if (fullname.find("file://") == 0)
++              fullname.erase(0, strlen("file://"));
++
+             // give some warning if file does not exist.
+             std::ifstream fin; fin.open(fullname.c_str(), std::ios::in); fin.close();
+             if (fin.fail())
+@@ -1842,6 +1859,9 @@
+               fullname = package_path + fullname;
+             }
+ 
++            if (fullname.find("file://") == 0)
++              fullname.erase(0, strlen("file://"));
++
+             // add mesh filename
+             addKeyValue(gazebo_visual, "mesh", fullname);
+         }
+Index: src/gazebo_ros_api_plugin.cpp
+===================================================================
+--- src/gazebo_ros_api_plugin.cpp	(リビジョン 40248)
++++ src/gazebo_ros_api_plugin.cpp	(作業コピー)
+@@ -418,7 +418,7 @@
+       // incoming robot model string
+       std::string model_xml = req.model_xml;
+ 
+-      if (!this->IsURDF(model_xml))
++      if (!this->IsURDF(model_xml) && !this->IsCOLLADA(model_xml))
+       {
+         ROS_ERROR("SpawnModel: Failure - model format is not URDF.");
+         res.success = false;
+@@ -429,15 +429,16 @@
+       /// STRIP DECLARATION <? ... xml version="1.0" ... ?> from model_xml
+       /// @todo: does tinyxml have functionality for this?
+       /// @todo: should gazebo take care of the declaration?
+-      std::string open_bracket("<?");
+-      std::string close_bracket("?>");
+-      size_t pos1 = model_xml.find(open_bracket,0);
+-      size_t pos2 = model_xml.find(close_bracket,0);
+-      if (pos1 != std::string::npos && pos2 != std::string::npos)
+-        model_xml.replace(pos1,pos2-pos1+2,std::string(""));
+-
++      if (this->IsURDF(model_xml))
++      {
++	std::string open_bracket("<?");
++	std::string close_bracket("?>");
++	size_t pos1 = model_xml.find(open_bracket,0);
++	size_t pos2 = model_xml.find(close_bracket,0);
++	if (pos1 != std::string::npos && pos2 != std::string::npos)
++	  model_xml.replace(pos1,pos2-pos1+2,std::string(""));
++      }
+       ROS_DEBUG("Model XML\n\n%s\n\n ",model_xml.c_str());
+-
+       urdf2gazebo::URDF2Gazebo u2g;
+       TiXmlDocument model_xml_doc;
+       model_xml_doc.Parse(model_xml.c_str());
+@@ -1643,9 +1644,20 @@
+       doc_in.Parse(model_xml.c_str());
+       if (doc_in.FirstChild("robot"))
+         return true;
++      else if ( doc_in.FirstChildElement("COLLADA") )
++	return true;
+       else
+         return false;
+     }
++    bool GazeboRosApiPlugin::IsCOLLADA(std::string model_xml)
++    {
++      TiXmlDocument doc_in;
++      doc_in.Parse(model_xml.c_str());
++      if(doc_in.FirstChildElement("COLLADA"))
++	return true;
++      else
++        return false;
++    }
+     bool GazeboRosApiPlugin::IsGazeboModelXML(std::string model_xml)
+     {
+       // FIXME: very crude check

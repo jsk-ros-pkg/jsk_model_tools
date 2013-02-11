@@ -1,0 +1,27 @@
+<package>
+  <description brief="collada_eus">
+
+     euscollada
+
+  </description>
+  <author>Kei Okada</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/euscollada</url>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+
+  <rosdep name="collada-dom"/>
+  <depend package="collada_urdf_jsk_patch"/>
+  <depend package="euslisp"/>
+  <depend package="roseus" />
+  <depend package="jsk_tools" />
+
+  <rosdep name="yaml-cpp"/>
+  <rosdep name="libqhull" />
+
+</package>
+
+

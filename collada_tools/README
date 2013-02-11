@@ -1,0 +1,32 @@
+. USAGE
+$ roscd collada_tools
+$ mkdir -p models/meshes; cd models
+$ rosrun collada_tools collada_to_urdf $(rospack find hrpsys_ros_bridge)/models/HRP4C.dae -A --mesh_output_dir `pwd`/meshes
+$ sed -i -e "s@file://`pwd`@package://collada_tools/models@g" HRP4.urdf 
+;; additional for making urdf with gazebo descriptions
+$ rosrun collada_tools add_gazebo_tags.sh collada_tools models/HRP4.urdf
+
+. INSTALL
+
+INSTALL for ROS fuerte
+If you would like to use collada file in gazebo, you should try below.
+$ cd ~/ros/fuerte
+$ echo '[{svn: {uri: "https://code.ros.org/svn/ros-pkg/stacks/simulator_gazebo/tags/fuerte",local-name: simulator_gazebo}}]' | rosws merge -
+$ rosws update simulator_gazebo
+$ source ~/.bashrc
+$ roscd gazebo; patch -p0 < $(rospack find collada_tools)/gazebo_fuerte_collada.patch; roscd simulator_gazebo; rosmake
+
+
+INSTALL for ROS electric
+$ cd ~/ros/electric
+$ echo '[{hg: {uri: "https://kforge.ros.org/robotmodel/robot_model", local-name: robot_model, version: robot_model-1.8}}]' | rosws merge -
+$ echo '[{svn: {uri: "https://code.ros.org/svn/ros-pkg/stacks/simulator_gazebo/tags/electric",local-name: simulator_gazebo}}]' | rosws merge -
+$ rosws update robot_model simulator_gazebo
+$ source ~/.bashrc
+$ roscd robot_model; rosmake
+$ roscd gazebo; patch -p0 < $(rospack find collada_gazebo_tools)/gazebo_collada.patch; roscd simulator_gazebo; rosmake
+
+Usage for gazebo:
+
+$ roscd collada_gazebo_tools
+$ scripts/add_gazebo_tags_to_collada.sh packagename robot.dae ## file should be at $(rospack find packagename)/robot.dae

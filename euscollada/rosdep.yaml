@@ -1,0 +1,22 @@
+libqhull:
+  ubuntu: libqhull-dev
+  debian: libqhull-dev
+pcre:
+  ubuntu: libpcre3-dev
+  fedora: pcre-devel
+  debian: libpcre3-dev
+  osxbrew:
+    homebrew:
+      packages: [ pcre++]
+#
+# copy from openrave_planning/rosdep.yaml
+#
+collada-dom:
+  ubuntu: |
+   #!/bin/bash
+   if [ ! -f /etc/apt/sources.list.d/openrave-release*.list ] ; then
+     echo "deb http://ppa.launchpad.net/openrave/release/ubuntu `lsb_release -cs` main" |  sudo tee /etc/apt/sources.list.d/openrave-release.list
+     sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 58E6B835EDC85D09
+     sudo apt-get -y update
+   fi
+   sudo apt-get -y --force-yes install collada-dom-dev

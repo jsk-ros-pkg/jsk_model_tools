@@ -1,0 +1,26 @@
+Index: src/urdf2gazebo.cpp
+===================================================================
+--- src/urdf2gazebo.cpp	(リビジョン 39451)
++++ src/urdf2gazebo.cpp	(作業コピー)
+@@ -148,7 +148,21 @@
+ {
+   ROS_DEBUG("parsing gazebo extension");
+   TiXmlElement* robot_xml = urdf_in.FirstChildElement("robot");
++  if ( ! robot_xml ) { // collada
++    TiXmlElement* collada_xml = urdf_in.FirstChildElement("COLLADA");
++    // search for <extra type="physics" name="gazebo">
++    if ( collada_xml ) {
++      TiXmlElement* physics_xml = collada_xml->FirstChildElement("extra");
++      while ( physics_xml && strcmp(physics_xml->Attribute("type"),"physics") != 0 ) {
++        physics_xml = physics_xml->NextSiblingElement();
++      }
++      robot_xml = physics_xml->FirstChildElement("technique");
++    }
++  }
+ 
++  if ( ! robot_xml ) {
++    ROS_INFO("failed to parse gazebo extension for robot");
++  }
+   // Get all Gazebo extension elements, put everything in this->gazebo_extensions_ map, containing a key string (link/joint name) and values
+   for (TiXmlElement* gazebo_xml = robot_xml->FirstChildElement("gazebo"); gazebo_xml; gazebo_xml = gazebo_xml->NextSiblingElement("gazebo"))
+   {
