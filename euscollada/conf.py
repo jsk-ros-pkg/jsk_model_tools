@@ -9,7 +9,7 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8'
 master_doc = 'index'
 project = u'euscollada'
-copyright = u'2011, Kei Okada'
+copyright = u'2011, Kei Okada (k-okada@jsk.t.u-tokyo.ac.jp)'
 
 version = '1.0'
 release = '1.0'
