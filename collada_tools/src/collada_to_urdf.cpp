@@ -43,6 +43,7 @@ bool add_gazebo_description = false;
 bool use_assimp_export = false;
 bool use_same_collision_as_visual = true;
 bool rotate_inertia_frame = true;
+bool export_collision_mesh = true;
 
 string mesh_dir = "/tmp";
 string arobot_name = "";
@@ -253,11 +254,21 @@ void addChildLinkNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
         if (ifname.find("file://") == 0) {
           ifname.erase(0, strlen("file://"));
         }
-        std::string ofname (mesh_dir + "/" + link->name + "_mesh.dae");
+        std::string oofname;
+        if (export_collision_mesh) {
+          oofname = link->name + "_mesh.stl";
+        } else {
+          oofname = link->name + "_mesh.dae";
+        }
+        std::string ofname = (mesh_dir + "/" + oofname);
 
         if (use_assimp_export) {
           // using collada export
-          assimp_file_export (ifname, ofname);
+          if (export_collision_mesh) {
+            assimp_file_export (ifname, ofname, "stl");
+          } else {
+            assimp_file_export (ifname, ofname);
+          }
         } else {
           // copy to ofname
           std::ofstream tmp_os;
@@ -270,10 +281,11 @@ void addChildLinkNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
           tmp_os.close();
         }
         if (mesh_prefix != "") {
-          os << "        <mesh filename=\"" << mesh_prefix + "/" + link->name + "_mesh.dae" << "\" scale=\"1 1 1\" />" << endl;
+          os << "        <mesh filename=\"" << mesh_prefix + "/" + oofname;
         } else {
-          os << "        <mesh filename=\"" << "file://" << ofname << "\" scale=\"1 1 1\" />" << endl;
+          os << "        <mesh filename=\"" << "file://" << ofname;
         }
+        os << "\" scale=\"1 1 1\" />" << endl;
       }
       os << "      </geometry>" << endl;
     } else {
@@ -509,6 +521,7 @@ int main(int argc, char** argv)
     ("help", "produce help message")
     ("simple_visual,V", "use bounding box for visual")
     ("simple_collision,C", "use bounding box for collision")
+    ("export_collision_mesh", "export collision mesh as STL")
     ("add_gazebo_description,G", "add description for using on gazebo")
     ("use_assimp_export,A", "use assimp library for exporting mesh")
     ("use_collision,U", "use collision geometry (default collision is the same as visual)")
@@ -557,6 +570,10 @@ int main(int argc, char** argv)
   if (vm.count("original_inertia_rotation")) {
     rotate_inertia_frame = false;
     cerr << ";; Does not rotate inertia frame" << endl;
+  }
+  if (vm.count("export_collision_mesh")) {
+    export_collision_mesh = true;
+    cerr << ";; erxport collision mesh as STL" << endl;
   }
   if (vm.count("output_file")) {
     vector<string> aa = vm["output_file"].as< vector<string> >();
