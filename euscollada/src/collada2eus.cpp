@@ -825,17 +825,18 @@ int main(int argc, char* argv[]){
   fprintf(stderr, "Convert %s to %s\n with %s", input_filename, output_filename, yaml_filename);
 
   // init COLLADA
-  g_dae = new DAE();
+  DAE dae;
+  g_dae = &dae;
   int iRet = g_dae->load(input_filename);
   if ( iRet != DAE_OK ) {
     exit(1);
   }
 
-  if ( g_dae->getDocCount() != 1 ) {
+  if ( g_dae->getDatabase()->getDocumentCount() != 1 ) {
     fprintf(stderr, "Number of documnet is not 1\n");
     exit(1);
   }
-  g_document = g_dae->getDoc(0);
+  g_document = g_dae->getDatabase()->getDocument((daeUInt)0);
 
   // read yaml
   typedef pair<vector<string>, vector<string> > link_joint;
