@@ -827,7 +827,7 @@ int main(int argc, char* argv[]){
   // init COLLADA
   DAE dae;
   g_dae = &dae;
-  int iRet = g_dae->load(input_filename);
+  int iRet = dae.load(input_filename);
   if ( iRet != DAE_OK ) {
     exit(1);
   }
@@ -895,10 +895,9 @@ int main(int argc, char* argv[]){
   domNode* thisNode= thisVisualscene->getNode_array()[0];
 
   fprintf(stderr, "Visual_scene %s\n", thisNode->getName());
-  
-  if( !!((domCOLLADA *)g_dae->getDom(input_filename))->getAsset()) {
-      if( !!((domCOLLADA *)g_dae->getDom(input_filename))->getAsset()->getUnit() ) {
-	  g_scale = ((domCOLLADA *)g_dae->getDom(input_filename))->getAsset()->getUnit()->getMeter();
+  if( !!((domCOLLADA *)dae.getDom(input_filename))->getAsset()) {
+      if( !!((domCOLLADA *)dae.getDom(input_filename))->getAsset()->getUnit() ) {
+	  g_scale = ((domCOLLADA *)dae.getDom(input_filename))->getAsset()->getUnit()->getMeter();
       }
   }
 
