@@ -11,6 +11,9 @@
 #include <assimp3/postprocess.h>
 #include <assimp3/scene.h>
 
+// convex decomposition
+//#include "NvConvexDecomposition.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -432,6 +435,7 @@ static void register_all_nodes (register context *ctx, eusfloat_t base_scl,
       fprintf (stderr, " mesh: %d", node->mMeshes[n]);
 #endif
       aiMesh *am = scene->mMeshes[node->mMeshes[n]];
+      std::cerr << ";; mesh = " << (void *)am << std::endl;
       pointer ret = store_mesh_info (ctx, base_scl, scene, node, am, node_world_trans);
       vpush (ret);
       mesh_info.push_back (ret);
@@ -666,7 +670,7 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
 
     pScene->mRootNode->mMeshes[i] = i;
     aiMesh* pMesh = pScene->mMeshes[i] = new aiMesh();
-
+    std::cerr << ";; mesh = " << (void *)pMesh << std::endl;
     if (!has_materials) {
       pMesh->mMaterialIndex = 0;
     } else {
@@ -843,6 +847,108 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   return NIL;
 }
 
+pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
+{
+#if 0
+  /* vertices-list indices-list (params) */
+  numunion nu;
+  int verts_per_face = 3;
+  pointer lvertices = argv[0];
+  pointer lindices = argv[1];
+
+  int list_len = 0;
+  {
+    pointer a = lvertices;
+    while (islist(a)) {list_len++; a=ccdr(a);}
+  }
+
+  CONVEX_DECOMPOSITION::iConvexDecomposition *ic = CONVEX_DECOMPOSITION::createConvexDecomposition();
+
+  for (int i = 0; i < list_len; i++) {
+    pointer mvertices = ccar (lvertices);
+    pointer mindices = ccar (lindices);
+
+    lvertices = ccdr (lvertices);
+    lindices = ccdr (lindices);
+
+    if (mvertices == NIL) { /* error */ }
+    eusinteger_t size = intval (mvertices->c.ary.entity->c.fvec.length);
+    eusfloat_t *fv = mvertices->c.ary.entity->c.fvec.fv;
+    NxF32 p1[3];
+    NxF32 p2[3];
+    NxF32 p3[3];
+
+    if (mindices != NIL) {
+      eusinteger_t *iv = mindices->c.ivec.iv;
+      eusinteger_t idlen = intval (mindices->c.ivec.length);
+      for (unsigned int f = 0; f < idlen / verts_per_face; f++) {
+        eusinteger_t i1 = *iv++;
+        eusinteger_t i2 = *iv++;
+        eusinteger_t i3 = *iv++;
+
+        p1[0] = fv[3*i1];
+        p1[1] = fv[3*i1+1];
+        p1[2] = fv[3*i1+2];
+
+        p2[0] = fv[3*i2];
+        p2[1] = fv[3*i2+1];
+        p2[2] = fv[3*i2+2];
+
+        p3[0] = fv[3*i3];
+        p3[1] = fv[3*i3+1];
+        p3[2] = fv[3*i3+2];
+
+        ic->addTriangle(p1, p2, p3);
+      }
+    } else {
+      for (unsigned int f = 0; f < size / (3 * verts_per_face); f++) {
+        p1[0] = fv[(3 * verts_per_face) + 0];
+        p1[1] = fv[(3 * verts_per_face) + 1];
+        p1[2] = fv[(3 * verts_per_face) + 2];
+
+        p2[0] = fv[(3 * verts_per_face) + 3];
+        p2[1] = fv[(3 * verts_per_face) + 4];
+        p2[2] = fv[(3 * verts_per_face) + 5];
+
+        p3[0] = fv[(3 * verts_per_face) + 6];
+        p3[1] = fv[(3 * verts_per_face) + 7];
+        p3[2] = fv[(3 * verts_per_face) + 8];
+
+        ic->addTriangle(p1, p2, p3);
+      }
+    }
+  }
+  NxF32 skinWidth = 0;
+  NxU32 decompositionDepth = 4;
+  NxU32 maxHullVertices    = 64;
+  NxF32 concavityThresholdPercent = 0.1f;
+  NxF32 mergeThresholdPercent = 20;
+  NxF32 volumeSplitThresholdPercent = 2;
+  bool useInitialIslandGeneration = true;
+  bool useIslandGeneration = false;
+  bool useBackgroundThreads = true;
+  ic->computeConvexDecomposition(skinWidth,
+                                 decompositionDepth,
+                                 maxHullVertices,
+                                 concavityThresholdPercent,
+                                 mergeThresholdPercent,
+                                 volumeSplitThresholdPercent,
+                                 useInitialIslandGeneration,
+                                 useIslandGeneration,
+                                 useBackgroundThreads);
+
+  while ( !ic->isComputeComplete() ) {
+    printf("Computing the convex decomposition in a background thread.\r\n");
+    // Sleep(1000);
+  }
+  // finish process
+
+  NxU32 hullCount = ic->getHullCount();
+  printf("Convex Decomposition produced %d hulls.\r\n", hullCount );
+
+  printf("Saving the convex hulls into a single Wavefront OBJ file 'hulls.obj'\r\n");
+#endif
+}
 
 pointer ASSIMP_DESCRIBE(register context *ctx,int n,pointer *argv)
 {
@@ -899,6 +1005,7 @@ pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
 {
   defun(ctx,"ASSIMP-GET-GLVERTICES", argv[0], (pointer (*)())GET_MESHES);
   defun(ctx,"ASSIMP-DUMP-GLVERTICES", argv[0], (pointer (*)())DUMP_GL_VERTICES);
+  defun(ctx,"CONVEX-DECOMPOSITION-GLVERTICES", argv[0], (pointer (*)())CONVEX_DECOMP_GL_VERTICES);
 
   defun(ctx,"ASSIMP-DESCRIBE", argv[0], (pointer (*)())ASSIMP_DESCRIBE);
 
