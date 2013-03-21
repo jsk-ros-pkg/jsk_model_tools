@@ -544,7 +544,7 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
          rit != mesh_info.rend(); rit++) {
       vpush(lst);
       lst = rawcons (ctx, *rit, lst);
-      vpop();
+      vpop(); // vpop(); // pop for mesh_info
     }
     vpush (lst);
   }
@@ -849,13 +849,14 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
 
 pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
 {
-#if 0
   /* vertices-list indices-list (params) */
   numunion nu;
   int verts_per_face = 3;
   pointer lvertices = argv[0];
   pointer lindices = argv[1];
+  pointer ret = NIL;
 
+#if 0
   int list_len = 0;
   {
     pointer a = lvertices;
@@ -863,7 +864,7 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   }
 
   CONVEX_DECOMPOSITION::iConvexDecomposition *ic = CONVEX_DECOMPOSITION::createConvexDecomposition();
-
+  // store all vertices
   for (int i = 0; i < list_len; i++) {
     pointer mvertices = ccar (lvertices);
     pointer mindices = ccar (lindices);
@@ -918,6 +919,7 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
       }
     }
   }
+
   NxF32 skinWidth = 0;
   NxU32 decompositionDepth = 4;
   NxU32 maxHullVertices    = 64;
@@ -939,6 +941,7 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
 
   while ( !ic->isComputeComplete() ) {
     printf("Computing the convex decomposition in a background thread.\r\n");
+    sleep(1);
     // Sleep(1000);
   }
   // finish process
@@ -946,8 +949,89 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   NxU32 hullCount = ic->getHullCount();
   printf("Convex Decomposition produced %d hulls.\r\n", hullCount );
 
-  printf("Saving the convex hulls into a single Wavefront OBJ file 'hulls.obj'\r\n");
+  for (NxU32 i = 0; i < hullCount; i++) {
+    //
+    pointer tmpret = NIL;
+    int npc = 0;
+    // name
+    {
+      std::string nname = "convex_" + i;
+      pointer lname = makestring ((char *)nname.c_str(), nname.length());
+      vpush (lname);
+      lname = rawcons (ctx, lname , NIL);
+      vpop (); vpush (lname);
+      lname = rawcons (ctx, K_NAME, lname);
+      vpop (); vpush (lname);
+      tmpret = rawcons (ctx, lname, tmpret);
+      vpop ();
+      vpush (tmpret); npc++;
+    }
+    // type
+    {
+      pointer ltype = K_TRIANGLES;
+      ltype = rawcons (ctx, ltype , NIL);
+      vpush (ltype);
+      ltype = rawcons (ctx, K_TYPE, ltype);
+      vpop(); vpush (ltype);
+      tmpret = rawcons (ctx, ltype, tmpret);
+      vpop();
+      vpush (tmpret); npc++;
+    }
+
+    CONVEX_DECOMPOSITION::ConvexHullResult result;
+    ic->getConvexHullResult(i, result);
+
+    pointer ver_mat = makematrix (ctx, result.mVcount, 3); vpush (ver_mat); npc++;
+    eusfloat_t *ver_vec = ver_mat->c.ary.entity->c.fvec.fv;
+
+    pointer indices = makevector (C_INTVECTOR, result.mTcount * 3);
+    eusinteger_t *vec = indices->c.ivec.iv;
+    vpush (indices); npc++;
+
+    for (NxU32 i = 0; i < result.mVcount * 3; i++) {
+      //const NxF32 *pos = &result.mVertices[i*3];
+      //fprintf(fph,"v %0.9f %0.9f %0.9f\r\n", pos[0], pos[1], pos[2] );
+      ver_vec[i] = result.mVertices[i];
+    }
+    for (NxU32 i = 0; i < result.mTcount * 3; i++) {
+      //NxU32 i1 = result.mIndices[i*3+0];
+      //NxU32 i2 = result.mIndices[i*3+1];
+      //NxU32 i3 = result.mIndices[i*3+2];
+      //fprintf(fph,"f %d %d %d\r\n", i1 + vcount_base, i2 + vcount_base, i3 + vcount_base );
+      vec[i] = result.mIndices[i];
+    }
+    //vcount_base += result.mVcount;
+    // add indices to return list
+    {
+      pointer tmp;
+      tmp = rawcons (ctx, indices, NIL);
+      vpush (tmp);
+      tmp = rawcons (ctx, K_INDICES, tmp);
+      tmpret = rawcons (ctx, tmp, tmpret);
+      vpop();
+      vpush (tmpret); npc++;
+    }
+    //
+    {
+      pointer tmp;
+      tmp = rawcons (ctx, ver_mat , NIL);
+      vpush (tmp);
+      tmp = rawcons (ctx, K_VERTICES , tmp);
+      tmpret = rawcons (ctx, tmp, tmpret);
+      vpop();
+      vpush (tmpret); npc++;
+    }
+
+    vpush(ret); npc++;
+    ret = rawcons (ctx, tmpret, ret);
+    for (;npc > 0; npc--) vpop();
+    vpush(ret);
+  }
+
+  CONVEX_DECOMPOSITION::releaseConvexDecomposition(ic);
+  vpop(); // pop ret
 #endif
+  return ret;
 }
 
 pointer ASSIMP_DESCRIBE(register context *ctx,int n,pointer *argv)
