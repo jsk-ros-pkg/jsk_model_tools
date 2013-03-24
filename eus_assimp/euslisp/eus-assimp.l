@@ -58,3 +58,23 @@
         (setq ret (append ret mlst))
         ))
     (instance gl::glvertices :init ret)))
+
+(defun convex-decomposition-glvertices (glvtcs
+                                        &key ((:scale scl) 1.0) (gen-normal) (smooth-normal)
+                                        (split-large-mesh) (optimize-mesh) (identical-vertices))
+  (let ((mlst (glvtcs . gl::mesh-list))
+        ;;name-lst ;; type-lst
+        ;;material-lst ;;normals-lst
+        vertices-lst
+        indices-lst
+        ret glv)
+    (dolist (m mlst)
+      (when (eq :triangles (cadr (assoc :type m)))
+        (push (cadr (assoc :vertices m)) vertices-lst)
+        (push (cadr (assoc :indices m)) indices-lst)))
+    (setq ret (c-convex-decomposition-glvertices
+               (nreverse vertices-lst) (nreverse indices-lst)))
+    (when ret
+      (setq glv (instance gl::glvertices :init ret))
+      glv)
+    ))

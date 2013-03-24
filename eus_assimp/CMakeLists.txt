@@ -23,16 +23,21 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #common commands for building c++ executables and libraries
 rosbuild_find_ros_package(euslisp)
-include_directories(/usr/include /usr/X11R6/include ${euslisp_PACKAGE_PATH}/jskeus/eus/include)
+rosbuild_find_ros_package(openrave)
+include_directories(/usr/include /usr/X11R6/include ${euslisp_PACKAGE_PATH}/jskeus/eus/include ${openrave_PACKAGE_PATH}/openrave_git/3rdparty/convexdecomposition)
+link_directories ("${openrave_PACKAGE_PATH}/build/3rdparty/convexdecomposition")
 
 rosbuild_add_library(eus_assimp src/eus_assimp.cpp)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+if(EXISTS ${openrave_PACKAGE_PATH}/build/3rdparty/convexdecomposition/libconvexdecomposition.a)
+  target_link_libraries(eus_assimp convexdecomposition)
+  add_definitions(-DCOMPILE_CONVEX_DECOMPOSITION=1)
+endif()
 
 set(COMPILE_FLAGS "-O2 -Wno-write-strings -Wno-comment")
-add_definitions(-DLinux -D_REENTRANT -DVERSION='\"${8.26}\"' -DTHREADED -DPTHREAD -DX11R6_1)
+add_definitions(-DLINUX -DLinux -D_REENTRANT -DVERSION='\"${8.26}\"' -DTHREADED -DPTHREAD -DX11R6_1)
 add_definitions(-DSVNVERSION='\"r${SVNVERSION}\"')
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES amd64* OR
    ${CMAKE_SYSTEM_PROCESSOR} MATCHES x86_64* )

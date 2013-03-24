@@ -12,7 +12,9 @@
 #include <assimp3/scene.h>
 
 // convex decomposition
-//#include "NvConvexDecomposition.h"
+#if COMPILE_CONVEX_DECOMPOSITION
+#include "NvConvexDecomposition.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -856,14 +858,15 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   pointer lindices = argv[1];
   pointer ret = NIL;
 
-#if 0
+#if COMPILE_CONVEX_DECOMPOSITION
   int list_len = 0;
   {
     pointer a = lvertices;
-    while (islist(a)) {list_len++; a=ccdr(a);}
+    while (islist (a)) {list_len++; a=ccdr(a);}
   }
-
+  //
   CONVEX_DECOMPOSITION::iConvexDecomposition *ic = CONVEX_DECOMPOSITION::createConvexDecomposition();
+
   // store all vertices
   for (int i = 0; i < list_len; i++) {
     pointer mvertices = ccar (lvertices);
@@ -875,9 +878,6 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
     if (mvertices == NIL) { /* error */ }
     eusinteger_t size = intval (mvertices->c.ary.entity->c.fvec.length);
     eusfloat_t *fv = mvertices->c.ary.entity->c.fvec.fv;
-    NxF32 p1[3];
-    NxF32 p2[3];
-    NxF32 p3[3];
 
     if (mindices != NIL) {
       eusinteger_t *iv = mindices->c.ivec.iv;
@@ -886,6 +886,9 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
         eusinteger_t i1 = *iv++;
         eusinteger_t i2 = *iv++;
         eusinteger_t i3 = *iv++;
+        NxF32 p1[3];
+        NxF32 p2[3];
+        NxF32 p3[3];
 
         p1[0] = fv[3*i1];
         p1[1] = fv[3*i1+1];
@@ -899,23 +902,28 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
         p3[1] = fv[3*i3+1];
         p3[2] = fv[3*i3+2];
 
-        ic->addTriangle(p1, p2, p3);
+        ic->addTriangle (p1, p2, p3);
       }
     } else {
-      for (unsigned int f = 0; f < size / (3 * verts_per_face); f++) {
-        p1[0] = fv[(3 * verts_per_face) + 0];
-        p1[1] = fv[(3 * verts_per_face) + 1];
-        p1[2] = fv[(3 * verts_per_face) + 2];
+      int step = (3 * verts_per_face);
+      for (unsigned int f = 0; f < size / step; f++) {
+        NxF32 p1[3];
+        NxF32 p2[3];
+        NxF32 p3[3];
 
-        p2[0] = fv[(3 * verts_per_face) + 3];
-        p2[1] = fv[(3 * verts_per_face) + 4];
-        p2[2] = fv[(3 * verts_per_face) + 5];
+        p1[0] = fv[f * step + 0];
+        p1[1] = fv[f * step + 1];
+        p1[2] = fv[f * step + 2];
 
-        p3[0] = fv[(3 * verts_per_face) + 6];
-        p3[1] = fv[(3 * verts_per_face) + 7];
-        p3[2] = fv[(3 * verts_per_face) + 8];
+        p2[0] = fv[f * step + 3];
+        p2[1] = fv[f * step + 4];
+        p2[2] = fv[f * step + 5];
 
-        ic->addTriangle(p1, p2, p3);
+        p3[0] = fv[f * step + 6];
+        p3[1] = fv[f * step + 7];
+        p3[2] = fv[f * step + 8];
+
+        ic->addTriangle (p1, p2, p3);
       }
     }
   }
@@ -928,35 +936,39 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   NxF32 volumeSplitThresholdPercent = 2;
   bool useInitialIslandGeneration = true;
   bool useIslandGeneration = false;
-  bool useBackgroundThreads = true;
-  ic->computeConvexDecomposition(skinWidth,
-                                 decompositionDepth,
-                                 maxHullVertices,
-                                 concavityThresholdPercent,
-                                 mergeThresholdPercent,
-                                 volumeSplitThresholdPercent,
-                                 useInitialIslandGeneration,
-                                 useIslandGeneration,
-                                 useBackgroundThreads);
+  bool useBackgroundThreads = false;
+  ic->computeConvexDecomposition (skinWidth,
+                                  decompositionDepth,
+                                  maxHullVertices,
+                                  concavityThresholdPercent,
+                                  mergeThresholdPercent,
+                                  volumeSplitThresholdPercent,
+                                  useInitialIslandGeneration,
+                                  useIslandGeneration,
+                                  useBackgroundThreads);
 
   while ( !ic->isComputeComplete() ) {
-    printf("Computing the convex decomposition in a background thread.\r\n");
+#if DEBUG
+    fprintf (stderr, "Computing the convex decomposition in a background thread.\r\n");
+#endif
     sleep(1);
     // Sleep(1000);
   }
   // finish process
 
   NxU32 hullCount = ic->getHullCount();
-  printf("Convex Decomposition produced %d hulls.\r\n", hullCount );
-
+#if DEBUG
+  fprintf (stderr, "Convex Decomposition produced %d hulls.\r\n", hullCount );
+#endif
   for (NxU32 i = 0; i < hullCount; i++) {
     //
     pointer tmpret = NIL;
     int npc = 0;
     // name
     {
-      std::string nname = "convex_" + i;
-      pointer lname = makestring ((char *)nname.c_str(), nname.length());
+      std::ostringstream oss;
+      oss << "convex_" << i;
+      pointer lname = makestring ((char *)oss.str().c_str(), oss.str().length());
       vpush (lname);
       lname = rawcons (ctx, lname , NIL);
       vpop (); vpush (lname);
@@ -989,18 +1001,11 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
     vpush (indices); npc++;
 
     for (NxU32 i = 0; i < result.mVcount * 3; i++) {
-      //const NxF32 *pos = &result.mVertices[i*3];
-      //fprintf(fph,"v %0.9f %0.9f %0.9f\r\n", pos[0], pos[1], pos[2] );
       ver_vec[i] = result.mVertices[i];
     }
     for (NxU32 i = 0; i < result.mTcount * 3; i++) {
-      //NxU32 i1 = result.mIndices[i*3+0];
-      //NxU32 i2 = result.mIndices[i*3+1];
-      //NxU32 i3 = result.mIndices[i*3+2];
-      //fprintf(fph,"f %d %d %d\r\n", i1 + vcount_base, i2 + vcount_base, i3 + vcount_base );
       vec[i] = result.mIndices[i];
     }
-    //vcount_base += result.mVcount;
     // add indices to return list
     {
       pointer tmp;
@@ -1031,6 +1036,7 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   CONVEX_DECOMPOSITION::releaseConvexDecomposition(ic);
   vpop(); // pop ret
 #endif
+
   return ret;
 }
 
@@ -1089,8 +1095,7 @@ pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
 {
   defun(ctx,"ASSIMP-GET-GLVERTICES", argv[0], (pointer (*)())GET_MESHES);
   defun(ctx,"ASSIMP-DUMP-GLVERTICES", argv[0], (pointer (*)())DUMP_GL_VERTICES);
-  defun(ctx,"CONVEX-DECOMPOSITION-GLVERTICES", argv[0], (pointer (*)())CONVEX_DECOMP_GL_VERTICES);
-
+  defun(ctx,"C-CONVEX-DECOMPOSITION-GLVERTICES", argv[0], (pointer (*)())CONVEX_DECOMP_GL_VERTICES);
   defun(ctx,"ASSIMP-DESCRIBE", argv[0], (pointer (*)())ASSIMP_DESCRIBE);
 
   K_VERTICES  = defkeyword(ctx, "VERTICES");
