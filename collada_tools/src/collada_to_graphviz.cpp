@@ -33,7 +33,7 @@
 *********************************************************************/
 
 // this program was modified from urdf_to_graphviz.cpp
-
+#include <ros/ros.h>
 #include "collada_parser/collada_parser.h"
 #include "urdf/model.h"
 #include <iostream>

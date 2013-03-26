@@ -1,5 +1,5 @@
 /* Author: Yohei Kakiuchi */
-
+#include <ros/ros.h>
 #include "collada_parser/collada_parser.h"
 #include "urdf/model.h"
 
