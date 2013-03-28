@@ -753,9 +753,10 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	      fprintf(fp, ") ");
 	    }
 	    if ( prot ) {
-	      fprintf(fp, ":axis #f(");
-	      for(unsigned int i=0;i<3;i++) { fprintf(fp, " %f", prot->getValue()[i]);}
-	      fprintf(fp, ") :angle");
+	      fprintf(fp, ":axis ");
+              fprintf(fp, "(let ((tmp-axis (float-vector %f %f %f))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+                      prot->getValue()[0], prot->getValue()[1], prot->getValue()[2]);
+	      fprintf(fp, " :angle");
 	      fprintf(fp, " %f", prot->getValue()[3]*(M_PI/180.0));
 	    }
 	    fprintf(fp, "))\n");
@@ -1058,9 +1059,10 @@ int main(int argc, char* argv[]){
 	      fprintf(output_fp, ") ");
 	    }
 	    if ( prot ) {
-	      fprintf(output_fp, ":axis #f(");
-	      for(unsigned int i=0;i<3;i++) { fprintf(output_fp, " %f", 1000*prot->getValue()[i]);}
-	      fprintf(output_fp, ") :angle");
+	      fprintf(output_fp, ":axis ");
+              fprintf(output_fp, "(let ((tmp-axis (float-vector %f %f %f))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+                      prot->getValue()[0], prot->getValue()[1], prot->getValue()[2]);
+	      fprintf(output_fp, " :angle");
 	      fprintf(output_fp, " %f", prot->getValue()[3]*(M_PI/180.0));
 	    }
 	    fprintf(output_fp, ") :local)\n");
