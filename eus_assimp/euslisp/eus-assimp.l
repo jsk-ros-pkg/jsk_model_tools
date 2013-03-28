@@ -6,8 +6,8 @@
                              (split-large-mesh) (optimize-mesh) (identical-vertices) (fix-normal)
                              (dump-filename))
   (let ((ret
-         (assimp-get-glvertices fname scl gen-normal smooth-normal split-large-mesh
-                                optimize-mesh identical-vertices fix-normal dump-filename))
+         (c-assimp-get-glvertices fname scl gen-normal smooth-normal split-large-mesh
+                                  optimize-mesh identical-vertices fix-normal dump-filename))
         glv)
     (when ret
       (setq glv (instance gl::glvertices :init ret))
@@ -42,11 +42,11 @@
       )
     ;;(pprint (list (nreverse type-lst) (nreverse material-lst)
     ;;(nreverse vertices-lst) (nreverse normals-lst) (nreverse indices-lst)))
-    (assimp-dump-glvertices fname
-                            (nreverse type-lst) (nreverse material-lst)
-                            (nreverse vertices-lst) (nreverse normals-lst) (nreverse indices-lst)
-                            scl gen-normal smooth-normal
-                            split-large-mesh optimize-mesh identical-vertices)
+    (c-assimp-dump-glvertices fname
+                              (nreverse type-lst) (nreverse material-lst)
+                              (nreverse vertices-lst) (nreverse normals-lst) (nreverse indices-lst)
+                              scl gen-normal smooth-normal
+                              split-large-mesh optimize-mesh identical-vertices)
     ))
 ;;
 (defun append-glvertices (glv-lst)
@@ -60,8 +60,9 @@
     (instance gl::glvertices :init ret)))
 
 (defun convex-decomposition-glvertices (glvtcs
-                                        &key ((:scale scl) 1.0) (gen-normal) (smooth-normal)
-                                        (split-large-mesh) (optimize-mesh) (identical-vertices))
+                                        &key ((:scale scl) 1.0)
+                                        (skinwidth 0.0) (decomposition-depth 4) (max-hull-vertices 64)
+                                        (concavity-threshold 0.1) (merge-threshold 20.0) (volume-split-threshold 2.0))
   (let ((mlst (glvtcs . gl::mesh-list))
         ;;name-lst ;; type-lst
         ;;material-lst ;;normals-lst
@@ -73,7 +74,9 @@
         (push (cadr (assoc :vertices m)) vertices-lst)
         (push (cadr (assoc :indices m)) indices-lst)))
     (setq ret (c-convex-decomposition-glvertices
-               (nreverse vertices-lst) (nreverse indices-lst)))
+               (nreverse vertices-lst) (nreverse indices-lst)
+               skinwidth decomposition-depth max-hull-vertices
+               concavity-threshold merge-threshold volume-split-threshold 2.0))
     (when ret
       (setq glv (instance gl::glvertices :init ret))
       glv)

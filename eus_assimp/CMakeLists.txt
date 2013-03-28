@@ -23,6 +23,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #common commands for building c++ executables and libraries
 rosbuild_find_ros_package(euslisp)
+# for using convex decomposition in openrave/3rdparty
 rosbuild_find_ros_package(openrave)
 include_directories(/usr/include /usr/X11R6/include ${euslisp_PACKAGE_PATH}/jskeus/eus/include ${openrave_PACKAGE_PATH}/openrave_git/3rdparty/convexdecomposition)
 link_directories ("${openrave_PACKAGE_PATH}/build/3rdparty/convexdecomposition")

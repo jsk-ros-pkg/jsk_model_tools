@@ -849,9 +849,12 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   return NIL;
 }
 
-pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
+pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx, int n, pointer *argv)
 {
-  /* vertices-list indices-list (params) */
+  /* vertices-list indices-list
+     skinwidth decomposition-depth max-hull-vertices
+     concavity-threshold merge-threshold volume-split-threshold */
+
   numunion nu;
   int verts_per_face = 3;
   pointer lvertices = argv[0];
@@ -859,6 +862,34 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   pointer ret = NIL;
 
 #if COMPILE_CONVEX_DECOMPOSITION
+  ckarg2(2, 8);
+
+  NxF32 skinWidth = 0;
+  NxU32 decompositionDepth = 4;
+  NxU32 maxHullVertices    = 64;
+  NxF32 concavityThresholdPercent = 0.1f;
+  NxF32 mergeThresholdPercent = 20;
+  NxF32 volumeSplitThresholdPercent = 2;
+
+  if (n > 1) {
+    skinWidth = ckfltval(argv[2]);
+  }
+  if (n > 2) {
+    decompositionDepth = ckintval(argv[3]);
+  }
+  if (n > 3) {
+    maxHullVertices    = ckintval(argv[4]);
+  }
+  if (n > 4) {
+    concavityThresholdPercent = ckfltval(argv[5]);
+  }
+  if (n > 5) {
+    mergeThresholdPercent = ckfltval(argv[6]);
+  }
+  if (n > 6) {
+    volumeSplitThresholdPercent = ckfltval(argv[7]);
+  }
+
   int list_len = 0;
   {
     pointer a = lvertices;
@@ -928,15 +959,16 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
     }
   }
 
-  NxF32 skinWidth = 0;
-  NxU32 decompositionDepth = 4;
-  NxU32 maxHullVertices    = 64;
-  NxF32 concavityThresholdPercent = 0.1f;
-  NxF32 mergeThresholdPercent = 20;
-  NxF32 volumeSplitThresholdPercent = 2;
+  //NxF32 skinWidth = 0;
+  //NxU32 decompositionDepth = 4;
+  //NxU32 maxHullVertices    = 64;
+  //NxF32 concavityThresholdPercent = 0.1f;
+  //NxF32 mergeThresholdPercent = 20;
+  //NxF32 volumeSplitThresholdPercent = 2;
   bool useInitialIslandGeneration = true;
   bool useIslandGeneration = false;
   bool useBackgroundThreads = false;
+
   ic->computeConvexDecomposition (skinWidth,
                                   decompositionDepth,
                                   maxHullVertices,
@@ -1035,6 +1067,8 @@ pointer CONVEX_DECOMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
 
   CONVEX_DECOMPOSITION::releaseConvexDecomposition(ic);
   vpop(); // pop ret
+#else
+  fprintf(stderr, ";;This program have not been compiled with convex decomposition");
 #endif
 
   return ret;
@@ -1093,10 +1127,10 @@ pointer ASSIMP_DESCRIBE(register context *ctx,int n,pointer *argv)
 
 pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
 {
-  defun(ctx,"ASSIMP-GET-GLVERTICES", argv[0], (pointer (*)())GET_MESHES);
-  defun(ctx,"ASSIMP-DUMP-GLVERTICES", argv[0], (pointer (*)())DUMP_GL_VERTICES);
+  defun(ctx,"C-ASSIMP-GET-GLVERTICES", argv[0], (pointer (*)())GET_MESHES);
+  defun(ctx,"C-ASSIMP-DUMP-GLVERTICES", argv[0], (pointer (*)())DUMP_GL_VERTICES);
   defun(ctx,"C-CONVEX-DECOMPOSITION-GLVERTICES", argv[0], (pointer (*)())CONVEX_DECOMP_GL_VERTICES);
-  defun(ctx,"ASSIMP-DESCRIBE", argv[0], (pointer (*)())ASSIMP_DESCRIBE);
+  defun(ctx,"C-ASSIMP-DESCRIBE", argv[0], (pointer (*)())ASSIMP_DESCRIBE);
 
   K_VERTICES  = defkeyword(ctx, "VERTICES");
   K_NORMALS   = defkeyword(ctx, "NORMALS");
