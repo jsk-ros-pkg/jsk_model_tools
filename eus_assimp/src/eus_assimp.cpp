@@ -16,6 +16,11 @@
 #include "NvConvexDecomposition.h"
 #endif
 
+//SDL image
+#if USE_SDL_IMAGE
+#include "SDL_image.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -63,9 +68,9 @@ extern "C" {
 
 #define SIZE_T_MAX (std::numeric_limits<size_t>::max())
 
-static pointer K_VERTICES, K_NORMALS, K_INDICES, K_TYPE, K_MATERIAL;
+static pointer K_VERTICES, K_NORMALS, K_INDICES, K_TEXCOORDS, K_TYPE, K_MATERIAL;
 static pointer K_LINES, K_TRIANGLES, K_QUADS, K_POLYGON, K_NAME;
-static pointer K_AMBIENT, K_DIFFUSE, K_SPECULAR, K_EMISSION, K_SHININESS, K_TRANSPARENCY;
+static pointer K_FILENAME, K_AMBIENT, K_DIFFUSE, K_SPECULAR, K_EMISSION, K_SHININESS, K_TRANSPARENCY;
 
 static std::string primitiveType (unsigned int tp) {
  switch (tp) {
@@ -146,8 +151,8 @@ static pointer store_mesh_info (register context *ctx, eusfloat_t base_scl,
                                 const aiScene *scene, const aiNode *node, const aiMesh *amesh,
                                 const aiMatrix4x4 &trans) {
   static int mesh_cntr = -1;
-  pointer ver_mat, nom_mat, indices;
-  eusfloat_t *ver_vec=NULL, *nom_vec=NULL;
+  pointer ver_mat, nom_mat, indices, tex_cds;
+  eusfloat_t *ver_vec = NULL, *nom_vec = NULL, *tex_vec = NULL;
   numunion nu;
   pointer ret = NIL;
   int npc = 0;
@@ -212,8 +217,8 @@ static pointer store_mesh_info (register context *ctx, eusfloat_t base_scl,
     int lpc = 0;
     ar = am->Get (AI_MATKEY_NAME, s);
     if (ar == aiReturn_SUCCESS) {
-      std::string str; str.assign(s.C_Str());
 #if DEBUG
+      std::string str; str.assign(s.C_Str());
       std::cerr << ";; material properties: name: " << str << std::endl;
 #endif
       pointer pelem;
@@ -331,6 +336,45 @@ static pointer store_mesh_info (register context *ctx, eusfloat_t base_scl,
       vpush (lmaterial); lpc++;
     }
 #endif
+    for (unsigned int tex_count = 0; tex_count < am->GetTextureCount(aiTextureType_DIFFUSE); tex_count++) {
+      aiString fpath; // filename
+#if DEBUG
+      aiTextureMapping mapping;
+      unsigned int uvindex;
+      float blend;
+      aiTextureOp op;
+      aiTextureMapMode mapmode;
+      ar = am->GetTexture(aiTextureType_DIFFUSE, tex_count, &fpath,
+                          &mapping, &uvindex, &blend, &op, &mapmode);
+#else
+      ar = am->GetTexture(aiTextureType_DIFFUSE, tex_count, &fpath);
+#endif
+
+      if (ar == AI_SUCCESS) {
+        pointer pelem;
+        pointer eusstr = makestring (fpath.data, strlen(fpath.data));
+        vpush (eusstr);//
+        pelem = rawcons (ctx, eusstr, NIL);
+        vpush (pelem);//
+        pelem = rawcons (ctx, K_FILENAME, pelem);
+        vpush (pelem);//
+        lmaterial = rawcons (ctx, pelem, lmaterial);
+        vpop(); vpop(); vpop();
+        vpush (lmaterial); lpc++;
+#if DEBUG
+        std::cerr << ";; material properties: Texture: ";
+        std::string str; str.assign(fpath.C_Str());
+        std::cerr << "file: " << str << std::endl;
+        std::cerr << " / uv_index: " << uvindex  << std::endl;
+        std::cerr << " / blend: " << blend  << std::endl;
+        std::cerr << " / Mapping: " << mapping  << std::endl;
+        std::cerr << " / Op: " << op  << std::endl;
+        std::cerr << " / Mode: " << mapmode  << std::endl;
+#endif
+      }
+    }
+
+    // finalize material
     pointer tmp = rawcons (ctx, lmaterial, NIL);
     vpush (tmp); lpc++;
     tmp = rawcons (ctx, K_MATERIAL, tmp);
@@ -349,8 +393,8 @@ static pointer store_mesh_info (register context *ctx, eusfloat_t base_scl,
   ver_vec = ver_mat->c.ary.entity->c.fvec.fv;
 
   // count indices
+  int icount = 0;
   {
-    int icount = 0;
     for (unsigned int f = 0; f < amesh->mNumFaces; f++) {
       icount += amesh->mFaces[f].mNumIndices;
     }
@@ -377,6 +421,28 @@ static pointer store_mesh_info (register context *ctx, eusfloat_t base_scl,
     vpop();
     vpush (ret); npc++;
   }
+  // texcoords
+  {
+    int texcount = 0;
+    if (amesh->HasTextureCoords(texcount)) {
+      tex_cds = makefvector (2 * amesh->mNumVertices);
+      tex_vec = tex_cds->c.fvec.fv;
+      for (unsigned int v = 0; v < amesh->mNumVertices; v++) {
+        *tex_vec++ = amesh->mTextureCoords[texcount][v].x;
+        *tex_vec++ = (1.0 - amesh->mTextureCoords[texcount][v].y); // why swap horizontal line
+      }
+    }
+    if (!!tex_vec) {
+      pointer tmp;
+      tmp = rawcons (ctx, tex_cds, NIL);
+      vpush (tmp);
+      tmp = rawcons (ctx, K_TEXCOORDS, tmp);
+      ret = rawcons (ctx, tmp, ret);
+      vpop();
+      vpush (ret); npc++;
+    }
+  }
+
   // make vetices and normal matrix
   int vcount=0, ncount=0;
   for (unsigned int i = 0; i < amesh->mNumVertices; ++i) {
@@ -433,11 +499,11 @@ static void register_all_nodes (register context *ctx, eusfloat_t base_scl,
 #endif
   if (node->mNumMeshes > 0 && node->mMeshes != NULL) {
     for (unsigned int n = 0; n < node->mNumMeshes; n++) {
+      aiMesh *am = scene->mMeshes[node->mMeshes[n]];
 #if DEBUG
       fprintf (stderr, " mesh: %d", node->mMeshes[n]);
-#endif
-      aiMesh *am = scene->mMeshes[node->mMeshes[n]];
       std::cerr << ";; mesh = " << (void *)am << std::endl;
+#endif
       pointer ret = store_mesh_info (ctx, base_scl, scene, node, am, node_world_trans);
       vpush (ret);
       mesh_info.push_back (ret);
@@ -1125,16 +1191,49 @@ pointer ASSIMP_DESCRIBE(register context *ctx,int n,pointer *argv)
   return NIL;
 }
 
+pointer ASSIMP_LOAD_IMAGE(register context *ctx,int n,pointer *argv)
+{
+  pointer ret = NIL;
+  ckarg(1);
+  if (!isstring(argv[0])) error (E_NOSTRING);
+
+#if USE_SDL_IMAGE
+  SDL_Surface *sf = IMG_Load((char *)get_string(argv[0]));
+  if (!!sf) {
+    if (!!(sf->format)) {
+      printf("fmt:%0X, byte/pixel %d, MASK(RGBA): %08X %08X %08X %08X\n",
+             //sf->format->format,
+             sf->flags,
+             sf->format->BytesPerPixel,
+             sf->format->Rmask,
+             sf->format->Gmask,
+             sf->format->Bmask,
+             sf->format->Amask);
+    }
+    printf("width: %d, height: %d, pitch: %d, pixels: %lX\n",
+           sf->w,
+           sf->h,
+           sf->pitch,
+           sf->pixels);
+  }
+  IMG_Quit();
+#endif
+
+  return ret;
+}
+
 pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
 {
   defun(ctx,"C-ASSIMP-GET-GLVERTICES", argv[0], (pointer (*)())GET_MESHES);
   defun(ctx,"C-ASSIMP-DUMP-GLVERTICES", argv[0], (pointer (*)())DUMP_GL_VERTICES);
   defun(ctx,"C-CONVEX-DECOMPOSITION-GLVERTICES", argv[0], (pointer (*)())CONVEX_DECOMP_GL_VERTICES);
   defun(ctx,"C-ASSIMP-DESCRIBE", argv[0], (pointer (*)())ASSIMP_DESCRIBE);
+  defun(ctx,"C-ASSIMP-LOAD-IMAGE", argv[0], (pointer (*)())ASSIMP_LOAD_IMAGE);
 
   K_VERTICES  = defkeyword(ctx, "VERTICES");
   K_NORMALS   = defkeyword(ctx, "NORMALS");
   K_INDICES   = defkeyword(ctx, "INDICES");
+  K_TEXCOORDS = defkeyword(ctx, "TEXCOORDS");
   K_MATERIAL  = defkeyword(ctx, "MATERIAL");
   K_TYPE      = defkeyword(ctx, "TYPE");
   K_LINES     = defkeyword(ctx, "LINES");
@@ -1143,6 +1242,7 @@ pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
   K_POLYGON   = defkeyword(ctx, "POLYGON");
   K_NAME      = defkeyword(ctx, "NAME");
   // for material
+  K_FILENAME     = defkeyword(ctx, "FILENAME");
   K_AMBIENT      = defkeyword(ctx, "AMBIENT");
   K_DIFFUSE      = defkeyword(ctx, "DIFFUSE");
   K_SPECULAR     = defkeyword(ctx, "SPECULAR");

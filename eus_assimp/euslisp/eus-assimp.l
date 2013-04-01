@@ -12,6 +12,7 @@
     (when ret
       (setq glv (instance gl::glvertices :init ret))
       (send glv :filename fname)
+      (send glv :load-texture-image)
       glv)
     ))
 
@@ -81,3 +82,22 @@
       (setq glv (instance gl::glvertices :init ret))
       glv)
     ))
+
+(in-package "GL")
+(defmethod glvertices
+  (:load-texture-image ()
+   (dolist (minfo mesh-list)
+     (let ((matinfo (cadr (assoc :material minfo))))
+       (let ((fname (cadr (assoc :filename matinfo)))
+             (img   (cadr (assoc :teximage matinfo))))
+         (when (and fname (null img))
+           (setq img (image::read-image-file fname))
+           ;; TODO: check color-image24 and packed to RGB24bit
+           (when img
+             (nconc matinfo (list (list :teximage img))))
+           ;;; load other method
+           )
+         )))
+   )
+  )
+(in-package "USER")

@@ -20,12 +20,14 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_genmsg()
 #uncomment if you have defined services
 #rosbuild_gensrv()
+include (FindPkgConfig)
+pkg_check_modules (SDLIMG SDL_image)
 
 #common commands for building c++ executables and libraries
 rosbuild_find_ros_package(euslisp)
 # for using convex decomposition in openrave/3rdparty
 rosbuild_find_ros_package(openrave)
-include_directories(/usr/include /usr/X11R6/include ${euslisp_PACKAGE_PATH}/jskeus/eus/include ${openrave_PACKAGE_PATH}/openrave_git/3rdparty/convexdecomposition)
+include_directories(/usr/include /usr/X11R6/include ${euslisp_PACKAGE_PATH}/jskeus/eus/include ${openrave_PACKAGE_PATH}/openrave_git/3rdparty/convexdecomposition ${SDLIMG_INCLUDE_DIRS})
 link_directories ("${openrave_PACKAGE_PATH}/build/3rdparty/convexdecomposition")
 
 rosbuild_add_library(eus_assimp src/eus_assimp.cpp)
@@ -36,6 +38,13 @@ if(EXISTS ${openrave_PACKAGE_PATH}/build/3rdparty/convexdecomposition/libconvexd
   target_link_libraries(eus_assimp convexdecomposition)
   add_definitions(-DCOMPILE_CONVEX_DECOMPOSITION=1)
 endif()
+
+if(SDLIMG_FOUND)
+#  message(STATUS "SDL_image found")
+  add_definitions(-DUSE_SDL_IMAGE=1)
+  add_definitions(${SDLIMG_CFLAGS_OTHER})
+  target_link_libraries(eus_assimp ${SDLIMG_LIBRARIES})
+endif(SDLIMG_FOUND)
 
 set(COMPILE_FLAGS "-O2 -Wno-write-strings -Wno-comment")
 add_definitions(-DLINUX -DLinux -D_REENTRANT -DVERSION='\"${8.26}\"' -DTHREADED -DPTHREAD -DX11R6_1)
