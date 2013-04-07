@@ -79,7 +79,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry) {
     fprintf(fp, "          (list\n"); // mesh-info
     fprintf(fp, "           (list :type :triangles)\n");
 
-    domTriangles* thisTriangles = thisMesh->getTriangles_array().get(0);
+    domTriangles* thisTriangles = thisMesh->getTriangles_array().get(currentTriangle);
     fprintf(fp, "           (list :material (list\n");
     // NEED FIX, we mut get matriar target name from database
     domMaterial* thisMaterial; string materialTarget;

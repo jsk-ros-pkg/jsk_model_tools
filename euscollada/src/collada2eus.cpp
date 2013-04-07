@@ -91,7 +91,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry) {
   // based on http://www.shader.jp/xoops/html/modules/mydownloads/singlefile.php?cid=5&lid=6
   for(int currentTriangle=0;currentTriangle<triangleElementCount;currentTriangle++)
     {
-      domTriangles* thisTriangles = thisMesh->getTriangles_array().get(0);
+      domTriangles* thisTriangles = thisMesh->getTriangles_array().get(currentTriangle);
 
       // NEED FIX, we mut get matriar target name from database
       domMaterial* thisMaterial; string materialTarget;
