@@ -645,31 +645,39 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       fprintf(fp, ")\n");
       fprintf(fp, "                       :name \"%s\"\n", thisNode->getName());
       if ( thisRigidbody && thisRigidbody->getTechnique_common()->getMass_frame() ) {
-	domTranslate_Array translateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getTranslate_array();
-	domTranslateRef thisTranslate = translateArray[translateArray.getCount()-1];
-	fprintf(fp, "                       :weight %.3f :centroid (float-vector %.3f %.3f %.3f)\n",
+	fprintf(fp, "                       :weight %.3f))\n",
 		/* weight : collada [kg] -> eus : [g] */
-		thisRigidbody->getTechnique_common()->getMass()->getValue()*1000,
-		/* centroid : collada [m] -> eus : [mm] */
-		thisTranslate->getValue()[0]*1000, thisTranslate->getValue()[1]*1000, thisTranslate->getValue()[2]*1000);
-	domRotate_Array rotateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getRotate_array();
-	domRotateRef thisRotate = rotateArray[rotateArray.getCount()-1];
-	fprintf(fp, "                       :inertia-tensor (let* ((tmp-rot-axis (float-vector %.6f %.6f %.6f %.6f))\n",
-		thisRotate ? thisRotate->getValue()[0] : 0,
-		thisRotate ? thisRotate->getValue()[1] : 0,
-		thisRotate ? thisRotate->getValue()[2] : 1,
-		thisRotate ? thisRotate->getValue()[3]*M_PI/180.0 : 0);
-	fprintf(fp, "                                              (tmp-rot-matrix (matrix-exponent (scale (elt tmp-rot-axis 3) (subseq tmp-rot-axis 0 3))))\n");
-	fprintf(fp, "                                              (iner (float-vector %.3f %.3f %.3f)))\n",
-		/* inertia : collada [kg m^2] -> eus : [g mm^2] */
-		thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
-		thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
-		thisRigidbody->getTechnique_common()->getInertia()->getValue()[2]*1e9);
-	fprintf(fp, "                                          (m* (m* tmp-rot-matrix (diagonal iner)) (transpose tmp-rot-matrix)))\n");
+		thisRigidbody->getTechnique_common()->getMass()->getValue()*1000);
+        domTranslate_Array translateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getTranslate_array();
+        domRotate_Array rotateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getRotate_array();
+        fprintf(fp, "       (let ((tmp-c-list (list\n");
+        for (size_t ii = 0; ii < translateArray.getCount(); ii++) {
+          domTranslateRef thisTranslate = translateArray[ii];
+          fprintf(fp, "                          (make-coords :pos (float-vector %.3f %.3f %.3f) ",
+                  /* centroid : collada [m] -> eus : [mm] */
+                  thisTranslate->getValue()[0]*1000, thisTranslate->getValue()[1]*1000, thisTranslate->getValue()[2]*1000);
+          domRotateRef thisRotate = rotateArray[ii];
+          fprintf(fp, ":rot (matrix-exponent (scale %.6f (float-vector %.6f %.6f %.6f))))\n",
+                  thisRotate ? thisRotate->getValue()[3]*M_PI/180.0 : 0,
+                  thisRotate ? thisRotate->getValue()[0] : 0,
+                  thisRotate ? thisRotate->getValue()[1] : 0,
+                  thisRotate ? thisRotate->getValue()[2] : 1);
+        }
+        fprintf(fp, "                          ))\n");
+        fprintf(fp, "             (tmp-c (make-coords)))\n");
+        fprintf(fp, "         (dolist (cc tmp-c-list)\n");
+        fprintf(fp, "           (setq tmp-c (send tmp-c :transform cc)))\n");
+        fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNode->getName());
+        fprintf(fp, "               (m* (send tmp-c :worldrot) (diagonal (float-vector %.3f %.3f %.3f)) (transpose (send tmp-c :worldrot))))\n",
+                /* inertia : collada [kg m^2] -> eus : [g mm^2] */
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[2]*1e9);
+        fprintf(fp, "         (setq (%s . acentroid) (send tmp-c :worldpos))\n", thisNode->getName());
+        fprintf(fp, "        )\n");
       } else {
-	fprintf(fp, "                       :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))\n");
+	fprintf(fp, "                       :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n");
       }
-      fprintf(fp, "		       ))\n");
     } else if ( (thisNode->getNode_array().getCount() > 0 &&
                  strcmp(thisNode->getNode_array()[0]->getName(),"visual") != 0 ) ||
 		(thisNode->getNode_array().getCount() > 1 &&

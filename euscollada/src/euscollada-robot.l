@@ -7,6 +7,14 @@
 (defmethod euscollada-robot
   (:init-ending
    ()
+   (dolist (l links)
+     (setq (l . acentroid) (send l :inverse-transform-vector
+                                 (send (send (car links) :worldcoords) :transform-vector
+                                       (l . acentroid))))
+     (setq (l . inertia-tensor) (m* (transpose (send l :worldrot))
+                                    (m* (send (car links) :worldrot)
+                                        (l . inertia-tensor))))
+     )
    (send-super :init-ending)
 
    ;;
