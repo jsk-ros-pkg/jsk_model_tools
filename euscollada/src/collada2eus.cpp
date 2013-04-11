@@ -558,6 +558,24 @@ domLink* findLinkfromKinematics (domLink* thisLink, const std::string& link_name
   return NULL;
 }
 
+std::string getSensorType (const domExtraRef pextra) {
+  // get sensor_type from extra tag
+  std::string sensor_type;
+  for (size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
+    domExtra *tmpextra;
+    g_dae->getDatabase()->getElement((daeElement**)&tmpextra, ii, NULL, "extra");
+    if (tmpextra->getType() == std::string("library_sensors")) {
+      for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
+        if ((std::string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
+            pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
+          sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
+        }
+      }
+    }
+  }
+  return sensor_type;
+}
+
 void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisRigidbodyArray) {
   int nodeArrayCount = thisNodeArray.getCount();
   for(int currentNodeArray=0;currentNodeArray<nodeArrayCount;currentNodeArray++) {
@@ -733,20 +751,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
 	  daeElement* frame_origin = pextra->getTechnique_array()[0]->getChild("frame_origin");
 	  if ( std::string(thisKinematics->getId())+std::string("/")+std::string(thisLink->getSid()) == frame_origin->getAttribute("link")) {
-            // get sensor_type from extra tag
-            std::string sensor_type;
-            for (size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
-              domExtra *tmpextra;
-              g_dae->getDatabase()->getElement((daeElement**)&tmpextra, ii, NULL, "extra");
-              if (tmpextra->getType() == std::string("library_sensors")) {
-                for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
-                  if ((std::string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
-                      pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
-                    sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
-                  }
-                }
-              }
-            }
+            std::string sensor_type = getSensorType(pextra);
             std::string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
 	    std::cerr << "Sensor " << pextra->getName() << " is attached to " << thisNode->getName() << " " << sensor_type << " " << sensor_url << std::endl;
 	    fprintf(fp, "       (setq %s-sensor-coords (make-cascoords :name :%s))\n", pextra->getName(), pextra->getName());
@@ -1240,22 +1245,8 @@ int main(int argc, char* argv[]){
       // find element which type is attach_sensor and is attached to thisNode
       if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
 	fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s-sensor-coords args))\n", pextra->getName(), pextra->getName());
-        // gather sensor type
-        std::string sensor_type;
-        for (size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
-          domExtra *tmpextra;
-          g_dae->getDatabase()->getElement((daeElement**)&tmpextra, ii, NULL, "extra");
-          if (tmpextra->getType() == std::string("library_sensors")) {
-            for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
-              if ((std::string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
-                  pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
-                sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
-                if (sensor_type == "base_force6d" ) {
-                  fsensor_list.push_back(string(pextra->getName()));
-                }
-              }
-            }
-          }
+        if (getSensorType(pextra) == "base_force6d" ) {
+          fsensor_list.push_back(string(pextra->getName()));
         }
       }
     }
