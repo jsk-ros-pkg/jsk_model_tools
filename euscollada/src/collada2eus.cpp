@@ -1229,6 +1229,19 @@ int main(int argc, char* argv[]){
   for(vector<pair<string, string> >::iterator it=g_all_link_names.begin();it!=g_all_link_names.end();it++){
     fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", it->second.c_str(), it->first.c_str());
   }
+  // sensor
+  fprintf(output_fp, "\n    ;; attach_sensor\n");
+  if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
+    domArticulated_system *thisArticulated;
+    g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, 0, NULL, "articulated_system");
+    for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
+      domExtraRef pextra = thisArticulated->getExtra_array()[ie];
+      // find element which type is attach_sensor and is attached to thisNode
+      if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
+	fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s-sensor-coords args))\n", pextra->getName(), pextra->getName());
+      }
+    }
+  }
   fprintf(output_fp, "  )\n\n");
 
   writeGeometry(output_fp, g_dae->getDatabase());
