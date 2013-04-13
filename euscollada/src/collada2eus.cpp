@@ -930,15 +930,14 @@ int main(int argc, char* argv[]){
   fprintf(output_fp, ";; %s $ ", get_current_dir_name());for(int i=0;i<argc;i++) fprintf(output_fp, "%s ", argv[i]); fprintf(output_fp, "\n");
   fprintf(output_fp, ";;\n");
   fprintf(output_fp, "\n");
-  std::string robot_name;
-  robot_name = std::string(thisNode->getName());
+  std::string robot_name(thisNode->getName());
   if ( thisNode->getNode_array().getCount() == 0 ) {
-      fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-object :init)))\n", thisNode->getName(), thisNode->getName(), thisNode->getName());
+      fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-object :init)))\n", robot_name.c_str(), robot_name.c_str(), robot_name.c_str());
       fprintf(output_fp, "\n");
-      fprintf(output_fp, "(defclass %s-object\n", thisNode->getName());
+      fprintf(output_fp, "(defclass %s-object\n", robot_name.c_str());
       fprintf(output_fp, "  :super bodyset-link\n");
       fprintf(output_fp, "  :slots ())\n\n");
-      fprintf(output_fp, "(defmethod %s-object\n", thisNode->getName());
+      fprintf(output_fp, "(defmethod %s-object\n", robot_name.c_str());
       fprintf(output_fp, "  (:init\n");
       fprintf(output_fp, "   (&rest args)\n");
       fprintf(output_fp, "   (let ()\n");
@@ -959,21 +958,21 @@ int main(int argc, char* argv[]){
 	  // write geometry information
       }
       fprintf(output_fp, ")\n");
-      fprintf(output_fp, "                  :name \"%s\"\n", thisNode->getName());
+      fprintf(output_fp, "                  :name \"%s\"\n", robot_name.c_str());
       fprintf(output_fp, "                  args))))\n");
 
       writeGeometry(output_fp, g_dae->getDatabase(), robot_name.c_str());
 
-      fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", thisNode->getName(), get_current_dir_name(), output_filename);
+      fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", robot_name.c_str(), get_current_dir_name(), output_filename);
       fprintf(stderr, ";; generate lisp code for body\n");
       exit(0);
   }
 
   copy_euscollada_robot_class_definition(output_fp);
 
-  fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-robot :init)))\n", thisNode->getName(), thisNode->getName(), thisNode->getName());
+  fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-robot :init)))\n", robot_name.c_str(), robot_name.c_str(), robot_name.c_str());
   fprintf(output_fp, "\n");
-  fprintf(output_fp, "(defclass %s-robot\n", thisNode->getName());
+  fprintf(output_fp, "(defclass %s-robot\n", robot_name.c_str());
   fprintf(output_fp, "  :super euscollada-robot\n");
   fprintf(output_fp, "  :slots (");
   // all joint and link name
@@ -1017,13 +1016,13 @@ int main(int argc, char* argv[]){
   //
   fprintf(output_fp, "))\n");
 
-  fprintf(output_fp, "(defmethod %s-robot\n", thisNode->getName());
+  fprintf(output_fp, "(defmethod %s-robot\n", robot_name.c_str());
   fprintf(output_fp, "  (:init\n");
   fprintf(output_fp, "   (&rest args)\n");
   fprintf(output_fp, "   (let ()\n");
 
   // send super :init
-  fprintf(output_fp, "     (send-super* :init :name \"%s\" args)\n", thisNode->getName());
+  fprintf(output_fp, "     (send-super* :init :name \"%s\" args)\n", robot_name.c_str());
   fprintf(output_fp, "\n");
 
   // write kinemtaics
@@ -1261,9 +1260,9 @@ int main(int argc, char* argv[]){
   }
   fprintf(output_fp, "  )\n\n");
 
-  writeGeometry(output_fp, g_dae->getDatabase(), thisNode->getName());
+  writeGeometry(output_fp, g_dae->getDatabase(), robot_name.c_str());
 
-  fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", thisNode->getName(), get_current_dir_name(), output_filename);
+  fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", robot_name.c_str(), get_current_dir_name(), output_filename);
 
   ifstream fin2(yaml_filename);
   if (fin2.fail()) {
