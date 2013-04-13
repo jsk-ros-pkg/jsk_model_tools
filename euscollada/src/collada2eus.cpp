@@ -39,17 +39,17 @@ unsigned int getMaxOffset( domInput_local_offset_Array &input_array )
   return maxOffset;
 }
 
-void writeTriangle(FILE *fp, domGeometry *thisGeometry) {
+void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) {
   std::vector<coordT> points;
 
   // get mesh
   domMesh *thisMesh = thisGeometry->getMesh();
   int triangleElementCount = thisMesh?(int)(thisMesh->getTriangles_array().getCount()):0;
 
-  fprintf(fp, "(defclass %s\n", thisGeometry->getId());
+  fprintf(fp, "(defclass %s_%s\n", robot_name, thisGeometry->getId());
   fprintf(fp, "  :super body\n");
   fprintf(fp, "  :slots ())\n");
-  fprintf(fp, "(defmethod %s\n", thisGeometry->getId());
+  fprintf(fp, "(defmethod %s_%s\n", robot_name, thisGeometry->getId());
   if ( thisMesh == NULL || triangleElementCount == 0 )  {
     fprintf(fp, "  (:init (&key (name))\n");
     fprintf(fp, "         (replace-object self (make-cube 10 10 10))\n");
@@ -295,7 +295,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry) {
   assert(polygonesElementCount==0);
 }
 
-void writeGeometry(FILE *fp, daeDatabase *thisDatabase) {
+void writeGeometry(FILE *fp, daeDatabase *thisDatabase, const char* robot_name) {
   // number of geometry
   int geometryElementCount =  thisDatabase->getElementCount(NULL, "geometry", NULL);
   for(int currentGeometry=0;currentGeometry<geometryElementCount;currentGeometry++) {
@@ -307,7 +307,7 @@ void writeGeometry(FILE *fp, daeDatabase *thisDatabase) {
             currentGeometry, thisGeometry->getId(), thisGeometry->getName());
 
     // write geometry information
-    writeTriangle(fp, thisGeometry);
+    writeTriangle(fp, thisGeometry, robot_name);
   }
 }
 
@@ -576,12 +576,13 @@ std::string getSensorType (const domExtraRef pextra) {
   return sensor_type;
 }
 
-void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisRigidbodyArray) {
+void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisRigidbodyArray, const char* robot_name) {
+  std::cerr << "HOGE" << std::string(robot_name) << std::endl;
   int nodeArrayCount = thisNodeArray.getCount();
   for(int currentNodeArray=0;currentNodeArray<nodeArrayCount;currentNodeArray++) {
     domNode *thisNode = thisNodeArray[currentNodeArray];
     string parentName = ":local";
-    writeNodes(fp, thisNode->getNode_array(), thisRigidbodyArray);
+    writeNodes(fp, thisNode->getNode_array(), thisRigidbodyArray, robot_name);
 
     if ( strcmp(thisNode->getName(),"visual") == 0 ) continue; //@@@ OK??
     // link
@@ -630,7 +631,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       for(vector<pair<domInstance_geometry *, string> >::iterator it=geometryNameArray.begin();it!=geometryNameArray.end();it++){
 	domInstance_geometry *thisGeometry = it->first;
 	const char * geometryName = it->second.c_str();
-	fprintf(fp, "       (setq %s (instance %s :init))\n",  geometryName, thisGeometry->getUrl().id().c_str());
+	fprintf(fp, "       (setq %s (instance %s_%s :init))\n",  geometryName, robot_name, thisGeometry->getUrl().id().c_str());
 
 	// note that geometryNameCount 0 means root node and >1 indicates the coordinates of each geometry
 	if ( thisNode == geomNode ) {
@@ -929,6 +930,8 @@ int main(int argc, char* argv[]){
   fprintf(output_fp, ";; %s $ ", get_current_dir_name());for(int i=0;i<argc;i++) fprintf(output_fp, "%s ", argv[i]); fprintf(output_fp, "\n");
   fprintf(output_fp, ";;\n");
   fprintf(output_fp, "\n");
+  std::string robot_name;
+  robot_name = std::string(thisNode->getName());
   if ( thisNode->getNode_array().getCount() == 0 ) {
       fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-object :init)))\n", thisNode->getName(), thisNode->getName(), thisNode->getName());
       fprintf(output_fp, "\n");
@@ -959,7 +962,7 @@ int main(int argc, char* argv[]){
       fprintf(output_fp, "                  :name \"%s\"\n", thisNode->getName());
       fprintf(output_fp, "                  args))))\n");
 
-      writeGeometry(output_fp, g_dae->getDatabase());
+      writeGeometry(output_fp, g_dae->getDatabase(), robot_name.c_str());
 
       fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", thisNode->getName(), get_current_dir_name(), output_filename);
       fprintf(stderr, ";; generate lisp code for body\n");
@@ -1026,7 +1029,7 @@ int main(int argc, char* argv[]){
   // write kinemtaics
   domPhysics_model *thisPhysicsmodel;
   g_dae->getDatabase()->getElement((daeElement**)&thisPhysicsmodel, 0, NULL, "physics_model");
-  writeNodes(output_fp, thisNode->getNode_array(), thisPhysicsmodel?(thisPhysicsmodel->getRigid_body_array()):(domRigid_body_Array)NULL);
+  writeNodes(output_fp, thisNode->getNode_array(), thisPhysicsmodel?(thisPhysicsmodel->getRigid_body_array()):(domRigid_body_Array)NULL, robot_name.c_str());
   fprintf(output_fp, "     (send self :assoc %s)\n", thisNode->getNode_array()[0]->getName());
   
   // write joint
@@ -1258,7 +1261,7 @@ int main(int argc, char* argv[]){
   }
   fprintf(output_fp, "  )\n\n");
 
-  writeGeometry(output_fp, g_dae->getDatabase());
+  writeGeometry(output_fp, g_dae->getDatabase(), thisNode->getName());
 
   fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", thisNode->getName(), get_current_dir_name(), output_filename);
 
