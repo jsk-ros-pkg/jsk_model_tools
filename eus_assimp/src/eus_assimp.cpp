@@ -149,7 +149,7 @@ static void printMaterial(aiMaterial *material, unsigned int idx)
 
 static pointer store_mesh_info (register context *ctx, eusfloat_t base_scl,
                                 const aiScene *scene, const aiNode *node, const aiMesh *amesh,
-                                const aiMatrix4x4 &trans) {
+                                const aiMatrix4x4 &trans, int direc) {
   static int mesh_cntr = -1;
   pointer ver_mat, nom_mat, indices, tex_cds;
   eusfloat_t *ver_vec = NULL, *nom_vec = NULL, *tex_vec = NULL;
@@ -452,14 +452,63 @@ static pointer store_mesh_info (register context *ctx, eusfloat_t base_scl,
     aiVector3D tvec (amesh->mVertices[i]);
     tvec *= trans;
     tvec *= base_scl;
-    ver_vec[vcount++] = tvec.x;
-    ver_vec[vcount++] = tvec.y;
-    ver_vec[vcount++] = tvec.z;
+    switch (direc) {
+    case 0: // X_UP
+      ver_vec[vcount++] = - tvec.z;
+      ver_vec[vcount++] = tvec.y;
+      ver_vec[vcount++] = tvec.x;
+      break;
+    case 1: // Y_UP
+      ver_vec[vcount++] = tvec.x;
+      ver_vec[vcount++] = - tvec.z;
+      ver_vec[vcount++] = tvec.y;
+      break;
+    case 2: // Z_UP
+      ver_vec[vcount++] = tvec.x;
+      ver_vec[vcount++] = tvec.y;
+      ver_vec[vcount++] = tvec.z;
+      break;
+    case 3: // -X_UP
+      ver_vec[vcount++] = tvec.z;
+      ver_vec[vcount++] = tvec.y;
+      ver_vec[vcount++] = - tvec.x;
+      break;
+    case 4: // -Y_UP
+      ver_vec[vcount++] = tvec.x;
+      ver_vec[vcount++] = tvec.z;
+      ver_vec[vcount++] = - tvec.y;
+      break;
+    }
+
     if ( !!nom_vec ) {
       aiVector3D tnom = rot.Rotate (amesh->mNormals[i]);
-      nom_vec[ncount++] = tnom.x;
-      nom_vec[ncount++] = tnom.y;
-      nom_vec[ncount++] = tnom.z;
+      switch (direc) {
+      case 0:
+        nom_vec[ncount++] = - tnom.z;
+        nom_vec[ncount++] = tnom.y;
+        nom_vec[ncount++] = tnom.x;
+        break;
+      case 1:
+        nom_vec[ncount++] = tnom.x;
+        nom_vec[ncount++] = - tnom.z;
+        nom_vec[ncount++] = tnom.y;
+        break;
+      case 2:
+        nom_vec[ncount++] = tnom.x;
+        nom_vec[ncount++] = tnom.y;
+        nom_vec[ncount++] = tnom.z;
+        break;
+      case 3:
+        nom_vec[ncount++] = tnom.z;
+        nom_vec[ncount++] = tnom.y;
+        nom_vec[ncount++] = - tnom.x;
+        break;
+      case 4:
+        nom_vec[ncount++] = tnom.x;
+        nom_vec[ncount++] = tnom.z;
+        nom_vec[ncount++] = - tnom.y;
+        break;
+      }
     }
   }
   //
@@ -490,7 +539,7 @@ static pointer store_mesh_info (register context *ctx, eusfloat_t base_scl,
 
 static void register_all_nodes (register context *ctx, eusfloat_t base_scl,
                                 const aiScene *scene, const aiNode *node,
-                                const aiMatrix4x4 &parent_world_trans,
+                                const aiMatrix4x4 &parent_world_trans, int direc,
                                 std::vector<pointer> &mesh_info) {
   aiMatrix4x4 node_world_trans = parent_world_trans * node->mTransformation;
 #if DEBUG
@@ -504,7 +553,7 @@ static void register_all_nodes (register context *ctx, eusfloat_t base_scl,
       fprintf (stderr, " mesh: %d", node->mMeshes[n]);
       std::cerr << ";; mesh = " << (void *)am << std::endl;
 #endif
-      pointer ret = store_mesh_info (ctx, base_scl, scene, node, am, node_world_trans);
+      pointer ret = store_mesh_info (ctx, base_scl, scene, node, am, node_world_trans, direc);
       vpush (ret);
       mesh_info.push_back (ret);
     }
@@ -516,17 +565,17 @@ static void register_all_nodes (register context *ctx, eusfloat_t base_scl,
   for (unsigned int c = 0; c < node->mNumChildren; c++) {
     register_all_nodes (ctx, base_scl,
                         scene, node->mChildren[c],
-                        node_world_trans, mesh_info);
+                        node_world_trans, direc, mesh_info);
   }
 }
 
 pointer GET_MESHES(register context *ctx,int n,pointer *argv)
 {
-  /* filename &optional scale (gen_normal nil) (smooth_normal nil) (split_large_mesh nil) (optimize_mesh nil) (identical_vert nil) (fix_normal nil) (dumpfilename) */
+  /* filename &optional scale (gen_normal nil) (smooth_normal nil) (split_large_mesh nil) (optimize_mesh nil) (identical_vert nil) (fix_normal nil) (direction) (dumpfilename) */
   eusfloat_t base_scl = 1.0;
   numunion nu;
 
-  ckarg2(1, 9);
+  ckarg2(1, 10);
   if (!isstring(argv[0])) error (E_NOSTRING);
   if (n > 1) {
     base_scl = ckfltval (argv[1]);
@@ -536,6 +585,7 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
   unsigned int post_proc = (aiProcess_Triangulate | aiProcess_SortByPType);
   bool recalc_normal = false;
   char *dumpfile = NULL;
+  int direction = 2; // :X_UP 0, :Y_UP 1, :Z_UP 2
 
   if (n > 2) {
     if (argv[2] != NIL) {
@@ -562,7 +612,10 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
     if (argv[7] != NIL) { post_proc |= aiProcess_FixInfacingNormals; }
   }
   if (n > 8) {
-    if (argv[8] != NIL) {
+    direction = intval(argv[8]);
+  }
+  if (n > 9) {
+    if (argv[9] != NIL) {
       if (!isstring(argv[8])) error(E_NOSTRING);
       dumpfile = (char *)get_string(argv[8]);
     }
@@ -604,7 +657,7 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
     aiMatrix4x4 world_trans;
     std::vector<pointer> mesh_info;
     register_all_nodes (ctx, base_scl, scene,
-                        scene->mRootNode, world_trans, mesh_info);
+                        scene->mRootNode, world_trans, direction, mesh_info);
 #if DEBUG
     std::cerr << ";; mesh size: " << mesh_info.size() << std::endl;
 #endif
@@ -662,12 +715,12 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
 {
   /* filename type-list material-list vertices-list normals-list indices-list
      (scale) (gen_normal nil) (smooth_normal nil) (split_large_mesh nil)
-     (optimize_mesh nil) (identical_vert nil) (fix_normal)
+     (optimize_mesh nil) (identical_vert nil) (fix_normal) (direction)
   */
   // FIXME: name_list
-  ckarg2(6, 12);
+  ckarg2(6, 13);
   numunion nu;
-
+  int direction = 2;
   char *dumpfile = NULL;
   if (!isstring(argv[0])) error(E_NOSTRING);
   dumpfile = (char *)get_string(argv[0]);
@@ -686,6 +739,9 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   lvertices = argv[3];
   lnormals = argv[4];
   lindices = argv[5];
+  if (n > 12) {
+    direction = intval(argv[12]);
+  }
 
   // assimp loader
   aiScene *pScene = (aiScene *) malloc(sizeof (aiScene));
