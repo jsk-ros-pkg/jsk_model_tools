@@ -5,9 +5,9 @@
 (unless (boundp '*worldcoords*) (setq *worldcoords* (make-coords)))
 (unless (fboundp 'stl2eus) (load "read-stl.l"))
 (when (and (boundp '*use-assimp*) *use-assimp*)
-  (load "package://eus_assimp_reader/euslisp/eus-assimp.l"))
+  (load "package://eus_assimp/euslisp/eus-assimp.l"))
 (load "package://euscollada/src/xml.l")
-(defvar *xml2sxml* (format nil "~A/src/xml2sxml.scm" (ros::rospack-find "eusurdf")))
+(defvar *xml2sxml* (format nil "~A/scripts/xml2sxml.scm" (ros::rospack-find "eusurdf")))
 
 (defun convert-minus-to-underbar (str)
   (cond
@@ -33,12 +33,18 @@
 (defun urdf2eus (fname &key (scale 1000.0))
   (let ((sxml (read-sxml fname)))
     (parse-urdf-sxml sxml :scale scale)))
+(defun sdf2eus (fname &key (scale 1000.0))
+  (let ((sxml (read-sxml fname)))
+    (parse-sdf-sxml sxml :scale scale)))
 
 (defun parse-urdf-sxml (sxml &key (scale 1000.0))
   (let ((robots (extract-robot-tag-from-urdf sxml)))
     (mapcar #'(lambda (x)
                 (make-robot-model-from-robot-urdf x :scale scale))
             robots)))
+(defun parse-sdf-sxml (sxml &key (scale 1000.0))
+  (let ((sdfmodel (extract-model-tag-from-sdf sxml)))
+    (make-robot-model-from-robot-urdf sdfmodel :scale scale :robot 'model)))
 
 (defun make-urdf-materials (robot-sxml)
   (let ((materials (remove-if-not #'(lambda (x) (eq (car x) 'material))
@@ -58,9 +64,9 @@
               (cons (cadr (massoc material '@ 'name)) ret))))
       materials))))
 
-(defun make-robot-model-from-robot-urdf (robot-sxml &key (scale 1000.0))
+(defun make-robot-model-from-robot-urdf (robot-sxml &key (scale 1000.0) (robot 'robot))
   ;; simple error check
-  (if (not (eq (car robot-sxml) 'robot))
+  (if (not (eq (car robot-sxml) robot))
       (error "robot-sxml must be start with robot"))
   (let ((attr (cadr robot-sxml))
         (contents (cddr robot-sxml)))
@@ -240,7 +246,8 @@
     (when sxml
       (case specifier
         (mesh
-         (let ((fname (cadr (massoc contents '@ 'filename))))
+         (let ((fname (or (cadr (massoc contents '@ 'filename))
+                          (cadr (assoc 'uri contents)))))
            (let ((path (ros::resolve-ros-path fname))
                  ret)
              (cond
@@ -255,7 +262,8 @@
         (box
          (let ((val (mapcar #'(lambda (x) (* scale x))
                             (read-list-from-xml-value
-                             (cadr (massoc contents '@ 'size))))))
+                             (or (cadr (massoc contents '@ 'size))
+                                 (cadr (assoc 'size contents)))))))
            (make-cube (elt val 0) (elt val 1) (elt val 2) :coords coords)))
         (cylinder
          (let ((radius (* scale (read-from-string
@@ -315,6 +323,19 @@
   (let ((contents sxml))
     (remove-if-not #'(lambda (x) (if (listp x) (eq (car x) 'robot)))
                    contents)))
+(defun extract-model-tag-from-sdf (sxml)
+  ;; sxml starts with (*TOP* (*PI* ...) (content1 ...) (content2 ...))
+  ;; skip *top* and *pi*
+  (let ((contents sxml) ret)
+    (if (eq (car contents) '*top*)
+        (setq contents (cdr contents)))
+    (if (setq ret (assoc 'model contents))
+        ret
+      (dolist (ct contents)
+        (if (listp ct)
+            (setq ret (extract-model-tag-from-sdf ct)))
+        (if ret (return-from extract-model-tag-from-sdf ret))
+        ))))
 
 (defun get-all-child-links (parent)
   (if (null parent)
