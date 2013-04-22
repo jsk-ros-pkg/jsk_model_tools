@@ -39,7 +39,7 @@ unsigned int getMaxOffset( domInput_local_offset_Array &input_array )
   return maxOffset;
 }
 
-void writeTriangle(FILE *fp, domGeometry *thisGeometry) {
+void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) {
   std::vector<coordT> points;
   fprintf(stderr, "wirteTriangle: %s\n", thisGeometry->getId());
   // get mesh
@@ -47,10 +47,10 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry) {
   int triangleElementCount = thisMesh?(int)(thisMesh->getTriangles_array().getCount()):0;
   fprintf(stderr, "triangleElementCount = %d\n", triangleElementCount);
 
-  fprintf(fp, "(defclass %s\n", thisGeometry->getId());
+  fprintf(fp, "(defclass %s_%s\n", robot_name, thisGeometry->getId());
   fprintf(fp, "  :super collada-body\n");
   fprintf(fp, "  :slots ())\n");
-  fprintf(fp, "(defmethod %s\n", thisGeometry->getId());
+  fprintf(fp, "(defmethod %s_%s\n", robot_name, thisGeometry->getId());
   if ( thisMesh == NULL || triangleElementCount == 0 )  {
     fprintf(fp, "  (:init (&key (name))\n");
     fprintf(fp, "         (replace-object self (make-cube 10 10 10))\n");
@@ -272,7 +272,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry) {
   assert(polygonesElementCount==0);
 }
 
-void writeGeometry(FILE *fp, daeDatabase *thisDatabase) {
+void writeGeometry(FILE *fp, daeDatabase *thisDatabase, const char* robot_name) {
   // number of geometry
   int geometryElementCount =  thisDatabase->getElementCount(NULL, "geometry", NULL);
   for(int currentGeometry=0;currentGeometry<geometryElementCount;currentGeometry++) {
@@ -284,7 +284,7 @@ void writeGeometry(FILE *fp, daeDatabase *thisDatabase) {
             currentGeometry, thisGeometry->getId(), thisGeometry->getName());
 
     // write geometry information
-    writeTriangle(fp, thisGeometry);
+    writeTriangle(fp, thisGeometry, robot_name);
   }
 }
 
@@ -535,12 +535,30 @@ domLink* findLinkfromKinematics (domLink* thisLink, const std::string& link_name
   return NULL;
 }
 
-void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisRigidbodyArray) {
+std::string getSensorType (const domExtraRef pextra) {
+  // get sensor_type from extra tag
+  std::string sensor_type;
+  for (size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
+    domExtra *tmpextra;
+    g_dae->getDatabase()->getElement((daeElement**)&tmpextra, ii, NULL, "extra");
+    if (tmpextra->getType() == std::string("library_sensors")) {
+      for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
+        if ((std::string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
+            pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
+          sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
+        }
+      }
+    }
+  }
+  return sensor_type;
+}
+
+void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisRigidbodyArray, const char* robot_name) {
   int nodeArrayCount = thisNodeArray.getCount();
   for(int currentNodeArray=0;currentNodeArray<nodeArrayCount;currentNodeArray++) {
     domNode *thisNode = thisNodeArray[currentNodeArray];
     string parentName = ":local";
-    writeNodes(fp, thisNode->getNode_array(), thisRigidbodyArray);
+    writeNodes(fp, thisNode->getNode_array(), thisRigidbodyArray, robot_name);
 
     if ( strcmp(thisNode->getName(),"visual") == 0 ) continue; //@@@ OK??
     // link
@@ -589,7 +607,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       for(vector<pair<domInstance_geometry *, string> >::iterator it=geometryNameArray.begin();it!=geometryNameArray.end();it++){
 	domInstance_geometry *thisGeometry = it->first;
 	const char * geometryName = it->second.c_str();
-	fprintf(fp, "       (setq %s (instance %s :init))\n",  geometryName, thisGeometry->getUrl().id().c_str());
+	fprintf(fp, "       (setq %s (instance %s_%s :init))\n",  geometryName, robot_name, thisGeometry->getUrl().id().c_str());
 
 	// note that geometryNameCount 0 means root node and >1 indicates the coordinates of each geometry
 	if ( thisNode == geomNode ) {
@@ -622,31 +640,39 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       fprintf(fp, ")\n");
       fprintf(fp, "                       :name \"%s\"\n", thisNode->getName());
       if ( thisRigidbody && thisRigidbody->getTechnique_common()->getMass_frame() ) {
-	domTranslate_Array translateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getTranslate_array();
-	domTranslateRef thisTranslate = translateArray[translateArray.getCount()-1];
-	fprintf(fp, "                       :weight %.3f :centroid (float-vector %.3f %.3f %.3f)\n",
+	fprintf(fp, "                       :weight %.3f))\n",
 		/* weight : collada [kg] -> eus : [g] */
-		thisRigidbody->getTechnique_common()->getMass()->getValue()*1000,
-		/* centroid : collada [m] -> eus : [mm] */
-		thisTranslate->getValue()[0]*1000, thisTranslate->getValue()[1]*1000, thisTranslate->getValue()[2]*1000);
-	domRotate_Array rotateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getRotate_array();
-	domRotateRef thisRotate = rotateArray[rotateArray.getCount()-1];
-	fprintf(fp, "                       :inertia-tensor (let* ((tmp-rot-axis (float-vector %.6f %.6f %.6f %.6f))\n",
-		thisRotate ? thisRotate->getValue()[0] : 0,
-		thisRotate ? thisRotate->getValue()[1] : 0,
-		thisRotate ? thisRotate->getValue()[2] : 1,
-		thisRotate ? thisRotate->getValue()[3]*M_PI/180.0 : 0);
-	fprintf(fp, "                                              (tmp-rot-matrix (matrix-exponent (scale (elt tmp-rot-axis 3) (subseq tmp-rot-axis 0 3))))\n");
-	fprintf(fp, "                                              (iner (float-vector %.3f %.3f %.3f)))\n",
-		/* inertia : collada [kg m^2] -> eus : [g mm^2] */
-		thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
-		thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
-		thisRigidbody->getTechnique_common()->getInertia()->getValue()[2]*1e9);
-	fprintf(fp, "                                          (m* (m* tmp-rot-matrix (diagonal iner)) (transpose tmp-rot-matrix)))\n");
+		thisRigidbody->getTechnique_common()->getMass()->getValue()*1000);
+        domTranslate_Array translateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getTranslate_array();
+        domRotate_Array rotateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getRotate_array();
+        fprintf(fp, "       (let ((tmp-c-list (list\n");
+        for (size_t ii = 0; ii < translateArray.getCount(); ii++) {
+          domTranslateRef thisTranslate = translateArray[ii];
+          fprintf(fp, "                          (make-coords :pos (float-vector %.3f %.3f %.3f) ",
+                  /* centroid : collada [m] -> eus : [mm] */
+                  thisTranslate->getValue()[0]*1000, thisTranslate->getValue()[1]*1000, thisTranslate->getValue()[2]*1000);
+          domRotateRef thisRotate = rotateArray[ii];
+          fprintf(fp, ":rot (matrix-exponent (scale %.6f (float-vector %.6f %.6f %.6f))))\n",
+                  thisRotate ? thisRotate->getValue()[3]*M_PI/180.0 : 0,
+                  thisRotate ? thisRotate->getValue()[0] : 0,
+                  thisRotate ? thisRotate->getValue()[1] : 0,
+                  thisRotate ? thisRotate->getValue()[2] : 1);
+        }
+        fprintf(fp, "                          ))\n");
+        fprintf(fp, "             (tmp-c (make-coords)))\n");
+        fprintf(fp, "         (dolist (cc tmp-c-list)\n");
+        fprintf(fp, "           (setq tmp-c (send tmp-c :transform cc)))\n");
+        fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNode->getName());
+        fprintf(fp, "               (m* (send tmp-c :worldrot) (diagonal (float-vector %.3f %.3f %.3f)) (transpose (send tmp-c :worldrot))))\n",
+                /* inertia : collada [kg m^2] -> eus : [g mm^2] */
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[2]*1e9);
+        fprintf(fp, "         (setq (%s . acentroid) (send tmp-c :worldpos))\n", thisNode->getName());
+        fprintf(fp, "        )\n");
       } else {
-	fprintf(fp, "                       :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))\n");
+	fprintf(fp, "                       :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n");
       }
-      fprintf(fp, "		       ))\n");
     } else if ( (thisNode->getNode_array().getCount() > 0 &&
                  strcmp(thisNode->getNode_array()[0]->getName(),"visual") != 0 ) ||
 		(thisNode->getNode_array().getCount() > 1 &&
@@ -702,20 +728,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
 	  daeElement* frame_origin = pextra->getTechnique_array()[0]->getChild("frame_origin");
 	  if ( std::string(thisKinematics->getId())+std::string("/")+std::string(thisLink->getSid()) == frame_origin->getAttribute("link")) {
-            // get sensor_type from extra tag
-            std::string sensor_type;
-            for (size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
-              domExtra *tmpextra;
-              g_dae->getDatabase()->getElement((daeElement**)&tmpextra, ii, NULL, "extra");
-              if (tmpextra->getType() == std::string("library_sensors")) {
-                for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
-                  if ((std::string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
-                      pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
-                    sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
-                  }
-                }
-              }
-            }
+            std::string sensor_type = getSensorType(pextra);
             std::string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
 	    std::cerr << "Sensor " << pextra->getName() << " is attached to " << thisNode->getName() << " " << sensor_type << " " << sensor_url << std::endl;
 	    fprintf(fp, "       (setq %s-sensor-coords (make-cascoords :name :%s))\n", pextra->getName(), pextra->getName());
@@ -892,13 +905,14 @@ int main(int argc, char* argv[]){
   fprintf(output_fp, ";; %s $ ", get_current_dir_name());for(int i=0;i<argc;i++) fprintf(output_fp, "%s ", argv[i]); fprintf(output_fp, "\n");
   fprintf(output_fp, ";;\n");
   fprintf(output_fp, "\n");
+  std::string robot_name(thisNode->getName());
   if ( thisNode->getNode_array().getCount() == 0 ) {
-      fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-object :init)))\n", thisNode->getName(), thisNode->getName(), thisNode->getName());
+      fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-object :init)))\n", robot_name.c_str(), robot_name.c_str(), robot_name.c_str());
       fprintf(output_fp, "\n");
-      fprintf(output_fp, "(defclass %s-object\n", thisNode->getName());
+      fprintf(output_fp, "(defclass %s-object\n", robot_name.c_str());
       fprintf(output_fp, "  :super bodyset-link\n");
       fprintf(output_fp, "  :slots ())\n\n");
-      fprintf(output_fp, "(defmethod %s-object\n", thisNode->getName());
+      fprintf(output_fp, "(defmethod %s-object\n", robot_name.c_str());
       fprintf(output_fp, "  (:init\n");
       fprintf(output_fp, "   (&rest args)\n");
       fprintf(output_fp, "   (let ()\n");
@@ -919,24 +933,24 @@ int main(int argc, char* argv[]){
 	  // write geometry information
       }
       fprintf(output_fp, ")\n");
-      fprintf(output_fp, "                  :name \"%s\"\n", thisNode->getName());
+      fprintf(output_fp, "                  :name \"%s\"\n", robot_name.c_str());
       fprintf(output_fp, "                  args))))\n");
 
       fprintf(output_fp,"(defclass collada-body\n  :super body\n  :slots (glvertices)\n  )\n");
       fprintf(output_fp,"(defmethod\n  (:draw (vwr)\n   (when glvertices\n     (send glvertices :draw vwr)))\n  )\n");
 
-      writeGeometry(output_fp, g_dae->getDatabase());
+      writeGeometry(output_fp, g_dae->getDatabase(), robot_name.c_str());
 
-      fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", thisNode->getName(), get_current_dir_name(), output_filename);
+      fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", robot_name.c_str(), get_current_dir_name(), output_filename);
       fprintf(stderr, ";; generate lisp code for body\n");
       exit(0);
   }
 
   copy_euscollada_robot_class_definition(output_fp);
 
-  fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-robot :init)))\n", thisNode->getName(), thisNode->getName(), thisNode->getName());
+  fprintf(output_fp, "(defun %s () (setq *%s* (instance %s-robot :init)))\n", robot_name.c_str(), robot_name.c_str(), robot_name.c_str());
   fprintf(output_fp, "\n");
-  fprintf(output_fp, "(defclass %s-robot\n", thisNode->getName());
+  fprintf(output_fp, "(defclass %s-robot\n", robot_name.c_str());
   fprintf(output_fp, "  :super euscollada-robot\n");
   fprintf(output_fp, "  :slots (");
   // all joint and link name
@@ -980,19 +994,19 @@ int main(int argc, char* argv[]){
   //
   fprintf(output_fp, "))\n");
 
-  fprintf(output_fp, "(defmethod %s-robot\n", thisNode->getName());
+  fprintf(output_fp, "(defmethod %s-robot\n", robot_name.c_str());
   fprintf(output_fp, "  (:init\n");
   fprintf(output_fp, "   (&rest args)\n");
   fprintf(output_fp, "   (let ()\n");
 
   // send super :init
-  fprintf(output_fp, "     (send-super* :init :name \"%s\" args)\n", thisNode->getName());
+  fprintf(output_fp, "     (send-super* :init :name \"%s\" args)\n", robot_name.c_str());
   fprintf(output_fp, "\n");
 
   // write kinemtaics
   domPhysics_model *thisPhysicsmodel;
   g_dae->getDatabase()->getElement((daeElement**)&thisPhysicsmodel, 0, NULL, "physics_model");
-  writeNodes(output_fp, thisNode->getNode_array(), thisPhysicsmodel?(thisPhysicsmodel->getRigid_body_array()):(domRigid_body_Array)NULL);
+  writeNodes(output_fp, thisNode->getNode_array(), thisPhysicsmodel?(thisPhysicsmodel->getRigid_body_array()):(domRigid_body_Array)NULL, robot_name.c_str());
   fprintf(output_fp, "     (send self :assoc %s)\n", thisNode->getNode_array()[0]->getName());
   
   // write joint
@@ -1096,11 +1110,12 @@ int main(int argc, char* argv[]){
   BOOST_FOREACH(link_joint_pair& limb, limbs) {
     string limb_name = limb.first;
     vector<string> link_names = limb.second.first;
-    if (link_names.size()>0) fprintf(output_fp, "     (setq %s-root-link %s)\n", limb_name.c_str(), link_names[0].c_str());
     if ( link_names.size() > 0 ) {
       fprintf(output_fp, "     (setq %s (list", limb_name.c_str());
       for (unsigned int i=0;i<link_names.size();i++) fprintf(output_fp, " %s", link_names[i].c_str()); fprintf(output_fp, "))\n");
       fprintf(output_fp, "\n");
+      // find root link by tracing limb's link list
+      fprintf(output_fp, "     (setq %s-root-link (labels ((find-parent (l) (if (find (send l :parent) %s) (find-parent (send l :parent)) l))) (find-parent (car %s))))\n", limb_name.c_str(), limb_name.c_str(), limb_name.c_str());
     }
   }
   fprintf(output_fp, "\n");
@@ -1199,14 +1214,35 @@ int main(int argc, char* argv[]){
   for(vector<pair<string, string> >::iterator it=g_all_link_names.begin();it!=g_all_link_names.end();it++){
     fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", it->second.c_str(), it->first.c_str());
   }
+  // sensor
+  fprintf(output_fp, "\n    ;; attach_sensor\n");
+  if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
+    domArticulated_system *thisArticulated;
+    g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, 0, NULL, "articulated_system");
+    std::vector<std::string> fsensor_list;
+    for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
+      domExtraRef pextra = thisArticulated->getExtra_array()[ie];
+      // find element which type is attach_sensor and is attached to thisNode
+      if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
+	fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s-sensor-coords args))\n", pextra->getName(), pextra->getName());
+        if (getSensorType(pextra) == "base_force6d" ) {
+          fsensor_list.push_back(string(pextra->getName()));
+        }
+      }
+    }
+    fprintf(output_fp, "    (:force-sensors (&rest args) (forward-message-to-all (list ");
+    for (size_t i = 0; i < fsensor_list.size(); i++) {
+      fprintf(output_fp, "(send self :%s) ", fsensor_list[i].c_str());
+    }
+    fprintf(output_fp, ") args))\n");
+  }
   fprintf(output_fp, "  )\n\n");
 
   fprintf(output_fp,"(defclass collada-body\n  :super body\n  :slots (glvertices)\n  )\n");
   fprintf(output_fp,"(defmethod collada-body\n  (:draw (vwr)\n   (when glvertices\n     (send glvertices :draw vwr)))\n  )\n");
+  writeGeometry(output_fp, g_dae->getDatabase(), robot_name.c_str());
 
-  writeGeometry(output_fp, g_dae->getDatabase());
-
-  fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", thisNode->getName(), get_current_dir_name(), output_filename);
+  fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", robot_name.c_str(), get_current_dir_name(), output_filename);
 
   ifstream fin2(yaml_filename);
   if (fin2.fail()) {
