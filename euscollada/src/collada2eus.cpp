@@ -1133,11 +1133,12 @@ int main(int argc, char* argv[]){
   BOOST_FOREACH(link_joint_pair& limb, limbs) {
     string limb_name = limb.first;
     vector<string> link_names = limb.second.first;
-    if (link_names.size()>0) fprintf(output_fp, "     (setq %s-root-link %s)\n", limb_name.c_str(), link_names[0].c_str());
     if ( link_names.size() > 0 ) {
       fprintf(output_fp, "     (setq %s (list", limb_name.c_str());
       for (unsigned int i=0;i<link_names.size();i++) fprintf(output_fp, " %s", link_names[i].c_str()); fprintf(output_fp, "))\n");
       fprintf(output_fp, "\n");
+      // find root link by tracing limb's link list
+      fprintf(output_fp, "     (setq %s-root-link (labels ((find-parent (l) (if (find (send l :parent) %s) (find-parent (send l :parent)) l))) (find-parent (car %s))))\n", limb_name.c_str(), limb_name.c_str(), limb_name.c_str());
     }
   }
   fprintf(output_fp, "\n");
