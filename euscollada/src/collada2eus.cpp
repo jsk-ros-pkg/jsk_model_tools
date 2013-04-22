@@ -577,7 +577,6 @@ std::string getSensorType (const domExtraRef pextra) {
 }
 
 void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisRigidbodyArray, const char* robot_name) {
-  std::cerr << "HOGE" << std::string(robot_name) << std::endl;
   int nodeArrayCount = thisNodeArray.getCount();
   for(int currentNodeArray=0;currentNodeArray<nodeArrayCount;currentNodeArray++) {
     domNode *thisNode = thisNodeArray[currentNodeArray];
