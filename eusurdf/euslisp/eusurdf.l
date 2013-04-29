@@ -1,6 +1,8 @@
 (defvar *use-assimp* t)
 (defvar *remove-worldlink* t)
 (defvar *remove-fixed-joint* nil)
+;;(defvar *default-direction* :-y-up)
+(defvar *default-direction* :z-up)
 
 (unless (boundp '*worldcoords*) (setq *worldcoords* (make-coords)))
 (unless (fboundp 'stl2eus) (load "read-stl.l"))
@@ -127,6 +129,18 @@
               ret)))))))
 
 (defun make-origin-coords (origin-sxml &key (scale 1000.0))
+  (cond
+   ((eq 'pose (car origin-sxml))
+    (let* ((vec (read-float-vector-from-xml-value (cadr origin-sxml)))
+           (pos (subseq vec 0 3))
+           (rpy (subseq vec 3)))
+      (scale scale pos pos)
+      (make-coords :pos pos :rpy (list (elt rpy 2) (elt rpy 1) (elt rpy 0)))
+      ))
+   (t
+    (make-origin-coords-org origin-sxml :scale scale)
+    )))
+(defun make-origin-coords-org (origin-sxml &key (scale 1000.0))
   (let ((origin-xyz (cadr (massoc origin-sxml '@ 'xyz)))
         (origin-rpy (cadr (massoc origin-sxml '@ 'rpy))))
     (make-coords :pos (if origin-xyz
@@ -134,7 +148,8 @@
                                  (read-float-vector-from-xml-value origin-xyz))
                         (float-vector 0 0 0))
                  :rpy (if origin-rpy
-                          (read-float-vector-from-xml-value origin-rpy)
+                          (let ((rpy (read-float-vector-from-xml-value origin-rpy)))
+                            (list (elt rpy 2) (elt rpy 1) (elt rpy 0)))
                         (float-vector 0 0 0)))))
 
 (defun rearrange-urdf-link (parent-link child-link origin-coords)
@@ -253,8 +268,10 @@
              (cond
               ((and (boundp '*use-assimp*)
                    *use-assimp*)
-               (setq ret (load-mesh-file path :scale scale))
-               (send ret :transform coords))
+               (setq ret (load-mesh-file path :scale scale :direction *default-direction*))
+               (when ret
+                 (send ret :transform coords)
+                 ))
               (t
                (setq ret (stl2eus path :coords coords :scale scale))))
              ret
@@ -277,7 +294,7 @@
         (t
          (error "~A is not supported" sxml))))))
 
-(defun make-urdf-link (sxml materials &key (scale 1000.0))
+(defun make-urdf-link-single (sxml materials &key (scale 1000.0))
   (let ((attr (sxml-attribute sxml))
         (contents (cddr sxml)))
     (let ((link-name (cadr (assoc 'name (cdr attr)))))
@@ -316,6 +333,63 @@
                              :name link-name)))
           (setf (get ret :collision-geometory) col-geom)
           ret)))))
+;; for multi collision/visual
+(defun make-urdf-link (sxml materials &key (scale 1000.0))
+  (let ((attr (sxml-attribute sxml))
+        (contents (cddr sxml)))
+    (let ((link-name (cadr (assoc 'name (cdr attr))))
+          vis-geom col-geom)
+      (block :extract-visual
+        (while t
+          (let ((visual-sxml
+                 (assoc 'visual contents))
+                (collision-sxml
+                 (assoc 'collision contents)))
+            (unless (or visual-sxml collision-sxml)
+              (return-from :extract-visual))
+            (setq contents (delete visual-sxml contents))
+            (setq contents (delete collision-sxml contents))
+            (setq visual-sxml (cdr visual-sxml))
+            (setq collision-sxml (cdr collision-sxml))
+            ;; visual
+            (when visual-sxml
+              (let ((origin-sxml (or (assoc 'origin visual-sxml)
+                                     (assoc 'pose visual-sxml)))
+                    (geometry-sxml (assoc 'geometry visual-sxml))
+                    (material-sxml (assoc 'material visual-sxml)))
+                (let ((origin-coords (make-origin-coords origin-sxml)))
+                  (let ((ret (make-geometry-from-urdf geometry-sxml
+                                                      :coords origin-coords
+                                                      :scale scale)))
+                    (let* ((material-name
+                            (cadr (massoc material-sxml '@ 'name)))
+                           (material (cdr (assoc material-name materials
+                                                 :test #'string=))))
+                      (when ret
+                        (setf (get ret :face-color) material)
+                        (push ret vis-geom))
+                      )))))
+            ;; collision
+            (when collision-sxml
+              (let ((origin-sxml (or (assoc 'origin visual-sxml)
+                                     (assoc 'pose visual-sxml)))
+                    (geometry-sxml (assoc 'geometry collision-sxml)))
+                (let ((origin-coords (make-origin-coords origin-sxml)))
+                  (let ((ret (make-geometry-from-urdf geometry-sxml
+                                                      :coords origin-coords
+                                                      :scale scale)))
+                    (when ret (push ret col-geom))
+                    ))))
+            )));; :extract-visual
+      (when vis-geom
+        (let ((p (car vis-geom)))
+          (dolist (c (cdr vis-geom))
+            (send p :assoc c))))
+      (let ((ret (instance bodyset-link :init (make-cascoords)
+                           :bodies (or vis-geom (list (make-cube 5 5 5)))
+                           :name link-name)))
+        (setf (get ret :collision-geometory) col-geom)
+        ret))))
 
 (defun extract-robot-tag-from-urdf (sxml)
   ;; sxml starts with (*TOP* (*PI* ...) (content1 ...) (content2 ...))
