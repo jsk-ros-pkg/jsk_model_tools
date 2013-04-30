@@ -284,13 +284,27 @@
            (make-cube (elt val 0) (elt val 1) (elt val 2) :coords coords)))
         (cylinder
          (let ((radius (* scale (read-from-string
-                                 (cadr (massoc contents '@ 'radius)))))
+                                 (or
+                                  (cadr (massoc contents '@ 'radius))
+                                  (cadr (assoc 'radius contents))))))
                (length (* scale (read-from-string
-                                 (cadr (massoc contents '@ 'length))))))
-           (make-cylinder radius length :coords coords)))
+                                 (or (cadr (massoc contents '@ 'length))
+                                     (cadr (assoc 'length contents)))))))
+           (make-cylinder radius length
+                          :origin-coords (make-coords :pos (float-vector 0 0 (/ length -2)))
+                          :coords coords)))
         (sphere
          (warn "spehre does not supported~%")
          (make-cube 1 1 1))
+        (plane
+         (let ((nm (if (assoc 'normal contents) (read-list-from-xml-value (cadr (assoc 'normal contents)))))
+               (size (if (assoc 'size contents) (read-list-from-xml-value (cadr (assoc 'size contents))))))
+           ;; not using normal
+           (unless size (setq size (list 1000 1000)))
+           (make-cube ;;(* 1000 (car size)) (* 1000 (cadr size)) 2
+            (* 400 (car size)) (* 400 (cadr size)) 2
+            :origin-coords (make-coords :pos (float-vector 0 0 -1)))
+           ))
         (t
          (error "~A is not supported" sxml))))))
 
@@ -315,7 +329,7 @@
                       (cadr (massoc material-sxml '@ 'name)))
                      (material (cdr (assoc material-name materials
                                            :test #'string=))))
-                (when ret
+                (when (and ret material)
                   (setf (get ret :face-color) material))
                 (setq vis-geom ret)
                 ))))
@@ -334,6 +348,7 @@
           (setf (get ret :collision-geometory) col-geom)
           ret)))))
 ;; for multi collision/visual
+(defun parse-sdf-material (obj material-sxml) obj) ;; not implemented yet
 (defun make-urdf-link (sxml materials &key (scale 1000.0))
   (let ((attr (sxml-attribute sxml))
         (contents (cddr sxml)))
@@ -365,8 +380,9 @@
                             (cadr (massoc material-sxml '@ 'name)))
                            (material (cdr (assoc material-name materials
                                                  :test #'string=))))
+                      (unless material (setq ret (parse-sdf-material ret material-sxml)))
                       (when ret
-                        (setf (get ret :face-color) material)
+                        (if material (setf (get ret :face-color) material))
                         (push ret vis-geom))
                       )))))
             ;; collision
