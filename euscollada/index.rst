@@ -27,7 +27,7 @@ PR2 example
 
   rosrun euscollada pr2.sh
 
-.. video:: http://jenkins.jsk.imi.i.u-tokyo.ac.jp:8080//job/jsk-ros-pkg-fuerte/lastSuccessfulBuild/artifact/doc/euscollada/html/_images/pr2_test
+.. video:: http://jenkins.jsk.imi.i.u-tokyo.ac.jp:8080//job/jsk-ros-pkg-electric/lastSuccessfulBuild/artifact/doc/euscollada/html/_images/pr2_test
   :width: 400
 
 .. code-block:: bash
