@@ -290,9 +290,10 @@
                (length (* scale (read-from-string
                                  (or (cadr (massoc contents '@ 'length))
                                      (cadr (assoc 'length contents)))))))
-           (make-cylinder radius length
-                          :origin-coords (make-coords :pos (float-vector 0 0 (/ length -2)))
-                          :coords coords)))
+           (let ((cyl (make-cylinder radius length)))
+             (send cyl :translate-vertices (float-vector 0 0 (/ length -2.0)))
+             (send cyl :transform coords)
+             cyl)))
         (sphere
          (warn "spehre does not supported~%")
          (make-cube 1 1 1))
@@ -301,10 +302,11 @@
                (size (if (assoc 'size contents) (read-list-from-xml-value (cadr (assoc 'size contents))))))
            ;; not using normal
            (unless size (setq size (list 1000 1000)))
-           (make-cube ;;(* 1000 (car size)) (* 1000 (cadr size)) 2
-            (* 400 (car size)) (* 400 (cadr size)) 2
-            :origin-coords (make-coords :pos (float-vector 0 0 -1)))
-           ))
+           (let ((cb
+                  (make-cube ;;(* 1000 (car size)) (* 1000 (cadr size)) 2
+                   (* 500 (car size)) (* 500 (cadr size)) 2)))
+             (send cb :translate-vertices (float-vector 0 0 -1))
+             cb)))
         (t
          (error "~A is not supported" sxml))))))
 
