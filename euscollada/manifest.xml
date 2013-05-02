@@ -14,7 +14,7 @@
   </export>
 
   <rosdep name="collada-dom"/>
-  <depend package="collada_urdf_jsk_patch"/>
+  <depend package="collada_urdf"/>
   <depend package="euslisp"/>
   <depend package="roseus" />
   <depend package="jsk_tools" />

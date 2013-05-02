@@ -2,7 +2,8 @@
 
 cd `rospack find euscollada`
 
-rosrun collada_urdf_jsk_patch urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf pr2.dae
+#rosrun collada_urdf_jsk_patch urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf pr2.dae
+rosrun collada_urdf urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf pr2.dae
 if [ "$?" != 0 ] ;  then exit ; fi
 
 rosrun euscollada collada2eus pr2.dae pr2.yaml pr2.l.$$.tmp; mv pr2.l.$$.tmp pr2.l
