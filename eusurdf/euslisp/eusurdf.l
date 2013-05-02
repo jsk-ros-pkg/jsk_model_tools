@@ -3,6 +3,7 @@
 (defvar *remove-fixed-joint* nil)
 ;;(defvar *default-direction* :-y-up)
 (defvar *default-direction* :z-up)
+(defvar *plane-scale* 1000.0)
 
 (unless (boundp '*worldcoords*) (setq *worldcoords* (make-coords)))
 (unless (fboundp 'stl2eus) (load "read-stl.l"))
@@ -303,10 +304,13 @@
            ;; not using normal
            (unless size (setq size (list 1000 1000)))
            (let ((cb
-                  (make-cube ;;(* 1000 (car size)) (* 1000 (cadr size)) 2
-                   (* 500 (car size)) (* 500 (cadr size)) 2)))
-             (send cb :translate-vertices (float-vector 0 0 -1))
+                  (make-cube (* *plane-scale* (car size)) (* *plane-scale* (cadr size)) 10)))
+             (send cb :translate-vertices (float-vector 0 0 -5))
              cb)))
+        (heightmap ;; for sdf
+         ;; not implemented yet
+         (make-cube 10 10 10)
+         )
         (t
          (error "~A is not supported" sxml))))))
 
