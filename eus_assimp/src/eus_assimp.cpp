@@ -71,6 +71,7 @@ extern "C" {
 static pointer K_VERTICES, K_NORMALS, K_INDICES, K_TEXCOORDS, K_TYPE, K_MATERIAL;
 static pointer K_LINES, K_TRIANGLES, K_QUADS, K_POLYGON, K_NAME;
 static pointer K_FILENAME, K_AMBIENT, K_DIFFUSE, K_SPECULAR, K_EMISSION, K_SHININESS, K_TRANSPARENCY;
+static pointer K_HEIGHT, K_WIDTH;
 
 static std::string primitiveType (unsigned int tp) {
  switch (tp) {
@@ -1256,6 +1257,11 @@ pointer ASSIMP_LOAD_IMAGE(register context *ctx,int n,pointer *argv)
 #if USE_SDL_IMAGE
   SDL_Surface *sf = IMG_Load((char *)get_string(argv[0]));
   if (!!sf) {
+    pointer ptr;
+    int byteperpixel = sf->format->BytesPerPixel;
+    pointer img_buffer = makestring ((char *)sf->pixels, sf->h * sf->w * byteperpixel);
+#if 0
+    // should check RGB and RGBA ...
     if (!!(sf->format)) {
       printf("fmt:%0X, byte/pixel %d, MASK(RGBA): %08X %08X %08X %08X\n",
              //sf->format->format,
@@ -1271,7 +1277,164 @@ pointer ASSIMP_LOAD_IMAGE(register context *ctx,int n,pointer *argv)
            sf->h,
            sf->pitch,
            sf->pixels);
+#endif
+    if (!!(sf->format)) {
+      if (sf->format->BytesPerPixel == 3) {
+        if ( sf->format->Rmask != 0x000000FF ||
+             sf->format->Gmask != 0x0000FF00 ||
+             sf->format->Bmask != 0x00FF0000 ) {
+          int rm = 0;
+          int gm = 0;
+          int bm = 0;
+          unsigned int mask;
+
+          mask = 0x000000FF;
+          for (int i = 0; i < 4; i++) {
+            if ( mask == sf->format->Rmask ) {
+              rm = i; break;
+            }
+            mask <<= 8;
+          }
+          mask = 0x000000FF;
+          for (int i = 0; i < 4; i++) {
+            if ( mask == sf->format->Gmask ) {
+              gm = i; break;
+            }
+            mask <<= 8;
+          }
+          mask = 0x000000FF;
+          for (int i = 0; i < 4; i++) {
+            if ( mask == sf->format->Bmask ) {
+              bm = i; break;
+            }
+            mask <<= 8;
+          }
+#if 0
+          fprintf(stderr, ";; fmt:%0X, byte/pixel %d, MASK(RGBA): %08X %08X %08X %08X -> %d %d %d\n",
+             //sf->format->format,
+                 sf->flags,
+                 sf->format->BytesPerPixel,
+                 sf->format->Rmask,
+                 sf->format->Gmask,
+                 sf->format->Bmask,
+                 sf->format->Amask, rm, gm, bm);
+          fprintf(stderr, ";; width: %d, height: %d, pitch: %d, pixels: %lX\n",
+                 sf->w,
+                 sf->h,
+                 sf->pitch,
+                 sf->pixels);
+#endif
+          unsigned char *src_ptr = (unsigned char *)sf->pixels;
+          unsigned char *dst_ptr = (unsigned char *)img_buffer->c.str.chars;
+          for (int i = 0; i < sf->w * sf->h; i++) {
+            dst_ptr[0] = src_ptr[rm];
+            dst_ptr[1] = src_ptr[gm];
+            dst_ptr[2] = src_ptr[bm];
+            dst_ptr += 3; src_ptr += 3;
+          }
+        }
+      }
+      if (sf->format->BytesPerPixel == 4) {
+        if ( sf->format->Rmask != 0x000000FF ||
+             sf->format->Gmask != 0x0000FF00 ||
+             sf->format->Bmask != 0x00FF0000 ||
+             sf->format->Amask != 0xFF000000 ) {
+          int am = 0;
+          int rm = 0;
+          int gm = 0;
+          int bm = 0;
+          unsigned int mask;
+
+          mask = 0x000000FF;
+          for (int i = 0; i < 4; i++) {
+            if ( mask == sf->format->Rmask ) {
+              rm = i; break;
+            }
+            mask <<= 8;
+          }
+          mask = 0x000000FF;
+          for (int i = 0; i < 4; i++) {
+            if ( mask == sf->format->Gmask ) {
+              gm = i; break;
+            }
+            mask <<= 8;
+          }
+          mask = 0x000000FF;
+          for (int i = 0; i < 4; i++) {
+            if ( mask == sf->format->Bmask ) {
+              bm = i; break;
+            }
+            mask <<= 8;
+          }
+          mask = 0x000000FF;
+          for (int i = 0; i < 4; i++) {
+            if ( mask == sf->format->Amask ) {
+              am = i; break;
+            }
+            mask <<= 8;
+          }
+#if 0
+          fprintf(stderr, ";; fmt:%0X, byte/pixel %d, MASK(RGBA): %08X %08X %08X %08X -> %d %d %d %d\n",
+             //sf->format->format,
+                 sf->flags,
+                 sf->format->BytesPerPixel,
+                 sf->format->Rmask,
+                 sf->format->Gmask,
+                 sf->format->Bmask,
+                 sf->format->Amask, rm, gm, bm, am);
+          fprintf(stderr, ";; width: %d, height: %d, pitch: %d, pixels: %lX\n",
+                 sf->w,
+                 sf->h,
+                 sf->pitch,
+                 sf->pixels);
+#endif
+          unsigned char *src_ptr = (unsigned char *)sf->pixels;
+          unsigned char *dst_ptr = (unsigned char *)img_buffer->c.str.chars;
+          for (int i = 0; i < sf->w * sf->h; i++) {
+            dst_ptr[0] = src_ptr[rm];
+            dst_ptr[1] = src_ptr[gm];
+            dst_ptr[2] = src_ptr[bm];
+            dst_ptr[3] = src_ptr[am];
+            dst_ptr += 4; src_ptr += 4;
+          }
+        }
+      }
+    }
+
+    vpush (img_buffer);
+    ptr = rawcons (ctx, img_buffer, NIL);
+    vpop(); vpush (ptr);
+    ptr = rawcons (ctx, K_VERTICES, ptr);
+    vpop(); vpush (ptr);
+    ret = rawcons (ctx, ptr, ret);
+    vpop ();
+    vpush(ret);
+
+    ptr = rawcons (ctx, makeint(byteperpixel), NIL);
+    vpush(ptr);
+    ptr = rawcons (ctx, K_TYPE, ptr);
+    vpop(); vpush (ptr);
+    ret = rawcons (ctx, ptr, ret);
+    vpop (); vpop();
+    vpush(ret);
+
+    ptr = rawcons (ctx, makeint(sf->h) ,NIL);
+    vpush(ptr);
+    ptr = rawcons (ctx, K_HEIGHT, ptr);
+    vpop(); vpush (ptr);
+    ret = rawcons (ctx, ptr, ret);
+    vpop (); vpop();
+    vpush(ret);
+
+    ptr = rawcons (ctx, makeint(sf->w) ,NIL);
+    vpush(ptr);
+    ptr = rawcons (ctx, K_WIDTH, ptr);
+    vpop(); vpush (ptr);
+    ret = rawcons (ctx, ptr, ret);
+    vpop (); vpop();
+    //vpush(ret);
   }
+
   IMG_Quit();
 #endif
 
@@ -1305,6 +1468,8 @@ pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
   K_EMISSION     = defkeyword(ctx, "EMISSION");
   K_SHININESS    = defkeyword(ctx, "SHININESS");
   K_TRANSPARENCY = defkeyword(ctx, "TRANSPARENCY");
-
+  // for image
+  K_HEIGHT       = defkeyword(ctx, "HEIGHT");
+  K_WIDTH        = defkeyword(ctx, "WIDTH");
   return 0;
 }

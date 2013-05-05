@@ -14,7 +14,7 @@
     (t
      (unless (numberp direction)
        (setq direction 2))))
-  (pprint direction)
+  ;; (pprint direction)
   (let ((ret
          (c-assimp-get-glvertices fname scl gen-normal smooth-normal split-large-mesh
                                   optimize-mesh identical-vertices fix-normal direction dump-filename))
@@ -95,6 +95,24 @@
       glv)
     ))
 
+(defun assimp-read-image-file (fname)
+  (let* ((ret (c-assimp-load-image fname))
+         (w (cadr (assoc :width ret)))
+         (h (cadr (assoc :height ret)))
+         (byte/pixel (cadr (assoc :type ret)))
+         (buf (cadr (assoc :vertices ret))))
+    (when ret
+      (case byte/pixel
+        (1
+         (instance grayscale-image :init w h buf))
+        (3
+         (instance color-image24 :init w h buf))
+        (4
+         (instance color-image32 :init w h buf))
+        (t
+         (warn ";; not implemented byte/pixel ~d~%" byte/pixel)
+         )))))
+
 (in-package "GL")
 (defmethod glvertices
   (:load-texture-image (&optional dir)
@@ -138,4 +156,10 @@
           (send p :assoc glv))
         (setq (bd . glvertices) glv))
       )))
+(defun make-cube-from-bounding-box (bbox &rest args &key (origin))
+  (let ((cds (make-coords :pos (send bbox :center)))
+        (dsize (send bbox :diagonal)) ret)
+    (setq ret (apply #'make-cube (elt dsize 0) (elt dsize 1) (elt dsize 2) args))
+    (send ret :translate-vertices origin)
+    ret))
 |#
