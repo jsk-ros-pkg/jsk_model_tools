@@ -70,7 +70,7 @@
 (defun make-robot-model-from-robot-urdf (robot-sxml &key (scale 1000.0) (robot 'robot))
   ;; simple error check
   (if (not (eq (car robot-sxml) robot))
-      (error "robot-sxml must be start with robot"))
+      (error "robot-sxml must be start with ~A" robot))
   (let ((attr (cadr robot-sxml))
         (contents (cddr robot-sxml)))
     (let ((links-sxml
