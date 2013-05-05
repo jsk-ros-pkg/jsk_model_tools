@@ -81,4 +81,27 @@
            ((BC EC) (cat-clark (cdr l)
                                (string-append s "~%" (make-string i #\ ) ">") i))))))
 
+;; TODO:: Is there better implementations??
+(defun sxml-child-nodes (sxml-node)
+  (when (consp (cadr sxml-node))
+    (let ((attr (assoc '@ sxml-node)))
+      (cond
+       (attr
+        (setq sxml-node (remove attr sxml-node))
+        (when (consp (cadr sxml-node))
+          (cdr sxml-node)))
+       (t
+        (cdr sxml-node))))))
+
+(defun sxml-all-children (sxml-node)
+  (let ((cn (sxml-child-nodes sxml-node)))
+    (cond
+     (cn
+      (append (list sxml-node) (mapcan #'(lambda (x) (when x (sxml-all-children x))) cn)))
+     (t (list sxml-node)))))
+
+(defun sxml-find-element-by-tagname (tag sxml-node)
+  (remove-if-not #'(lambda (elem) (eq tag (car elem)))
+                 (sxml-all-children sxml-node)))
+
 (provide :xml)
