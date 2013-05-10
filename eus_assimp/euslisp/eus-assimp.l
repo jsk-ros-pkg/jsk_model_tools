@@ -6,14 +6,15 @@
                              (split-large-mesh) (optimize-mesh) (identical-vertices) (fix-normal)
                              (direction :z_up) (dump-filename))
   (case direction
-    (:x_up (setq direction 0))
-    (:y_up (setq direction 1))
-    (:z_up (setq direction 2))
-    (:-x_up (setq direction 3))
-    (:-y_up (setq direction 4))
+    ((:x_up :x-up) (setq direction 0))
+    ((:y_up :y-up) (setq direction 1))
+    ((:z_up :z-up) (setq direction 2))
+    ((:-x_up :-x-up) (setq direction 3))
+    ((:-y_up :-y-up) (setq direction 4))
+    ((numberp direction) );; do-nothing
     (t
-     (unless (numberp direction)
-       (setq direction 2))))
+     (warn ";; unknown direction ~A~%" direction)))
+
   ;; (pprint direction)
   (let ((ret
          (c-assimp-get-glvertices fname scl gen-normal smooth-normal split-large-mesh
@@ -37,7 +38,7 @@
         vertices-lst
         normals-lst
         indices-lst)
-    (doliost (m mlst)
+    (dolist (m mlst)
       (push (case (cadr (assoc :type m))
               (:triangles 3)
               (:quads 4)
@@ -89,7 +90,7 @@
     (setq ret (c-convex-decomposition-glvertices
                (nreverse vertices-lst) (nreverse indices-lst)
                skinwidth decomposition-depth max-hull-vertices
-               concavity-threshold merge-threshold volume-split-threshold 2.0))
+               concavity-threshold merge-threshold volume-split-threshold))
     (when ret
       (setq glv (instance gl::glvertices :init ret))
       glv)
@@ -112,6 +113,39 @@
         (t
          (warn ";; not implemented byte/pixel ~d~%" byte/pixel)
          )))))
+
+(defun make-glvertices-from-faces (flst &key (material))
+  (setq flst (flatten (mapcar #'(lambda (f) (geometry::face-to-triangle-aux f)) flst)))
+  (let ((mat (make-matrix (* 3 (length flst)) 3))
+        (nom (make-matrix (* 3 (length flst)) 3))
+        (idx (instantiate integer-vector (* 3 (length flst))))
+        (cntr 0))
+    (dolist (f flst)
+      (let ((nm (normalize-vector (send f :normal)))
+            (vsl (send f :vertices)))
+        (c-matrix-row mat cntr (car vsl) t)
+        (c-matrix-row nom cntr nm t)
+        (incf cntr)
+
+        (c-matrix-row mat cntr (cadr vsl) t)
+        (c-matrix-row nom cntr nm t)
+        (incf cntr)
+
+        (c-matrix-row mat cntr (caddr vsl) t)
+        (c-matrix-row nom cntr nm t)
+        (incf cntr)
+        ))
+    (dotimes (i (length idx)) (setf (elt idx i) i))
+
+    (let ((msh
+           (list (list :type :triangles)
+                 (list :vertices mat)
+                 (list :normals nom)
+                 (list :indices idx))))
+      (when material
+        (push (list :material material) msh))
+      (instance gl::glvertices :init (list msh)))
+    ))
 
 (in-package "GL")
 (defmethod glvertices
