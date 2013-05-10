@@ -735,11 +735,16 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   bool has_materials = false;
   pointer ltype, linfo, lvertices, lnormals, lindices;
   pointer mtype, minfo, mvertices, mnormals, mindices;
+  eusfloat_t scale = 1.0;
+
   ltype = argv[1];
   linfo = argv[2];
   lvertices = argv[3];
   lnormals = argv[4];
   lindices = argv[5];
+  if (n > 6) {
+    scale = fltval(argv[6]);
+  }
   if (n > 12) {
     direction = intval(argv[12]);
   }
@@ -795,7 +800,7 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
 
     pScene->mRootNode->mMeshes[i] = i;
     aiMesh* pMesh = pScene->mMeshes[i] = new aiMesh();
-    std::cerr << ";; mesh = " << (void *)pMesh << std::endl;
+    // std::cerr << ";; mesh = " << (void *)pMesh << std::endl;
     if (!has_materials) {
       pMesh->mMaterialIndex = 0;
     } else {
@@ -883,9 +888,9 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
     pMesh->mNumVertices = size / 3;
     pMesh->mVertices = new aiVector3D [pMesh->mNumVertices];
     for (unsigned int k = 0; k < pMesh->mNumVertices; k++) {
-      pMesh->mVertices[k].x = *fv++;
-      pMesh->mVertices[k].y = *fv++;
-      pMesh->mVertices[k].z = *fv++;
+      pMesh->mVertices[k].x = scale * *fv++;
+      pMesh->mVertices[k].y = scale * *fv++;
+      pMesh->mVertices[k].z = scale * *fv++;
     }
     // normals
     if (mnormals != NIL) {
