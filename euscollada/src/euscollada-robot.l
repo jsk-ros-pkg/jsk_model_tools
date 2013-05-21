@@ -41,11 +41,12 @@
   ;;  reduce root-link's weight based on leg's joint limit
   ;;  increase stop and cog-gain
   (:fullbody-inverse-kinematics
-   (target-coords &rest args)
+   (target-coords &rest args &key (stop 250) (cog-gain 2.0) &allow-other-keys)
    (let* ((leg-ul (send self :calc-union-link-list (send self :legs :links))))
      (send self :reset-joint-angle-limit-weight-old leg-ul)
      (send-message* self robot-model :fullbody-inverse-kinematics
                     target-coords
+                    :stop stop :cog-gain cog-gain
                     :weight #'(lambda (ul)
                                 (let ((tw (fill (instantiate float-vector (send self :calc-target-joint-dimension ul)) 1.0)))
                                   ;; set root-link 6dof-joint's weight based on legs' joint limit
