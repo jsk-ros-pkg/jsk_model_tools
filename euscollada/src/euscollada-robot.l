@@ -37,4 +37,28 @@
                                    (forward-message-to (car (send self ,(read-from-string (format nil "~As" sensor-name)))) args))))
               )))
    )
+  ;; fullbody-inverse-kinematics overwrite
+  ;;  reduce root-link's weight based on leg's joint limit
+  ;;  increase stop and cog-gain
+  (:fullbody-inverse-kinematics
+   (target-coords &rest args)
+   (let* ((leg-ul (send self :calc-union-link-list (send self :legs :links))))
+     (send self :reset-joint-angle-limit-weight-old leg-ul)
+     (send-message* self robot-model :fullbody-inverse-kinematics
+                    target-coords
+                    :weight #'(lambda (ul)
+                                (let ((tw (fill (instantiate float-vector (send self :calc-target-joint-dimension ul)) 1.0)))
+                                  ;; set root-link 6dof-joint's weight based on legs' joint limit
+                                  (let* ((min-weight
+                                          (reduce #'(lambda (x y) (min x y))
+                                                  (coerce (send self :calc-inverse-kinematics-weight-from-link-list
+                                                                leg-ul :union-link-list leg-ul) cons))))
+                                    (dotimes (i 6) (setf (elt tw i) (* min-weight (elt tw i)))))
+                                  ;; additional weight setting
+                                  (if (memq :weight args)
+                                      (let ((tmp-weight2 (funcall (cadr (memq :weight args)) ul)))
+                                        (dotimes (i (length tmp-weight2)) (setf (elt tw i) (* (elt tw i) (elt tmp-weight2 i))))))
+                                  tw))
+                    args)
+     ))
   )
