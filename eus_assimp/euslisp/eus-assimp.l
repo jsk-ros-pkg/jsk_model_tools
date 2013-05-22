@@ -15,7 +15,6 @@
     (t
      (warn ";; unknown direction ~A~%" direction)))
 
-  ;; (pprint direction)
   (let ((ret
          (c-assimp-get-glvertices fname scl gen-normal smooth-normal split-large-mesh
                                   optimize-mesh identical-vertices fix-normal direction dump-filename))
@@ -147,6 +146,13 @@
       (instance gl::glvertices :init (list msh)))
     ))
 
+(defun make-cube-from-bounding-box (bbox &rest args &key (origin))
+  (let ((cds (make-coords :pos (send bbox :center)))
+        (dsize (send bbox :diagonal)) ret)
+    (setq ret (apply #'make-cube (elt dsize 0) (elt dsize 1) (elt dsize 2) args))
+    (send ret :translate-vertices origin)
+    ret))
+
 (in-package "GL")
 (defmethod glvertices
   (:load-texture-image (&optional dir)
@@ -190,10 +196,4 @@
           (send p :assoc glv))
         (setq (bd . glvertices) glv))
       )))
-(defun make-cube-from-bounding-box (bbox &rest args &key (origin))
-  (let ((cds (make-coords :pos (send bbox :center)))
-        (dsize (send bbox :diagonal)) ret)
-    (setq ret (apply #'make-cube (elt dsize 0) (elt dsize 1) (elt dsize 2) args))
-    (send ret :translate-vertices origin)
-    ret))
 |#
