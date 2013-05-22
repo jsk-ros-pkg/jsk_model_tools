@@ -195,17 +195,10 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
     } else { // no normals
       fprintf(stderr, "\n");
     }
-#if 1
     if ( sourceElements  > 2 ) {
       // texture coordinates
       if(texoffset != -255) {
         //int texindex = thisTriangles->getP()->getValue().get(i*numberOfInputs+texoffset);
-#if 0
-        fprintf(fp, "         (gl::glTexCoord2f %f %f)\n",
-                thisMesh->getSource_array()[2]->getFloat_array()->getValue().get(texindex*2),
-                thisMesh->getSource_array()[2]->getFloat_array()->getValue().get(texindex*2+1)
-                );
-#endif
         int numberOfTexcoords = thisMesh->getSource_array()[2]->getFloat_array()->getValue().getCount();
         fprintf(stderr, "B:numberOfTexcoords = %d\n", numberOfTexcoords);
       } else { // ???
@@ -217,7 +210,6 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       fprintf(stderr, "\n");
     }
     fprintf(fp, "           )\n");
-#endif
   }
   fprintf(fp, "           )))\n");
   fprintf(fp, "    (send glvertices :calc-normals)\n");
@@ -481,6 +473,18 @@ void writeTransform(FILE *fp, const char *indent, const char *name, domNode *thi
   fprintf(fp, "%s;; writeTransform(name=%s,domNode=%s,targetCount=%d,parent=%s), translateCount=%d, rotateCount=%d, matrixCount=%d\n", indent, name, thisNode->getName(), targetCount, parentName, translateCount, rotateCount, matrixCount);
   fprintf(stderr, "%s;; writeTransform(name=%s,domNode=%s,targetCount=%d,parent=%s), translateCount=%d, rotateCount=%d, matrixCount=%d\n", indent, name, thisNode->getName(), targetCount, parentName, translateCount, rotateCount, matrixCount);
 
+  // checking name
+  std::string pName;
+  std::string localName;
+  pName.assign(parentName);
+  if (pName == ":world") {
+    fprintf(fp, "%s(let ((localcds (make-coords)))\n", indent); // start let
+    localName = "localcds";
+    pName = ":local";
+  } else {
+    localName.assign(name);
+  }
+
   for (int i=0, currentTranslate=0, currentRotate=0, skipTranslate=0, skipRotate=0; i < min(translateCount, rotateCount); i++, currentTranslate++, currentRotate++){
     if ( translateArray[currentTranslate]->getSid() ) {
       fprintf(stderr, " skip translate %s : %s\n", name, translateArray[currentTranslate]->getSid());
@@ -497,7 +501,7 @@ void writeTransform(FILE *fp, const char *indent, const char *name, domNode *thi
 
     if ( skipTranslate + skipRotate == targetCount ) {
       fprintf(fp, "%s(send %s :transform\n%s      (make-coords :pos (float-vector %f %f %f)\n%s                   :angle %f :axis (float-vector %f %f %f)) %s)\n",
-	      indent, name, indent, 
+              indent, localName.c_str(), indent,
 	      thisTranslate ? 1000*thisTranslate->getValue()[0] : 0,
 	      thisTranslate ? 1000*thisTranslate->getValue()[1] : 0,
 	      thisTranslate ? 1000*thisTranslate->getValue()[2] : 0,
@@ -506,21 +510,26 @@ void writeTransform(FILE *fp, const char *indent, const char *name, domNode *thi
 	      thisRotate ? thisRotate->getValue()[0] : 0,
 	      thisRotate ? thisRotate->getValue()[1] : 0,
 	      thisRotate ? thisRotate->getValue()[2] : 1,
-	      parentName);
+              pName.c_str());
     }
   }
-  for (int i=0, currentMatrix=0, skipMatrix=0; i < matrixCount; i++, currentMatrix++){
+
+  for (int i=0, currentMatrix=0, skipMatrix=0; i < matrixCount; i++, currentMatrix++) {
     thisMatrix = matrixArray[currentMatrix];
 
     if ( skipMatrix == targetCount ) {
       fprintf(fp, "%s(send %s :transform\n%s      (make-coords :4x4 #2f((%f %f %f %f)(%f %f %f %f)(%f %f %f %f)(%f %f %f %f))) %s)\n",
-	      indent, name, indent,
+              indent, localName.c_str(), indent,
 	      thisMatrix->getValue()[0], thisMatrix->getValue()[1], thisMatrix->getValue()[2], 1000*thisMatrix->getValue()[3],
 	      thisMatrix->getValue()[4], thisMatrix->getValue()[5], thisMatrix->getValue()[6], 1000*thisMatrix->getValue()[7],
 	      thisMatrix->getValue()[8], thisMatrix->getValue()[9], thisMatrix->getValue()[10], 1000*thisMatrix->getValue()[11],
 	      thisMatrix->getValue()[12], thisMatrix->getValue()[13], thisMatrix->getValue()[14], thisMatrix->getValue()[15],
-	      parentName);
+              pName.c_str());
     }
+  }
+  if (localName == "localcds") {
+    fprintf(fp, "%s(send %s :transform localcds :world)\n", indent, name); // finish let
+    fprintf(fp, "%s)\n", indent); // finish let
   }
 }
 
@@ -697,7 +706,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
     string nodeName = string(thisNode->getName());
     writeTransform(fp, "       ", nodeName.c_str(), thisNode, 0, parentName.c_str());
 
-    fprintf(fp, "       ;;\n");
+    fprintf(fp, "       ;;1;\n");
 
    // assoc
     for(unsigned int currentNodeArray=0;currentNodeArray<thisNode->getNode_array().getCount();currentNodeArray++) {
@@ -706,11 +715,15 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       for(unsigned int geometryNameCount = 0; geometryNameCount < thisNode->getTranslate_array().getCount(); geometryNameCount++) {
       //for(int geometryNameCount = (int)thisNode->getTranslate_array().getCount()-1; geometryNameCount >=0 ; geometryNameCount--) {
 	// transform
-	string nodeName = string(thisNode->getName());
-	string nodeName2 = string(thisNode2->getName());
-	writeTransform(fp, "       ", nodeName2.c_str(), thisNode, geometryNameCount, nodeName.c_str());
+        string nodeName = string(thisNode->getName());
+        string nodeName2 = string(thisNode2->getName());
+        if (geometryNameCount == 0) {
+          writeTransform(fp, "       ", nodeName2.c_str(), thisNode, geometryNameCount, ":world");
+        } else {
+          writeTransform(fp, "       ", nodeName2.c_str(), thisNode, geometryNameCount, nodeName.c_str());
+        }
       }
-      fprintf(fp, "       ;;\n");
+      fprintf(fp, "       ;;2;\n");
       fprintf(fp, "       (send %s :assoc %s)\n",
 	      thisNode->getName(),
 	      thisNode->getNode_array()[currentNodeArray]->getName());
