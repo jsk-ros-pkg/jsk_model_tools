@@ -85,6 +85,7 @@
                           (make-urdf-link x materials :scale scale))
                       links-sxml))
               rawlinks)
+
           (let ((joints (mapcar #'(lambda (x)
                                     (make-urdf-joint x links :scale scale))
                                 joints-sxml)))
@@ -165,9 +166,12 @@
 
 (defun _make-urdf-joint (sxml joint-type parent-link child-link joint-name
                               scale)
-  (let ((axis-sxml (massoc sxml 'axis '@ 'xyz))
-        (low-limit-sxml (massoc sxml 'limit '@ 'lower))
-        (upper-limit-sxml (massoc sxml 'limit '@ 'upper)))
+  (let ((axis-sxml (or (massoc sxml 'axis '@ 'xyz)
+                       (massoc sxml 'axis 'xyz)))
+        (low-limit-sxml (or (massoc sxml 'limit '@ 'lower)
+                            (massoc sxml 'axis 'limit 'lower)))
+        (upper-limit-sxml (or (massoc sxml 'limit '@ 'upper)
+                              (massoc sxml 'axis 'limit 'upper))))
     (let ((axis (if axis-sxml (read-float-vector-from-xml-value
                                (cadr axis-sxml))))
           (low-limit (if low-limit-sxml
@@ -177,7 +181,8 @@
       (cond
        ((string= "revolute" joint-type)
          (instance rotational-joint :init
-                   :min (rad2deg low-limit) :max (rad2deg upper-limit)
+                   :min (if low-limit (rad2deg low-limit) most-negative-float)
+                   :max (if upper-limit (rad2deg upper-limit) most-positive-float)
                    :parent-link parent-link :child-link child-link
                    :name joint-name
                    :axis axis))
@@ -188,7 +193,8 @@
                   :axis axis))
        ((string= "prismatic" joint-type)
          (instance linear-joint :init
-                   :min (* scale low-limit) :max (* scale upper-limit)
+                   :min (if low-limit (* scale low-limit) most-negative-float)
+                   :max (if upper-limit (* scale upper-limit) most-positive-float)
                    :parent-link parent-link :child-link child-link
                    :name joint-name
                    :axis axis))
@@ -216,9 +222,12 @@
 (defun make-urdf-joint (sxml links &key (scale 1000.0))
   (let ((joint-name (cadr (massoc sxml '@ 'name)))
         (joint-type (cadr (massoc sxml '@ 'type))))
-    (let ((origin-coords (make-origin-coords (assoc 'origin sxml)))
-          (parent-link-name (cadr (massoc sxml 'parent '@ 'link)))
-          (child-link-name (cadr (massoc sxml 'child '@ 'link))))
+    (let ((origin-coords (make-origin-coords (or (assoc 'origin sxml)
+                                                 (assoc 'pose sxml))))
+          (parent-link-name (or (cadr (massoc sxml 'parent '@ 'link))
+                                (cadr (assoc 'parent sxml))))
+          (child-link-name (or (cadr (massoc sxml 'child '@ 'link))
+                               (cadr (assoc 'child sxml)))))
       (when (and parent-link-name child-link-name)
         (let ((parent-link (if (and *remove-worldlink*
                                     (string= parent-link-name "world"))
@@ -359,7 +368,10 @@
   (let ((attr (sxml-attribute sxml))
         (contents (cddr sxml)))
     (let ((link-name (cadr (assoc 'name (cdr attr))))
+          (link-pose (assoc 'pose contents))
           vis-geom col-geom)
+      (when link-pose
+        (setq link-pose (make-origin-coords link-pose)))
       (block :extract-visual
         (while t
           (let ((visual-sxml
@@ -411,6 +423,8 @@
                            :bodies (or vis-geom (list (make-cube 5 5 5)))
                            :name link-name)))
         (setf (get ret :collision-geometory) col-geom)
+        (when link-pose
+          (send ret :transform link-pose))
         ret))))
 
 (defun extract-robot-tag-from-urdf (sxml)
