@@ -108,7 +108,7 @@
                   )))
             (setq rawlinks links)
             (when *remove-fixed-joint*
-              (let ((fixed-j (remove-if #'(lambda (x) (get x :fixed-joint)) joints))
+              (let ((fixed-j (remove-if-not #'(lambda (x) (get x :fixed-joint)) joints))
                     fixed-l)
                 (dolist (fj fixed-j)
                   (push (send fj :child-link) fixed-l))
@@ -121,13 +121,14 @@
               (setq (ret . links) links)
               (setq (ret . joint-list) joints)
               (send ret :init :name (cadr (massoc robot-sxml '@ 'name)))
-              (setq (ret . bodies) (remove-if #'null (flatten (send-all rawlinks :bodies))))
+              ;;(setq (ret . bodies) (remove-if #'null (flatten (send-all rawlinks :bodies))))
               ;; search root link
               (let ((rt (find-if #'(lambda (x) (null (send x :parent))) rawlinks)))
                 (if rt
                     (send ret :assoc rt)
                   (warn ";; can not find root link?~%")))
               (send ret :init-ending)
+              (setq (ret . bodies) (remove-if #'null (flatten (send-all rawlinks :bodies))))
               ret)))))))
 
 (defun make-origin-coords (origin-sxml &key (scale 1000.0))
@@ -214,7 +215,7 @@
                          :parent-link parent-link :child-link child-link
                          :min 0 :max 0
                          :name joint-name)))
-          (setf (get ret :fixed-link) t)
+          (setf (get ret :fixed-joint) t)
           ret))
        (t
         (warn "~A is not supported~%" joint-type))))))
