@@ -117,18 +117,17 @@
                 ))
             (let ((ret (instance cascaded-link)))
               ;; hack!
-
               (setq (ret . links) links)
               (setq (ret . joint-list) joints)
               (send ret :init :name (cadr (massoc robot-sxml '@ 'name)))
-              ;;(setq (ret . bodies) (remove-if #'null (flatten (send-all rawlinks :bodies))))
               ;; search root link
               (let ((rt (find-if #'(lambda (x) (null (send x :parent))) rawlinks)))
-                (if rt
-                    (send ret :assoc rt)
+                (if rt (send ret :assoc rt)
                   (warn ";; can not find root link?~%")))
               (send ret :init-ending)
               (setq (ret . bodies) (remove-if #'null (flatten (send-all rawlinks :bodies))))
+              (unless (eq rawlinks links)
+                (setf (get ret :rawlinks) rawlinks))
               ret)))))))
 
 (defun make-origin-coords (origin-sxml &key (scale 1000.0))
@@ -370,6 +369,7 @@
         (contents (cddr sxml)))
     (let ((link-name (cadr (assoc 'name (cdr attr))))
           (link-pose (assoc 'pose contents))
+          (link-inertial (assoc 'inertial contents))
           vis-geom col-geom)
       (when link-pose
         (setq link-pose (make-origin-coords link-pose)))
@@ -424,10 +424,50 @@
                            :bodies (or vis-geom (list (make-cube 5 5 5)))
                            :name link-name)))
         (setf (get ret :collision-geometory) col-geom)
+        (when link-inertial
+          (set-inertial-param-to-link ret link-inertial))
         (when link-pose
           (send ret :transform link-pose))
         ret))))
-
+(defun set-inertial-param-to-link (blink inertial)
+  (let ((ms (cadr (massoc inertial 'mass '@ 'value)))
+        (xyz (cadr (massoc inertial 'origin '@ 'xyz)))
+        ;;(rpy (cadr (massoc inertial 'origin '@ 'rpy)))
+        (inn (cdr (massoc inertial 'inertia '@))))
+    (when ms
+      (send blink :weight (* 1000.0 (read-from-string ms))))
+    (when xyz
+      (setq (blink . acentroid)
+            (scale 1000.0 (read-float-vector-from-xml-value xyz))))
+    (when inn
+      (let ((xx (assoc 'ixx inn))
+            (yy (assoc 'iyy inn))
+            (zz (assoc 'izz inn))
+            (xy (assoc 'ixy inn))
+            (xz (assoc 'ixz inn))
+            (yz (assoc 'iyz inn))
+            (mat (make-matrix 3 3)))
+        (when xx
+          (setf (aref mat 0 0) (read-from-string (cadr xx))))
+        (when yy
+          (setf (aref mat 1 1) (read-from-string (cadr yy))))
+        (when zz
+          (setf (aref mat 2 2) (read-from-string (cadr zz))))
+        (when xy
+          (let ((val (read-from-string (cadr xy))))
+            (setf (aref mat 0 1) val)
+            (setf (aref mat 1 0) val)))
+        (when xz
+          (let ((val (read-from-string (cadr xz))))
+            (setf (aref mat 0 2) val)
+            (setf (aref mat 2 0) val)))
+        (when yz
+          (let ((val (read-from-string (cadr yz))))
+            (setf (aref mat 1 2) val)
+            (setf (aref mat 2 1) val)))
+        (send blink :inertia-tensor mat)
+        ))
+    ))
 (defun extract-robot-tag-from-urdf (sxml)
   ;; sxml starts with (*TOP* (*PI* ...) (content1 ...) (content2 ...))
   ;; skip *top* and *pi*
