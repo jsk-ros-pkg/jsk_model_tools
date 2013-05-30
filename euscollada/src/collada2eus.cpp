@@ -24,7 +24,7 @@ extern "C" {
 daeDocument *g_document;
 DAE* g_dae = NULL;
 float g_scale = 1.0;
-
+bool use_technique_limit = true;
 vector<pair<string, string> > g_all_link_names;
 
 // returns max offsset value
@@ -422,10 +422,12 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
       string joint_name(string(daeSafeCast<domKinematics_model>(thisJoint->getParentElement()->getParentElement())->getId()) // kinamtics_model's id
 			+"/"+ string(thisJoint->getSid()) +"/"+ jointAxis_array[0]->getSid());
       if (axis_info_name == joint_name && // if thisJoint corresponds to kinematics_axis
-	  thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()) {
-	min = scale*thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()->getFloat()->getValue();
-	max = scale*thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMax()->getFloat()->getValue();
-	fprintf(stderr, "    min = %f, max = %f (safety)\n", min, max);
+          thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()) {
+        if (use_technique_limit) {
+          min = scale*thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()->getFloat()->getValue();
+          max = scale*thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMax()->getFloat()->getValue();
+          fprintf(stderr, "    min = %f, max = %f (safety)\n", min, max);
+        }
       }
     }
   }
@@ -806,6 +808,16 @@ void copy_euscollada_robot_class_definition (FILE *output_fp)
 int main(int argc, char* argv[]){
   FILE *output_fp;
   char *input_filename, *yaml_filename, *output_filename;
+  for(int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--without-technique-limit") == 0) {
+      use_technique_limit = false;
+      if (i != argc-1) {
+        argv[i] = argv[i+1];
+      }
+      argc--;
+      break;
+    }
+  }
   switch (argc) {
   case 3:
     input_filename  = argv[1];
