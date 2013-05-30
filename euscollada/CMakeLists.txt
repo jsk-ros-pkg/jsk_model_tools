@@ -40,7 +40,7 @@ else()
 endif()
 rosbuild_add_executable(collada2eus src/collada2eus_dev.cpp)
 target_link_libraries(collada2eus ${COLLADA2EUS_LIBRARIES})
-rosbuild_add_executable(collada2eus_old src/collada2eus.cpp)
+rosbuild_add_executable(collada2eus_old src/collada2eus_old.cpp)
 target_link_libraries(collada2eus_old ${COLLADA2EUS_LIBRARIES})
 
 rosbuild_find_ros_package(euslisp)
