@@ -146,12 +146,13 @@
       (instance gl::glvertices :init (list msh)))
     ))
 
-(defun make-cube-from-bounding-box (bbox &rest args &key (origin))
+(defun make-cube-from-bounding-box (bbox &rest args)
   (let ((cds (make-coords :pos (send bbox :center)))
         (dsize (send bbox :diagonal)) ret)
     (setq ret (apply #'make-cube (elt dsize 0) (elt dsize 1) (elt dsize 2) args))
-    (send ret :translate-vertices origin)
+    (send ret :translate-vertices (send cds :pos))
     ret))
+
 
 (in-package "GL")
 (defmethod glvertices
