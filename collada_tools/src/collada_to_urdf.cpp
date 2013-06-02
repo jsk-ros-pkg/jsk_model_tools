@@ -43,7 +43,7 @@ bool add_gazebo_description = false;
 bool use_assimp_export = false;
 bool use_same_collision_as_visual = true;
 bool rotate_inertia_frame = true;
-bool export_collision_mesh = true;
+bool export_collision_mesh = false;
 
 string mesh_dir = "/tmp";
 string arobot_name = "";
