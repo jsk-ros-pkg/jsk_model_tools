@@ -27,6 +27,8 @@ float g_scale = 1.0;
 bool use_technique_limit = true;
 vector<pair<string, string> > g_all_link_names;
 
+bool add_link_suffix = false;
+
 // returns max offsset value
 unsigned int getMaxOffset( domInput_local_offset_Array &input_array )
 {
@@ -374,7 +376,11 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
   fprintf(fp, "           (instance %s :init\n",
           (thisJoint->getPrismatic_array().getCount()>0)?"linear-joint":"rotational-joint");
   fprintf(fp, "                     :name \"%s\"\n", thisJoint->getName());
-  fprintf(fp, "                     :parent-link %s :child-link %s\n", parentLink->getName(), childLink->getName());
+  if (add_link_suffix) {
+    fprintf(fp, "                     :parent-link %s_lk :child-link %s_lk\n", parentLink->getName(), childLink->getName());
+  } else {
+    fprintf(fp, "                     :parent-link %s :child-link %s\n", parentLink->getName(), childLink->getName());
+  }
   domAxis_constraint_Array jointAxis_array;
   float axis[3], min = FLT_MAX, max = -FLT_MAX, scale = 1.0;
   if ( thisJoint->getPrismatic_array().getCount() > 0 ) {
@@ -569,6 +575,13 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
   for(int currentNodeArray=0;currentNodeArray<nodeArrayCount;currentNodeArray++) {
     domNode *thisNode = thisNodeArray[currentNodeArray];
     string parentName = ":local";
+    string thisNodeName;
+    if (add_link_suffix) {
+      thisNodeName.assign(thisNode->getName());
+      thisNodeName += "_lk";
+    } else {
+      thisNodeName.assign(thisNode->getName());
+    }
     writeNodes(fp, thisNode->getNode_array(), thisRigidbodyArray, robot_name);
 
     if ( strcmp(thisNode->getName(),"visual") == 0 ) continue; //@@@ OK??
@@ -640,7 +653,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	// transform
 	//writeTransform(fp, "       ", rootName, thisNode, 1);
       }
-      fprintf(fp, "       (setq %s\n", thisNode->getName());
+      fprintf(fp, "       (setq %s\n", thisNodeName.c_str());
       fprintf(fp, "             (instance bodyset-link\n");
       fprintf(fp, "                       :init (make-cascoords)\n");
       fprintf(fp, "                       :bodies (list ");
@@ -673,13 +686,13 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
         fprintf(fp, "             (tmp-c (make-coords)))\n");
         fprintf(fp, "         (dolist (cc tmp-c-list)\n");
         fprintf(fp, "           (setq tmp-c (send tmp-c :transform cc)))\n");
-        fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNode->getName());
+        fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNodeName.c_str());
         fprintf(fp, "               (m* (send tmp-c :worldrot) (diagonal (float-vector %.3f %.3f %.3f)) (transpose (send tmp-c :worldrot))))\n",
                 /* inertia : collada [kg m^2] -> eus : [g mm^2] */
                 thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
                 thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
                 thisRigidbody->getTechnique_common()->getInertia()->getValue()[2]*1e9);
-        fprintf(fp, "         (setq (%s . acentroid) (send tmp-c :worldpos))\n", thisNode->getName());
+        fprintf(fp, "         (setq (%s . acentroid) (send tmp-c :worldpos))\n", thisNodeName.c_str());
         fprintf(fp, "        )\n");
       } else {
 	fprintf(fp, "                       :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n");
@@ -690,8 +703,8 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
                  strcmp(thisNode->getNode_array()[1]->getName(),"visual") != 0 ) ) {
       fprintf(fp, ")\n"); // let(
       cerr << ";; WARNING link without geometry : " << thisNode->getName() << endl;
-      fprintf(fp, "       ;; define bodyset-link for %s\n", thisNode->getName());
-      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :bodies (list (make-cube 10 10 10)) :name :%s :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNode->getName(), thisNode->getName());
+      fprintf(fp, "       ;; define bodyset-link for %s\n", thisNodeName.c_str());
+      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :bodies (list (make-cube 10 10 10)) :name :%s :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNodeName.c_str(), thisNodeName.c_str());
     } else {
       fprintf(fp, ")\n"); // let(
       cerr << ";; WARNING link without geometry nor node: " << thisNode->getName() << " geometry : " << thisNode->getInstance_geometry_array().getCount() << ", node : " << thisNode->getNode_array().getCount();;
@@ -700,13 +713,12 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       }
       cerr << endl;
       fprintf(fp, "       ;; define cascaded-coords for %s\n", thisNode->getName());
-      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :name :%s :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNode->getName(), thisNode->getName());
+      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :name :%s :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNodeName.c_str(), thisNodeName.c_str());
       parentName = ":world";
     }
 
     //transform
-    string nodeName = string(thisNode->getName());
-    writeTransform(fp, "       ", nodeName.c_str(), thisNode, 0, parentName.c_str());
+    writeTransform(fp, "       ", thisNodeName.c_str(), thisNode, 0, parentName.c_str());
 
     fprintf(fp, "       ;;1;\n");
 
@@ -717,18 +729,30 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       for(unsigned int geometryNameCount = 0; geometryNameCount < thisNode->getTranslate_array().getCount(); geometryNameCount++) {
       //for(int geometryNameCount = (int)thisNode->getTranslate_array().getCount()-1; geometryNameCount >=0 ; geometryNameCount--) {
 	// transform
-        string nodeName = string(thisNode->getName());
-        string nodeName2 = string(thisNode2->getName());
+        //string nodeName = string(thisNode->getName());
+        string nodeName2;
+        if (add_link_suffix) {
+          nodeName2.assign(thisNode2->getName());
+          nodeName2 += "_lk";
+        } else {
+          nodeName2.assign(thisNode2->getName());
+        }
         if (geometryNameCount == 0) {
           writeTransform(fp, "       ", nodeName2.c_str(), thisNode, geometryNameCount, ":world");
         } else {
-          writeTransform(fp, "       ", nodeName2.c_str(), thisNode, geometryNameCount, nodeName.c_str());
+          writeTransform(fp, "       ", nodeName2.c_str(), thisNode, geometryNameCount, thisNodeName.c_str());
         }
       }
       fprintf(fp, "       ;;2;\n");
-      fprintf(fp, "       (send %s :assoc %s)\n",
-	      thisNode->getName(),
-	      thisNode->getNode_array()[currentNodeArray]->getName());
+      if (add_link_suffix) {
+        fprintf(fp, "       (send %s :assoc %s_lk)\n",
+                thisNodeName.c_str(),
+                thisNode->getNode_array()[currentNodeArray]->getName());
+      } else {
+        fprintf(fp, "       (send %s :assoc %s)\n",
+                thisNodeName.c_str(),
+                thisNode->getNode_array()[currentNodeArray]->getName());
+      }
     }
     // sensor
     if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
@@ -765,7 +789,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	      fprintf(fp, " %f", prot->getValue()[3]*(M_PI/180.0));
 	    }
 	    fprintf(fp, "))\n");
-	    fprintf(fp, "       (send %s :assoc %s-sensor-coords)\n", thisNode->getName(), pextra->getName());
+	    fprintf(fp, "       (send %s :assoc %s-sensor-coords)\n", thisNodeName.c_str(), pextra->getName());
 	  }
 	}
       }
@@ -811,6 +835,16 @@ int main(int argc, char* argv[]){
   for(int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--without-technique-limit") == 0) {
       use_technique_limit = false;
+      if (i != argc-1) {
+        argv[i] = argv[i+1];
+      }
+      argc--;
+      break;
+    }
+  }
+  for(int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--add-link-suffix") == 0) {
+      add_link_suffix = true;
       if (i != argc-1) {
         argv[i] = argv[i+1];
       }
@@ -988,7 +1022,11 @@ int main(int argc, char* argv[]){
   for(int currentLink=0;currentLink<(int)(g_dae->getDatabase()->getElementCount(NULL, "link", NULL));currentLink++) {
     domJoint *thisLink;
     g_dae->getDatabase()->getElement((daeElement**)&thisLink, currentLink, NULL, "link");
-    fprintf(output_fp, "%s ", thisLink->getName());
+    if (add_link_suffix) {
+      fprintf(output_fp, "%s_lk ", thisLink->getName());
+    } else {
+      fprintf(output_fp, "%s ", thisLink->getName());
+    }
   }
   // add openrave manipulator tip frame
   if ( g_dae->getDatabase()->getElementCount(NULL, "kinematics_scene", NULL) > 0 ) {
@@ -1033,8 +1071,11 @@ int main(int argc, char* argv[]){
   domPhysics_model *thisPhysicsmodel;
   g_dae->getDatabase()->getElement((daeElement**)&thisPhysicsmodel, 0, NULL, "physics_model");
   writeNodes(output_fp, thisNode->getNode_array(), thisPhysicsmodel?(thisPhysicsmodel->getRigid_body_array()):(domRigid_body_Array)NULL, robot_name.c_str());
-  fprintf(output_fp, "     (send self :assoc %s)\n", thisNode->getNode_array()[0]->getName());
-  
+  if(add_link_suffix) {
+    fprintf(output_fp, "     (send self :assoc %s_lk)\n", thisNode->getNode_array()[0]->getName());
+  } else {
+    fprintf(output_fp, "     (send self :assoc %s)\n", thisNode->getNode_array()[0]->getName());
+  }
   // write joint
   domKinematics_model *thisKinematics;
   g_dae->getDatabase()->getElement((daeElement**)&thisKinematics, 0, NULL, "kinematics_model");
@@ -1070,7 +1111,11 @@ int main(int argc, char* argv[]){
 	    domTranslateRef ptrans = daeSafeCast<domTranslate>(frame_tip->getChild("translate"));
 	    domRotateRef prot = daeSafeCast<domRotate>(frame_tip->getChild("rotate"));
 
-	    fprintf(output_fp, "     (setq %s-frame-tip (make-cascoords :coords (send %s :copy-worldcoords) :name :%s-frame-tip))\n", armname.c_str(), pdomlink->getName(), armname.c_str());
+            if(add_link_suffix) {
+              fprintf(output_fp, "     (setq %s-frame-tip (make-cascoords :coords (send %s_lk :copy-worldcoords) :name :%s-frame-tip))\n", armname.c_str(), pdomlink->getName(), armname.c_str());
+            } else {
+              fprintf(output_fp, "     (setq %s-frame-tip (make-cascoords :coords (send %s :copy-worldcoords) :name :%s-frame-tip))\n", armname.c_str(), pdomlink->getName(), armname.c_str());
+            }
 	    fprintf(output_fp, "     (send %s-frame-tip :transform (make-coords ", armname.c_str());
 	    if ( ptrans ) {
 	      fprintf(output_fp, ":pos #f(");
@@ -1085,7 +1130,11 @@ int main(int argc, char* argv[]){
 	      fprintf(output_fp, " %f", prot->getValue()[3]*(M_PI/180.0));
 	    }
 	    fprintf(output_fp, ") :local)\n");
-	    fprintf(output_fp, "     (send %s :assoc %s-frame-tip)\n\n",pdomlink->getName(), armname.c_str());
+            if (add_link_suffix) {
+              fprintf(output_fp, "     (send %s_lk :assoc %s-frame-tip)\n\n",pdomlink->getName(), armname.c_str());
+            } else {
+              fprintf(output_fp, "     (send %s :assoc %s-frame-tip)\n\n",pdomlink->getName(), armname.c_str());
+            }
 	  }
 	  if ( armname == "leftarm" || armname == "rightarm" ) {
 	    fprintf(output_fp, "     (setq %carm-end-coords (make-cascoords :coords (send %s-frame-tip :copy-worldcoords)))\n", armname.c_str()[0], armname.c_str());
@@ -1108,7 +1157,11 @@ int main(int argc, char* argv[]){
 	n >> end_coords_parent_name;
       } catch(YAML::RepresentationException& e) {
       }
-      fprintf(output_fp, "     (setq %s-end-coords (make-cascoords :coords (send %s :copy-worldcoords)))\n", limb_name.c_str(), end_coords_parent_name.c_str());
+      if (add_link_suffix) {
+        fprintf(output_fp, "     (setq %s-end-coords (make-cascoords :coords (send %s_lk :copy-worldcoords)))\n", limb_name.c_str(), end_coords_parent_name.c_str());
+      } else {
+        fprintf(output_fp, "     (setq %s-end-coords (make-cascoords :coords (send %s :copy-worldcoords)))\n", limb_name.c_str(), end_coords_parent_name.c_str());
+      }
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
         double value;
@@ -1127,7 +1180,11 @@ int main(int argc, char* argv[]){
         fprintf(output_fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
-      fprintf(output_fp, "     (send %s :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
+      if(add_link_suffix) {
+        fprintf(output_fp, "     (send %s_lk :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
+      } else {
+        fprintf(output_fp, "     (send %s :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
+      }
     }
   }
   fprintf(output_fp, "\n");
@@ -1139,7 +1196,11 @@ int main(int argc, char* argv[]){
     vector<string> link_names = limb.second.first;
     if ( link_names.size() > 0 ) {
       fprintf(output_fp, "     (setq %s (list", limb_name.c_str());
-      for (unsigned int i=0;i<link_names.size();i++) fprintf(output_fp, " %s", link_names[i].c_str()); fprintf(output_fp, "))\n");
+      if (add_link_suffix) {
+        for (unsigned int i=0;i<link_names.size();i++) fprintf(output_fp, " %s_lk", link_names[i].c_str()); fprintf(output_fp, "))\n");
+      } else {
+        for (unsigned int i=0;i<link_names.size();i++) fprintf(output_fp, " %s", link_names[i].c_str()); fprintf(output_fp, "))\n");
+      }
       fprintf(output_fp, "\n");
       // find root link by tracing limb's link list
       fprintf(output_fp, "     (setq %s-root-link (labels ((find-parent (l) (if (find (send l :parent) %s) (find-parent (send l :parent)) l))) (find-parent (car %s))))\n", limb_name.c_str(), limb_name.c_str(), limb_name.c_str());
@@ -1150,11 +1211,19 @@ int main(int argc, char* argv[]){
   fprintf(output_fp, "     ;; links\n");
 
   domNode *rootNode = thisNode->getNode_array()[0];
-  fprintf(output_fp, "     (setq links (list %s", rootNode->getName());
+  if (add_link_suffix) {
+    fprintf(output_fp, "     (setq links (list %s_lk", rootNode->getName());
+  } else {
+    fprintf(output_fp, "     (setq links (list %s", rootNode->getName());
+  }
   BOOST_FOREACH(link_joint_pair& limb, limbs) {
     string limb_name = limb.first;
     vector<string> link_names = limb.second.first;
-    for (unsigned int i=0;i<link_names.size();i++) fprintf(output_fp, " %s", link_names[i].c_str());
+    if (add_link_suffix) {
+      for (unsigned int i=0;i<link_names.size();i++) fprintf(output_fp, " %s_lk", link_names[i].c_str());
+    } else {
+      for (unsigned int i=0;i<link_names.size();i++) fprintf(output_fp, " %s", link_names[i].c_str());
+    }
   }
   fprintf(output_fp, "))\n");
 
@@ -1179,7 +1248,11 @@ int main(int argc, char* argv[]){
   for(int currentLink=0;currentLink<(int)(g_dae->getDatabase()->getElementCount(NULL, "link", NULL));currentLink++) {
     domJoint *thisLink;
     g_dae->getDatabase()->getElement((daeElement**)&thisLink, currentLink, NULL, "link");
-    fprintf(output_fp, " %s", thisLink->getName());
+    if (add_link_suffix) {
+      fprintf(output_fp, " %s_lk", thisLink->getName());
+    } else {
+      fprintf(output_fp, " %s", thisLink->getName());
+    }
   }
   fprintf(output_fp, "))))\n\n");
 
@@ -1219,7 +1292,11 @@ int main(int argc, char* argv[]){
   for(int currentLink=0;currentLink<(int)(g_dae->getDatabase()->getElementCount(NULL, "link", NULL));currentLink++) {
     domJoint *thisLink;
     g_dae->getDatabase()->getElement((daeElement**)&thisLink, currentLink, NULL, "link");
-    fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", thisLink->getName(), thisLink->getName());
+    if (add_link_suffix) {
+      fprintf(output_fp, "    (:%s_lk (&rest args) (forward-message-to %s_lk args))\n", thisLink->getName(), thisLink->getName());
+    } else {
+      fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", thisLink->getName(), thisLink->getName());
+    }
   }
   // add openrave manipulator tip frame
   fprintf(output_fp, "\n    ;; all manipulator\n");
@@ -1280,4 +1357,3 @@ int main(int argc, char* argv[]){
   fflush(output_fp);
   return 0;
 }
-
