@@ -153,6 +153,23 @@
     (send ret :translate-vertices (send cds :pos))
     ret))
 
+;; urdf_to_collada -> collada2eus ..
+(defun update-to-original-meshfile (robot &key (scale 1000.0) (direction :-y_up))
+  (dolist (bd (send robot :bodies))
+    (let ((str (send bd :name)))
+      (when (and (stringp str)
+                 (substringp ".dae" str))
+        (let ((fn (ros::resolve-ros-path str))
+              (old-glv (bd . glvertices))
+              glv)
+          (setq glv (load-mesh-file fn :scale scale :direction direction))
+          (send glv :transform (send old-glv :worldcoords))
+          (let ((p (send old-glv :parent)))
+            (send p :dissoc old-glv)
+            (send p :assoc glv))
+          (setq (bd . glvertices) glv))
+        )))
+  robot)
 
 (in-package "GL")
 (defmethod glvertices
@@ -182,19 +199,3 @@
    )
   )
 (in-package "USER")
-#|
-(dolist (bd (send *pr2* :bodies))
-  (let ((str (send bd :name)))
-    (when (and (stringp str)
-               (substringp ".dae" str))
-      (let ((fn (ros::resolve-ros-path str))
-            (old-glv (bd . glvertices))
-            glv)
-        (setq glv (load-mesh-file fn :scale 1000.0 :direction :-y_up))
-        (send glv :transform (send old-glv :worldcoords))
-        (let ((p (send old-glv :parent)))
-          (send p :dissoc old-glv)
-          (send p :assoc glv))
-        (setq (bd . glvertices) glv))
-      )))
-|#
