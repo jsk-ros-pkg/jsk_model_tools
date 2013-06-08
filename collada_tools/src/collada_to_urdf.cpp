@@ -353,7 +353,7 @@ void addChildLinkNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
       //DEBUG_MAT(tmat);
       //DEBUG_MAT(imat);
 
-      imat = ( tmat * imat * mat );
+      imat = ( mat * imat * tmat );
 
       //DEBUG_MAT(imat);
 
