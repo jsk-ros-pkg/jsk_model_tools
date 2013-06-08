@@ -449,7 +449,7 @@ void addChildJointNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
 
     if ( add_gazebo_description ) {
       os << "  <transmission type=\"pr2_mechanism_model/SimpleTransmission\" name=\"";
-      os << (*child)->parent_joint->name << "_trans \">" << endl;
+      os << (*child)->parent_joint->name << "_trans\" >" << endl;
       os << "    <actuator name=\"" << (*child)->parent_joint->name << "_motor\" />" << endl;
       os << "    <joint name=\"" << (*child)->parent_joint->name << "\" />" << endl;
       os << "    <mechanicalReduction>1</mechanicalReduction>" << endl;
