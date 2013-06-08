@@ -343,10 +343,18 @@ void addChildLinkNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
       cout << "(" << mat[1][0] << " " << mat[1][1] << " " << mat[1][2] << ")"; \
       cout << "(" << mat[2][0] << " " << mat[2][1] << " " << mat[2][2] << "))" << endl;
 
+#if 0
+      cout << "#f(" << link->inertial->origin.rotation.w << " ";
+      cout << link->inertial->origin.rotation.x << " ";
+      cout << link->inertial->origin.rotation.y << " ";
+      cout << link->inertial->origin.rotation.z << ")" <<endl;
+#endif
       //DEBUG_MAT(mat);
       //DEBUG_MAT(tmat);
       //DEBUG_MAT(imat);
-      imat = ( mat * imat * tmat );
+
+      imat = ( tmat * imat * mat );
+
       //DEBUG_MAT(imat);
 
       urdf::Pose t_pose (link->inertial->origin);
