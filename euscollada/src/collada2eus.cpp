@@ -997,8 +997,8 @@ int main(int argc, char* argv[]){
       fprintf(output_fp, "                  args))))\n");
 
       fprintf(output_fp,"(defclass collada-body\n  :super body\n  :slots (glvertices)\n  )\n");
-      fprintf(output_fp,"(defmethod\n  (:draw (vwr)\n   (when glvertices\n     (send glvertices :draw vwr)))\n  )\n");
-
+      fprintf(output_fp,"(defmethod collada-body\n  (:draw (vwr)\n   (when glvertices\n     (send glvertices :draw vwr)))\n");
+      fprintf(output_fp,"  (:set-color (col)\n   (send-super :set-color col)\n   (when glvertices (send glvertices :set-color col)))\n  )\n");
       writeGeometry(output_fp, g_dae->getDatabase(), robot_name.c_str());
 
       fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", robot_name.c_str(), get_current_dir_name(), output_filename);
@@ -1343,7 +1343,8 @@ int main(int argc, char* argv[]){
   fprintf(output_fp, "  )\n\n");
 
   fprintf(output_fp,"(defclass collada-body\n  :super body\n  :slots (glvertices)\n  )\n");
-  fprintf(output_fp,"(defmethod collada-body\n  (:draw (vwr)\n   (when glvertices\n     (send glvertices :draw vwr)))\n  )\n");
+  fprintf(output_fp,"(defmethod collada-body\n  (:draw (vwr)\n   (when glvertices\n     (send glvertices :draw vwr)))\n");
+  fprintf(output_fp,"  (:set-color (col)\n   (send-super :set-color col)\n   (when glvertices (send glvertices :set-color col)))\n  )\n");
   writeGeometry(output_fp, g_dae->getDatabase(), robot_name.c_str());
 
   fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", robot_name.c_str(), get_current_dir_name(), output_filename);
