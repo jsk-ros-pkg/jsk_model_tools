@@ -26,7 +26,7 @@
      (send (send j :child-link) :add-parent-link (send j :parent-link))
      (send (send j :parent-link) :add-child-links (send j :child-link)))
    ;; add sensor method ;; e.g., (send self :camera 0), (send self :force-sensor :rasensor), ... etc
-   (dolist (sensor-name '(:force-sensor))
+   (dolist (sensor-name '(:force-sensor :imu-sensor))
      (eval `(defmethod ,(send (class self) :name)
               (,sensor-name (&rest args)
                             (cond ((integerp (car args))
