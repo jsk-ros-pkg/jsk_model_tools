@@ -31,6 +31,11 @@
               (,sensor-name (&rest args)
                             (cond ((integerp (car args))
                                    (forward-message-to (elt (send self ,(read-from-string (format nil "~As" sensor-name)) ) (car args)) (cdr args)))
+                                  ;; enable to access sensors by limb name
+                                  ((memq (car args) '(:larm :rarm :lleg :rleg :head :torso))
+                                   (find-if
+                                    #'(lambda (x) (member (send x :parent) (send self (car args))))
+                                    (send self ,(read-from-string (format nil "~As" sensor-name)))))
                                   ((keywordp (car args))
                                    (send* self args))
                                   (t
