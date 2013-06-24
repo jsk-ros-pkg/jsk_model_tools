@@ -27,7 +27,8 @@ float g_scale = 1.0;
 bool use_technique_limit = true;
 vector<pair<string, string> > g_all_link_names;
 
-bool add_link_suffix = false;
+bool add_link_suffix = true;
+bool add_joint_suffix = true;
 
 // returns max offsset value
 unsigned int getMaxOffset( domInput_local_offset_Array &input_array )
@@ -372,7 +373,11 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
   //
   // get number of joints
   domJoint *thisJoint = findJointFromName(jointSid);
-  fprintf(fp, "     (setq %s\n", thisJoint->getName());
+  if (add_joint_suffix) {
+    fprintf(fp, "     (setq %s_jt\n", thisJoint->getName());
+  } else {
+    fprintf(fp, "     (setq %s\n", thisJoint->getName());
+  }
   fprintf(fp, "           (instance %s :init\n",
           (thisJoint->getPrismatic_array().getCount()>0)?"linear-joint":"rotational-joint");
   fprintf(fp, "                     :name \"%s\"\n", thisJoint->getName());
@@ -832,27 +837,22 @@ void copy_euscollada_robot_class_definition (FILE *output_fp)
 int main(int argc, char* argv[]){
   FILE *output_fp;
   char *input_filename, *yaml_filename, *output_filename;
+
+  int nargc = argc;
   for(int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--without-technique-limit") == 0) {
       use_technique_limit = false;
-      if (i != argc-1) {
-        argv[i] = argv[i+1];
-      }
-      argc--;
-      break;
+      nargc--;
+    } else if (strcmp(argv[i], "--no-link-suffix") == 0) {
+      add_link_suffix = false;
+      nargc--;
+    } else if (strcmp(argv[i], "--no-joint-suffix") == 0) {
+      add_joint_suffix = false;
+      nargc--;
     }
   }
-  for(int i = 1; i < argc; i++) {
-    if (strcmp(argv[i], "--add-link-suffix") == 0) {
-      add_link_suffix = true;
-      if (i != argc-1) {
-        argv[i] = argv[i+1];
-      }
-      argc--;
-      break;
-    }
-  }
-  switch (argc) {
+
+  switch (nargc) {
   case 3:
     input_filename  = argv[1];
     output_filename = argv[2];
@@ -864,7 +864,7 @@ int main(int argc, char* argv[]){
     output_filename = argv[3];
     break;
   default:
-    fprintf(stderr, "Usage: %s <input dae filename> <input yaml filename> <output lisp filename>\n",argv[0]);
+    fprintf(stderr, "Usage: %s <input dae filename> <input yaml filename> <output lisp filename>\n", argv[0]);
     exit(-1);
   }
   output_fp = fopen(output_filename,"w");
@@ -1017,7 +1017,11 @@ int main(int argc, char* argv[]){
   for(int currentJoint=0;currentJoint<(int)(g_dae->getDatabase()->getElementCount(NULL, "joint", NULL));currentJoint++) {
     domJoint *thisJoint;
     g_dae->getDatabase()->getElement((daeElement**)&thisJoint, currentJoint, NULL, "joint");
-    fprintf(output_fp, "%s ", thisJoint->getName());
+    if (add_joint_suffix) {
+      fprintf(output_fp, "%s_jt ", thisJoint->getName());
+    } else {
+      fprintf(output_fp, "%s ", thisJoint->getName());
+    }
   }
   for(int currentLink=0;currentLink<(int)(g_dae->getDatabase()->getElementCount(NULL, "link", NULL));currentLink++) {
     domJoint *thisLink;
@@ -1231,7 +1235,11 @@ int main(int argc, char* argv[]){
   fprintf(output_fp, "     (setq joint-list (list");
   BOOST_FOREACH(link_joint_pair& limb, limbs) {
     vector<string> joint_names = limb.second.second;
-    for (unsigned int i=0;i<joint_names.size();i++) fprintf(output_fp, " %s", joint_names[i].c_str());
+    if(add_joint_suffix) {
+      for (unsigned int i=0;i<joint_names.size();i++) fprintf(output_fp, " %s_jt", joint_names[i].c_str());
+    } else {
+      for (unsigned int i=0;i<joint_names.size();i++) fprintf(output_fp, " %s", joint_names[i].c_str());
+    }
   }
   fprintf(output_fp, "))\n");
   fprintf(output_fp, "\n");
@@ -1286,7 +1294,24 @@ int main(int argc, char* argv[]){
   for(int currentJoint=0;currentJoint<(int)(g_dae->getDatabase()->getElementCount(NULL, "joint", NULL));currentJoint++) {
     domJoint *thisJoint;
     g_dae->getDatabase()->getElement((daeElement**)&thisJoint, currentJoint, NULL, "joint");
-    fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", thisJoint->getName(), thisJoint->getName());
+    if(add_joint_suffix) {
+      fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s_jt args))\n", thisJoint->getName(), thisJoint->getName());
+    } else {
+      fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", thisJoint->getName(), thisJoint->getName());
+    }
+  }
+  if (add_link_suffix) {
+    fprintf(output_fp, "\n    ;; all links forwarding\n");
+    fprintf(output_fp, "    (:links (&rest args)\n");
+    fprintf(output_fp, "     (if (null args) (return-from :links (send-super :links)))\n");
+    fprintf(output_fp, "     (let ((key (car args))\n           (nargs (cdr args)))\n");
+    fprintf(output_fp, "       (unless (keywordp key)\n         (return-from :links (send-super* :links args)))\n       (case key\n");
+    for(int currentLink=0;currentLink<(int)(g_dae->getDatabase()->getElementCount(NULL, "link", NULL));currentLink++) {
+      domJoint *thisLink;
+      g_dae->getDatabase()->getElement((daeElement**)&thisLink, currentLink, NULL, "link");
+      fprintf(output_fp, "         (:%s (forward-message-to %s_lk nargs))\n", thisLink->getName(), thisLink->getName());
+    }
+    fprintf(output_fp, "         (t (send-super* :links args)))))\n");
   }
   fprintf(output_fp, "\n    ;; all links\n");
   for(int currentLink=0;currentLink<(int)(g_dae->getDatabase()->getElementCount(NULL, "link", NULL));currentLink++) {
@@ -1316,7 +1341,11 @@ int main(int argc, char* argv[]){
   }
   fprintf(output_fp, "\n    ;; user-defined joint\n");
   for(vector<pair<string, string> >::iterator it=g_all_link_names.begin();it!=g_all_link_names.end();it++){
-    fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", it->second.c_str(), it->first.c_str());
+    if(add_joint_suffix) {
+      fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s_jt args))\n", it->second.c_str(), it->first.c_str());
+    } else {
+      fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", it->second.c_str(), it->first.c_str());
+    }
   }
   // sensor
   fprintf(output_fp, "\n    ;; attach_sensor\n");
