@@ -709,7 +709,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       fprintf(fp, ")\n"); // let(
       cerr << ";; WARNING link without geometry : " << thisNode->getName() << endl;
       fprintf(fp, "       ;; define bodyset-link for %s\n", thisNodeName.c_str());
-      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :bodies (list (make-cube 10 10 10)) :name :%s :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNodeName.c_str(), thisNodeName.c_str());
+      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :bodies (list (make-cube 10 10 10)) :name \"%s\" :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNodeName.c_str(), thisNode->getName());
     } else {
       fprintf(fp, ")\n"); // let(
       cerr << ";; WARNING link without geometry nor node: " << thisNode->getName() << " geometry : " << thisNode->getInstance_geometry_array().getCount() << ", node : " << thisNode->getNode_array().getCount();;
@@ -718,7 +718,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       }
       cerr << endl;
       fprintf(fp, "       ;; define cascaded-coords for %s\n", thisNode->getName());
-      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :name :%s :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNodeName.c_str(), thisNodeName.c_str());
+      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :name \"%s\" :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNodeName.c_str(), thisNode->getName());
       parentName = ":world";
     }
 
