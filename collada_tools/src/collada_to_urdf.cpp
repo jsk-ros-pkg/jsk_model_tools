@@ -427,7 +427,11 @@ void addChildJointNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
         os << "    <limit ";
         os << "lower=\"" << jt->limits->lower << "\"";
         os << " upper=\"" << jt->limits->upper << "\"";
-        os << " effort=\"" << jt->limits->effort << "\"";
+        if (jt->limits->effort == 0.0) {
+          os << " effort=\"100\"";
+        } else {
+          os << " effort=\"" << jt->limits->effort << "\"";
+        }
         os << " velocity=\"" << jt->limits->velocity << "\"";
         os << " />" << endl;
       }
