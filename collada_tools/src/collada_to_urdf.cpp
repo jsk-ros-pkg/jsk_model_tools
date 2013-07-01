@@ -378,7 +378,18 @@ void addChildLinkNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
   if ( add_gazebo_description ) {
     os << "  <gazebo reference=\"" << link->name << "\">" << endl;
     os << "    <material>Gazebo/Grey</material>" << endl;
+    //os << "    <mu1>0.9</mu1>" << endl;
+    //os << "    <mu2>0.9</mu2>" << endl;
     os << "    <turnGravityOff>false</turnGravityOff>" << endl;
+    os << "  </gazebo>" << endl;
+  }
+#endif
+
+#ifdef GAZEBO_1_3
+  if ( add_gazebo_description ) {
+    os << "  <gazebo reference=\"" << link->name << "\">" << endl;
+    os << "    <mu1>0.9</mu1>" << endl;
+    os << "    <mu2>0.9</mu2>" << endl;
     os << "  </gazebo>" << endl;
   }
 #endif
@@ -441,12 +452,23 @@ void addChildJointNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
         os << " friction=\"" << jt->dynamics->friction << "\"";
         os << " />" << endl;
       } else {
+#if 1
         os << "    <dynamics ";
-        os << "damping=\"0.1\"";
+        os << "damping=\"0.2\"";
         os << " friction=\"0\"";
         os << " />" << endl;
+#endif
       }
-      // <safty_controller />
+#ifdef GAZEBO_1_3
+#if 0
+      os << "    <safety_controller";
+      os << " k_position=\"10\"";
+      os << " k_velocity=\"10\"";
+      os << " soft_lower_limit=\"-10\"";
+      os << " soft_upper_limit=\"10\"";
+      os << "/>" << endl;
+#endif
+#endif
     }
 
     os << "  </joint>" << endl;
@@ -460,6 +482,13 @@ void addChildJointNamesXML(boost::shared_ptr<const Link> link, ofstream& os)
       //os << "    <motorTorqueConstant>1</motorTorqueConstant>" << endl;
       //os << "    <pulsesPerRevolution>90000</pulsesPerRevolution>" << endl;
       os << "  </transmission>" << endl;
+#ifdef GAZEBO_1_3
+#if 1
+      os << "  <gazebo reference=\"" << (*child)->parent_joint->name << "\">" << endl;
+      os << "    <cfmDamping>0.4</cfmDamping>" << endl;
+      os << "  </gazebo>" << endl;
+#endif
+#endif
     }
     addChildJointNamesXML(*child, os);
   }
