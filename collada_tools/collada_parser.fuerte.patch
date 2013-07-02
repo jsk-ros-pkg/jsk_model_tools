@@ -1,7 +1,66 @@
 diff -r 9262c77a45bb collada_parser/src/collada_parser.cpp
 --- a/collada_parser/src/collada_parser.cpp	Mon Aug 13 15:33:19 2012 -0700
-+++ b/collada_parser/src/collada_parser.cpp	Mon Feb 04 00:07:00 2013 +0900
-@@ -666,7 +666,12 @@
++++ b/collada_parser/src/collada_parser.cpp	Tue Jul 02 13:26:54 2013 +0900
+@@ -409,16 +409,17 @@
+     ColladaModelReader(boost::shared_ptr<ModelInterface> model) : _dom(NULL), _nGlobalSensorId(0), _nGlobalManipulatorId(0), _model(model) {
+         daeErrorHandler::setErrorHandler(this);
+         _resourcedir = ".";
+-        _collada = new DAE();
+     }
+     virtual ~ColladaModelReader() {
+         _vuserdata.clear();
+-	//delete _collada;
++        _collada.reset();
++        DAE::cleanup();
+     }
+ 
+     bool InitFromFile(const std::string& filename) {
+         ROS_DEBUG_STREAM(str(boost::format("init COLLADA reader version: %s, namespace: %s, filename: %s\n")%COLLADA_VERSION%COLLADA_NAMESPACE%filename));
+-        _dom = _collada->open(filename);
++        _collada.reset(new DAE);
++        _dom = (domCOLLADA*)_collada->open(filename);
+         if (!_dom) {
+             return false;
+         }
+@@ -436,7 +437,8 @@
+ 
+     bool InitFromData(const std::string& pdata) {
+         ROS_DEBUG_STREAM(str(boost::format("init COLLADA reader version: %s, namespace: %s\n")%COLLADA_VERSION%COLLADA_NAMESPACE));
+-        _dom = _collada->openFromMemory(".",pdata.c_str());
++        _collada.reset(new DAE);
++        _dom = (domCOLLADA*)_collada->openFromMemory(".",pdata.c_str());
+         if (!_dom) {
+             return false;
+         }
+@@ -498,13 +500,23 @@
+     {
+         std::map<std::string, std::string> parent_link_tree;
+         // building tree: name mapping
+-        if (!_model->initTree(parent_link_tree)) {
+-            ROS_ERROR("failed to build tree");
++        try
++        {
++            _model->initTree(parent_link_tree);
++        }
++        catch(...)
++        {
++            ROS_ERROR("Failed to build tree: ");
+         }
+ 
+         // find the root link
+-        if (!_model->initRoot(parent_link_tree)) {
+-            ROS_ERROR("failed to find root link");
++        try
++        {
++            _model->initRoot(parent_link_tree);
++        }
++        catch(...)
++        {
++            ROS_ERROR("Failed to find root link: ");
+         }
+     }
+ 
+@@ -666,7 +678,12 @@
  
          ROS_DEBUG_STREAM(str(boost::format("Number of root links in the kmodel %d\n")%ktec->getLink_array().getCount()));
          for (size_t ilink = 0; ilink < ktec->getLink_array().getCount(); ++ilink) {
@@ -15,7 +74,7 @@ diff -r 9262c77a45bb collada_parser/src/collada_parser.cpp
          }
  
          //  TODO: implement mathml
-@@ -834,7 +839,11 @@
+@@ -834,7 +851,11 @@
                  if ( !plink->inertial ) {
                      plink->inertial.reset(new Inertial());
                  }
@@ -28,7 +87,7 @@ diff -r 9262c77a45bb collada_parser/src/collada_parser.cpp
              }
          }
  
-@@ -847,6 +856,10 @@
+@@ -847,6 +868,10 @@
          else {
              ROS_DEBUG_STREAM(str(boost::format("Attachment link elements: %d\n")%pdomlink->getAttachment_full_array().getCount()));
              Pose tlink = _poseFromMatrix(_ExtractFullTransform(pdomlink));
@@ -39,7 +98,24 @@ diff -r 9262c77a45bb collada_parser/src/collada_parser.cpp
              plink->visual->origin = _poseMult(tParentLink, tlink); // use the kinematics coordinate system for each link
              //            ROS_INFO("link %s rot: %f %f %f %f",linkname.c_str(),plink->visual->origin.rotation.w, plink->visual->origin.rotation.x,plink->visual->origin.rotation.y,plink->visual->origin.rotation.z);
              //            ROS_INFO("link %s trans: %f %f %f",linkname.c_str(),plink->visual->origin.position.x,plink->visual->origin.position.y,plink->visual->origin.position.z);
-@@ -2664,7 +2677,7 @@
+@@ -1159,7 +1184,7 @@
+       </comments>\n\
+     </contributor>\n\
+     <unit name=\"meter\" meter=\"1.0\"/>\n\
+-    <up_axis>Z_UP</up_axis>\n\
++    <up_axis>Y_UP</up_axis>\n\
+   </asset>\n\
+   <library_materials>\n"));
+         for(unsigned int i=0; i < index; i++) {
+@@ -2657,14 +2682,14 @@
+         return v;
+     }
+ 
+-    DAE* _collada;
++    boost::shared_ptr<DAE> _collada;
+     domCOLLADA* _dom;
+     std::vector<USERDATA> _vuserdata; // all userdata
+     int _nGlobalSensorId, _nGlobalManipulatorId;
      std::string _filename;
      std::string _resourcedir;
      boost::shared_ptr<ModelInterface> _model;
