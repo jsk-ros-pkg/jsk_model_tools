@@ -36,10 +36,15 @@
                                    (find-if
                                     #'(lambda (x) (member (send x :parent) (send self (car args))))
                                     (send self ,(read-from-string (format nil "~As" sensor-name)))))
-                                  ((keywordp (car args))
+                                  ((and (keywordp (car args))
+                                        (derivedp (send self (car args)) cascaded-coords))
                                    (send* self args))
+                                  ((keywordp (car args))
+                                   (warn ";; no such sensor ~A~%" (car args))
+                                   nil)
                                   (t
-                                   (forward-message-to (car (send self ,(read-from-string (format nil "~As" sensor-name)))) args))))
+                                   (forward-message-to (car (send self ,(read-from-string (format nil "~As" sensor-name)))) args)
+                                   )))
               )))
    )
   ;; fullbody-inverse-kinematics overwrite
