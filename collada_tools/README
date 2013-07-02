@@ -1,10 +1,13 @@
 . USAGE
+## collada -> urdf(gazebo)
+$ roscd collada_tools
+$ mkdir -p SampleRobot/meshes; cd SampleRobot
+$ rosrun collada_tools collada_to_urdf $(rospack find hrpsys_ros_bridge_tutorials)/models/SampleRobot.dae -G -A --mesh_output_dir `pwd`/meshes --mesh_prefix 'package://SampleRobot/meshes'
+
+### collada -> urdf(rviz)
 $ roscd collada_tools
 $ mkdir -p models/meshes; cd models
-$ rosrun collada_tools collada_to_urdf $(rospack find hrpsys_ros_bridge)/models/HRP4C.dae -A --mesh_output_dir `pwd`/meshes
-$ sed -i -e "s@file://`pwd`@package://collada_tools/models@g" HRP4.urdf 
-;; additional for making urdf with gazebo descriptions
-$ rosrun collada_tools add_gazebo_tags.sh collada_tools models/HRP4.urdf
+$ rosrun collada_tools collada_to_urdf $(rospack find hrpsys_ros_bridge)/models/HRP4C.dae -A --mesh_output_dir `pwd`/meshes --mesh_prefix package://collada_tools/models/meshes
 
 . INSTALL
 
