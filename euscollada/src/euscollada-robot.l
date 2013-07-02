@@ -40,7 +40,7 @@
                                         (derivedp (send self (car args)) cascaded-coords))
                                    (send* self args))
                                   ((keywordp (car args))
-                                   (warn ";; no such sensor ~A~%" (car args))
+                                   ;;(warn ";; no such sensor ~A~%" (car args))
                                    nil)
                                   (t
                                    (forward-message-to (car (send self ,(read-from-string (format nil "~As" sensor-name)))) args)
