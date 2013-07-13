@@ -94,6 +94,8 @@ rosbuild_download_test_data(http://openrave.svn.sourceforge.net/viewvc/openrave/
 
 rosbuild_download_test_data(https://openrave.svn.sourceforge.net/svnroot/openrave/data/robots/darpa-arm.zae test/darpa-arm.zae 3944246c010a4a3ab212506c0588895b)
 
+rosbuild_download_test_data(https://openrave.svn.sourceforge.net/svnroot/openrave/data/robots/barrett-wam.zae test/barrett-wam.zae 7d59cad7186b3fb516c3dd75303c52f2)
+
 rosbuild_add_pyunit(test/collada2eus_test.py)
 rosbuild_check_for_display(disp)
 if(disp)
