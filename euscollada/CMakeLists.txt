@@ -66,7 +66,7 @@ macro(convert_to_collada)
   #
   foreach(_model ${irt_models})
     get_filename_component(_model_name ${_model} NAME_WE)
-    set(_command_arg "\"\\(convert-irtmodel-to-collada \\\"${_model}\\\" \\(ros::resolve-ros-path \\\"package://${PROJECT_NAME}/collada\\\"\\) \\\"${_model_name}\\\"\\)\"")
+    set(_command_arg "\"\\(convert-irtmodel-to-collada \\\"${_model}\\\" \\\"${collada_directory}\\\" \\\"${_model_name}\\\"\\)\"")
     add_custom_command(OUTPUT "${collada_directory}/${_model_name}.dae"
       COMMAND "rosrun" "roseus" "roseus" "${convert_exe}" "\"${_command_arg}\""
       DEPENDS "${convert_exe}" "${_model}")
