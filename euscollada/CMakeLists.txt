@@ -72,11 +72,12 @@ macro(convert_to_collada)
       DEPENDS "${convert_exe}" "${_model}")
     list(APPEND _autogen "${collada_directory}/${_model_name}.dae")
   endforeach(_model)
-  add_custom_target(CONVERT_EUS_TO_COLLADA ALL DEPENDS ${_autogen})
-  add_dependencies(ROSBUILD_genmanifest_roseus_euscollada CONVERT_EUS_TO_COLLADA)
+  add_custom_target(CONVERT_EUS_TO_COLLADA DEPENDS ${_autogen})
+  #add_dependencies(ROSBUILD_genmanifest_roseus_euscollada CONVERT_EUS_TO_COLLADA)
 endmacro(convert_to_collada)
 
-#convert_to_collada()
+# if you want to convert all irteus models to collada models, please run "make -C `rospack find euscollada`/build CONVERT_EUS_TO_COLLADA"
+convert_to_collada()
 
 ## pr2.l
 ADD_CUSTOM_COMMAND(
