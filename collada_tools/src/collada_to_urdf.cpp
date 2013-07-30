@@ -71,6 +71,13 @@ void assimp_file_export(std::string fname, std::string ofname,
   }
 
   Assimp::Importer importer;
+  { // ignore UP_DIRECTION tag in collada
+    bool existing;
+    importer.SetPropertyBool(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, true, &existing);
+    if(existing) {
+      fprintf(stderr, ";; OverWrite : Ignore UP_DIRECTION", existing);
+    }
+  }
   const aiScene* scene = importer.ReadFile(fname.c_str(),
                                            aiProcess_Triangulate            |
                                            aiProcess_GenNormals             |
@@ -527,21 +534,6 @@ void printTreeXML(boost::shared_ptr<const Link> link, string name, string file)
     os << "     <alwaysOn>true</alwaysOn>" << endl;
     os << "     <updateRate>1000.0</updateRate>" << endl;
     os << "   </controller:gazebo_ros_controller_manager>" << endl;
-    os << "  </gazebo>" << endl;
-#endif
-#ifdef GAZEBO_1_3
-    // for drcsim 1.3 and gazebo 1.3
-    os << "  <gazebo>" << endl;
-    os << "    <!--plugin filename=\"libMultiSenseSLPlugin.so\" name=\"multisense_plugin\" /-->" << endl;
-    os << "    <!--plugin filename=\"libAtlasPlugin.so\" name=\"atlas_plugin\"/-->" << endl;
-    os << "    <plugin filename=\"libgazebo_ros_joint_trajectory.so\" name=\"joint_trajectory_plugin\">" << endl;
-    os << "      <topicName>joint_trajectory</topicName>" << endl;
-    os << "      <updateRate>1000.0</updateRate>" << endl;
-    os << "    </plugin>" << endl;
-    os << "    <plugin filename=\"libgazebo_ros_controller_manager.so\" name=\"gazebo_ros_controller_manager\">" << endl;
-    os << "      <alwaysOn>true</alwaysOn>" << endl;
-    os << "      <updateRate>1000.0</updateRate>" << endl;
-    os << "    </plugin>" << endl;
     os << "  </gazebo>" << endl;
 #endif
   }
