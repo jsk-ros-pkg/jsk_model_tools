@@ -1261,13 +1261,13 @@ pointer ASSIMP_DESCRIBE(register context *ctx,int n,pointer *argv)
   return NIL;
 }
 
+#if USE_SDL_IMAGE
 pointer ASSIMP_LOAD_IMAGE(register context *ctx,int n,pointer *argv)
 {
   pointer ret = NIL;
   ckarg(1);
   if (!isstring(argv[0])) error (E_NOSTRING);
 
-#if USE_SDL_IMAGE
   SDL_Surface *sf = IMG_Load((char *)get_string(argv[0]));
   if (!!sf) {
     pointer ptr;
@@ -1449,10 +1449,10 @@ pointer ASSIMP_LOAD_IMAGE(register context *ctx,int n,pointer *argv)
   }
 
   IMG_Quit();
-#endif
 
   return ret;
 }
+#endif
 
 pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
 {
@@ -1460,7 +1460,9 @@ pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
   defun(ctx,"C-ASSIMP-DUMP-GLVERTICES", argv[0], (pointer (*)())DUMP_GL_VERTICES);
   defun(ctx,"C-CONVEX-DECOMPOSITION-GLVERTICES", argv[0], (pointer (*)())CONVEX_DECOMP_GL_VERTICES);
   defun(ctx,"C-ASSIMP-DESCRIBE", argv[0], (pointer (*)())ASSIMP_DESCRIBE);
+#if USE_SDL_IMAGE
   defun(ctx,"C-ASSIMP-LOAD-IMAGE", argv[0], (pointer (*)())ASSIMP_LOAD_IMAGE);
+#endif
 
   K_VERTICES  = defkeyword(ctx, "VERTICES");
   K_NORMALS   = defkeyword(ctx, "NORMALS");
