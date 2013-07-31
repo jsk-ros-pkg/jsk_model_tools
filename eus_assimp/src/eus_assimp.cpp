@@ -583,6 +583,14 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
   }
 
   Assimp::Importer importer;
+
+  { // ignore UP_DIRECTION tag in collada
+    bool existing;
+    importer.SetPropertyBool(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, true, &existing);
+    if(existing) {
+      fprintf(stderr, ";; OverWrite : Ignore UP_DIRECTION", existing);
+    }
+  }
   unsigned int post_proc = (aiProcess_Triangulate | aiProcess_SortByPType);
   bool recalc_normal = false;
   char *dumpfile = NULL;
