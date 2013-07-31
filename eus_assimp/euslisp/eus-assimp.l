@@ -95,23 +95,34 @@
       glv)
     ))
 
-(defun assimp-read-image-file (fname)
-  (let* ((ret (c-assimp-load-image fname))
-         (w (cadr (assoc :width ret)))
-         (h (cadr (assoc :height ret)))
-         (byte/pixel (cadr (assoc :type ret)))
-         (buf (cadr (assoc :vertices ret))))
-    (when ret
-      (case byte/pixel
-        (1
-         (instance grayscale-image :init w h buf))
-        (3
-         (instance color-image24 :init w h buf))
-        (4
-         (instance color-image32 :init w h buf))
-        (t
-         (warn ";; not implemented byte/pixel ~d~%" byte/pixel)
-         )))))
+(when (and (fboundp 'c-assimp-load-image)
+           (not (fboundp 'read-image-file-org)))
+  (defun assimp-read-image-file (fname)
+    (let* ((ret (c-assimp-load-image fname))
+           (w (cadr (assoc :width ret)))
+           (h (cadr (assoc :height ret)))
+           (byte/pixel (cadr (assoc :type ret)))
+           (buf (cadr (assoc :vertices ret))))
+      (when ret
+        (case byte/pixel
+          (1
+           (instance grayscale-image :init w h buf))
+          (3
+           (instance color-image24 :init w h buf))
+          (4
+           (instance color-image32 :init w h buf))
+          (t
+           (warn ";; not implemented byte/pixel ~d~%" byte/pixel)
+           )))))
+  (setf (symbol-function 'read-image-file-org)
+        (symbol-function 'read-image-file))
+  ;; override read-image-file
+  (defun read-image-file (fname)
+    (let ((r (read-image-file-org fname)))
+      (unless r
+        (setq r (assimp-read-image-file fname)))
+      r))
+  )
 
 (defun make-glvertices-from-faces (flst &key (material))
   (setq flst (flatten (mapcar #'(lambda (f) (geometry::face-to-triangle-aux f)) flst)))
