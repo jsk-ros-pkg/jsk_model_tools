@@ -30,7 +30,7 @@ vector<pair<string, string> > g_all_link_names;
 bool add_link_suffix = true;
 bool add_joint_suffix = true;
 
-#define FLOAT_PRECISION_FINE1   "%.16e"
+#define FLOAT_PRECISION_FINE   "%.16e"
 #define FLOAT_PRECISION_COARSE "%.3f"
 
 // returns max offsset value
@@ -696,7 +696,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
         fprintf(fp, "         (dolist (cc tmp-c-list)\n");
         fprintf(fp, "           (setq tmp-c (send tmp-c :transform cc)))\n");
         fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNodeName.c_str());
-        fprintf(fp, "               (m* (send tmp-c :worldrot) (diagonal (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")) (transpose (send tmp-c :worldrot))))\n",
+        fprintf(fp, "               (m* (m* (send tmp-c :worldrot) (diagonal (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (transpose (send tmp-c :worldrot))))\n",
                 /* inertia : collada [kg m^2] -> eus : [g mm^2] */
                 thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
                 thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
