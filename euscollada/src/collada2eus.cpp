@@ -30,6 +30,9 @@ vector<pair<string, string> > g_all_link_names;
 bool add_link_suffix = true;
 bool add_joint_suffix = true;
 
+#define FLOAT_PRECISION_FINE1   "%.16e"
+#define FLOAT_PRECISION_COARSE "%.3f"
+
 // returns max offsset value
 unsigned int getMaxOffset( domInput_local_offset_Array &input_array )
 {
@@ -148,7 +151,8 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       a0 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3);
       a1 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3 + 1);
       a2 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3 + 2);
-      fprintf(fp, "(%f %f %f)", g_scale * 1000 * a0, g_scale * 1000 * a1, g_scale * 1000 * a2);
+      fprintf(fp, "("FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+              g_scale * 1000 * a0, g_scale * 1000 * a1, g_scale * 1000 * a2);
       // store vertex vector to qhull
       points.push_back(a0);
       points.push_back(a1);
@@ -226,7 +230,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       if ( ret ) {
         fprintf(fp, "   (instance faceset :init :faces (list\n");
 	for (unsigned int i = 0; i < points.size()/9; i++ ) {
-          fprintf(fp, "    (instance face :init :vertices (list (float-vector %f %f %f) (float-vector %f %f %f) (float-vector %f %f %f)))\n",
+          fprintf(fp, "    (instance face :init :vertices (list (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")))\n",
 		  g_scale*1000*points[i*9+0], g_scale*1000*points[i*9+1], g_scale*1000*points[i*9+2],
 		  g_scale*1000*points[i*9+3], g_scale*1000*points[i*9+4], g_scale*1000*points[i*9+5],
 		  g_scale*1000*points[i*9+6], g_scale*1000*points[i*9+7], g_scale*1000*points[i*9+8]);
@@ -242,7 +246,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
           fprintf(fp, "    (instance face :init :vertices (list");
           setT *vertices = qh_facet3vertex(facet); // ccw?
           FOREACHvertex_(vertices) {
-            fprintf(fp, " (float-vector %f %f %f)", g_scale*1000*vertex->point[0], g_scale*1000*vertex->point[1], g_scale*1000*vertex->point[2]);
+            fprintf(fp, " (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")", g_scale*1000*vertex->point[0], g_scale*1000*vertex->point[1], g_scale*1000*vertex->point[2]);
           }
           fprintf(fp, "))\n");
           qh_settempfree(&vertices);
@@ -447,7 +451,7 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
   axis[1] = jointAxis_array[0]->getAxis()->getValue()[1];
   axis[2] = jointAxis_array[0]->getAxis()->getValue()[2];
   cerr << "    writeJoint " << thisJoint->getName() << ", parent = " << parentLink->getName() << ", child = " << childLink->getName()  << ", limit = " << min << "/" << max << endl;
-  fprintf(fp, "                     :axis (let ((tmp-axis (float-vector %f %f %f))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))\n", axis[0], axis[1], axis[2]);
+  fprintf(fp, "                     :axis (let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))\n", axis[0], axis[1], axis[2]);
   fprintf(fp, "                    ");
   fprintf(fp, " :min "); if (min == FLT_MAX) fprintf(fp, "*-inf*"); else fprintf(fp, "%f", min);
   fprintf(fp, " :max "); if (max ==-FLT_MAX) fprintf(fp,  "*inf*"); else fprintf(fp, "%f", max);
@@ -513,7 +517,7 @@ void writeTransform(FILE *fp, const char *indent, const char *name, domNode *thi
     thisRotate = rotateArray[currentRotate];
 
     if ( skipTranslate + skipRotate == targetCount ) {
-      fprintf(fp, "%s(send %s :transform\n%s      (make-coords :pos (float-vector %f %f %f)\n%s                   :angle %f :axis (float-vector %f %f %f)) %s)\n",
+      fprintf(fp, "%s(send %s :transform\n%s      (make-coords :pos (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n%s                   :angle "FLOAT_PRECISION_FINE" :axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")) %s)\n",
               indent, localName.c_str(), indent,
 	      thisTranslate ? 1000*thisTranslate->getValue()[0] : 0,
 	      thisTranslate ? 1000*thisTranslate->getValue()[1] : 0,
@@ -531,7 +535,7 @@ void writeTransform(FILE *fp, const char *indent, const char *name, domNode *thi
     thisMatrix = matrixArray[currentMatrix];
 
     if ( skipMatrix == targetCount ) {
-      fprintf(fp, "%s(send %s :transform\n%s      (make-coords :4x4 #2f((%f %f %f %f)(%f %f %f %f)(%f %f %f %f)(%f %f %f %f))) %s)\n",
+      fprintf(fp, "%s(send %s :transform\n%s      (make-coords :4x4 #2f(("FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")("FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")("FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")("FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) %s)\n",
               indent, localName.c_str(), indent,
 	      thisMatrix->getValue()[0], thisMatrix->getValue()[1], thisMatrix->getValue()[2], 1000*thisMatrix->getValue()[3],
 	      thisMatrix->getValue()[4], thisMatrix->getValue()[5], thisMatrix->getValue()[6], 1000*thisMatrix->getValue()[7],
@@ -677,11 +681,11 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
         fprintf(fp, "       (let ((tmp-c-list (list\n");
         for (size_t ii = 0; ii < translateArray.getCount(); ii++) {
           domTranslateRef thisTranslate = translateArray[ii];
-          fprintf(fp, "                          (make-coords :pos (float-vector %.3f %.3f %.3f) ",
+          fprintf(fp, "                          (make-coords :pos (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") ",
                   /* centroid : collada [m] -> eus : [mm] */
                   thisTranslate->getValue()[0]*1000, thisTranslate->getValue()[1]*1000, thisTranslate->getValue()[2]*1000);
           domRotateRef thisRotate = rotateArray[ii];
-          fprintf(fp, ":rot (matrix-exponent (scale %.6f (float-vector %.6f %.6f %.6f))))\n",
+          fprintf(fp, ":rot (matrix-exponent (scale "FLOAT_PRECISION_FINE" (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))))\n",
                   thisRotate ? thisRotate->getValue()[3]*M_PI/180.0 : 0,
                   thisRotate ? thisRotate->getValue()[0] : 0,
                   thisRotate ? thisRotate->getValue()[1] : 0,
@@ -692,7 +696,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
         fprintf(fp, "         (dolist (cc tmp-c-list)\n");
         fprintf(fp, "           (setq tmp-c (send tmp-c :transform cc)))\n");
         fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNodeName.c_str());
-        fprintf(fp, "               (m* (send tmp-c :worldrot) (diagonal (float-vector %.3f %.3f %.3f)) (transpose (send tmp-c :worldrot))))\n",
+        fprintf(fp, "               (m* (send tmp-c :worldrot) (diagonal (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")) (transpose (send tmp-c :worldrot))))\n",
                 /* inertia : collada [kg m^2] -> eus : [g mm^2] */
                 thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
                 thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
@@ -783,15 +787,15 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	    domRotateRef prot = daeSafeCast<domRotate>(frame_origin->getChild("rotate"));
 	    if ( ptrans ) {
 	      fprintf(fp, ":pos #f(");
-	      for(unsigned int i=0;i<3;i++) { fprintf(fp, " %f", 1000*ptrans->getValue()[i]);}
+	      for(unsigned int i=0;i<3;i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*ptrans->getValue()[i]);}
 	      fprintf(fp, ") ");
 	    }
 	    if ( prot ) {
               fprintf(fp, ":axis ");
-              fprintf(fp, "(let ((tmp-axis (float-vector %f %f %f))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+              fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
                       prot->getValue()[0], prot->getValue()[1], prot->getValue()[2]);
               fprintf(fp, " :angle");
-	      fprintf(fp, " %f", prot->getValue()[3]*(M_PI/180.0));
+	      fprintf(fp, " "FLOAT_PRECISION_FINE"", prot->getValue()[3]*(M_PI/180.0));
 	    }
 	    fprintf(fp, "))\n");
 	    fprintf(fp, "       (send %s :assoc %s-sensor-coords)\n", thisNodeName.c_str(), pextra->getName());
@@ -1123,15 +1127,15 @@ int main(int argc, char* argv[]){
 	    fprintf(output_fp, "     (send %s-frame-tip :transform (make-coords ", armname.c_str());
 	    if ( ptrans ) {
 	      fprintf(output_fp, ":pos #f(");
-	      for(unsigned int i=0;i<3;i++) { fprintf(output_fp, " %f", 1000*ptrans->getValue()[i]);}
+	      for(unsigned int i=0;i<3;i++) { fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*ptrans->getValue()[i]);}
 	      fprintf(output_fp, ") ");
 	    }
 	    if ( prot ) {
               fprintf(output_fp, ":axis ");
-              fprintf(output_fp, "(let ((tmp-axis (float-vector %f %f %f))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+              fprintf(output_fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
                       prot->getValue()[0], prot->getValue()[1], prot->getValue()[2]);
               fprintf(output_fp, " :angle");
-	      fprintf(output_fp, " %f", prot->getValue()[3]*(M_PI/180.0));
+	      fprintf(output_fp, " "FLOAT_PRECISION_FINE"", prot->getValue()[3]*(M_PI/180.0));
 	    }
 	    fprintf(output_fp, ") :local)\n");
             if (add_link_suffix) {
@@ -1170,7 +1174,7 @@ int main(int argc, char* argv[]){
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
         double value;
         fprintf(output_fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
-        for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " %f", 1000*value);}
+        for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
         fprintf(output_fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
@@ -1178,9 +1182,9 @@ int main(int argc, char* argv[]){
         const YAML::Node& n = doc[limb_name+"-end-coords"]["rotate"];
         double value;
         fprintf(output_fp, "     (send %s-end-coords :rotate", limb_name.c_str());
-        for(unsigned int i=3;i<4;i++) { n[i]>>value; fprintf(output_fp, " %f", M_PI/180*value);}
+        for(unsigned int i=3;i<4;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
         fprintf(output_fp, " (float-vector");
-        for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " %f", value);}
+        for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", value);}
         fprintf(output_fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
