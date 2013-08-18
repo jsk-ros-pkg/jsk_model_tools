@@ -25,6 +25,7 @@ daeDocument *g_document;
 DAE* g_dae = NULL;
 float g_scale = 1.0;
 bool use_technique_limit = true;
+bool use_speed_limit = true;
 vector<pair<string, string> > g_all_link_names;
 
 bool add_link_suffix = true;
@@ -411,7 +412,7 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
   // dump :max-joint-velocity of eus file from <speed> tag of collada file
   domMotion *thisMotion;
   g_dae->getDatabase()->getElement((daeElement**)&thisMotion, 0, NULL, "motion");
-  if( !!thisMotion->getTechnique_common() ) {
+  if( !!thisMotion->getTechnique_common() && use_speed_limit ) {
     for(size_t i = 0; i < thisMotion->getTechnique_common()->getAxis_info_array().getCount(); ++i) {
       domMotion_axis_infoRef motion_axis_info = thisMotion->getTechnique_common()->getAxis_info_array()[i];
       // Sid name from Motion axis info
@@ -846,6 +847,9 @@ int main(int argc, char* argv[]){
   for(int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--without-technique-limit") == 0) {
       use_technique_limit = false;
+      nargc--;
+    } else if (strcmp(argv[i], "--without-speed-limit") == 0) {
+      use_speed_limit = false;
       nargc--;
     } else if (strcmp(argv[i], "--no-link-suffix") == 0) {
       add_link_suffix = false;
