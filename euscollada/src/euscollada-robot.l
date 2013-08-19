@@ -34,7 +34,7 @@
                                   ;; enable to access sensors by limb name
                                   ((memq (car args) '(:larm :rarm :lleg :rleg :head :torso))
                                    (find-if
-                                    #'(lambda (x) (member (send x :parent) (send self (car args))))
+                                    #'(lambda (x) (member (send x :parent) (send self (car args) :links)))
                                     (send self ,(read-from-string (format nil "~As" sensor-name)))))
                                   ((and (keywordp (car args))
                                         (derivedp (send self (car args)) cascaded-coords))
