@@ -12,6 +12,9 @@
 (load "package://euscollada/src/xml.l")
 (defvar *xml2sxml* (format nil "~A/scripts/xml2sxml.scm" (ros::rospack-find "eusurdf")))
 
+(defun elt_x (v) (elt v 0))
+(defun elt_y (v) (elt v 1))
+(defun elt_z (v) (elt v 2))
 (defun convert-minus-to-underbar (str)
   (cond
    ((symbolp str) (setq str (symbol-string str)))
@@ -784,11 +787,13 @@ example:
                             (mesh
                              (@
                               (filename
-                               ,(reg-replace ;JSKEUS
+                               #|,(reg-replace ;JSKEUS
                                  package-path 
                                  (format nil "package://~A" 
                                          base-dir-package-name)
-                                 mesh-fname)))))))
+                                 mesh-fname)|#
+                               ,(format nil "file://~A" mesh-fname)
+                               ))))))
                      ,(when (cdr (assoc :color link-spec))
                         (let ((rgb (cdr (assoc :color link-spec))))
                           `(material
@@ -823,11 +828,13 @@ example:
                             (mesh
                              (@
                               (filename
-                               ,(reg-replace ;JSKEUS
+                               #|,(reg-replace ;JSKEUS
                                  package-path 
                                  (format nil "package://~A" 
                                          base-dir-package-name)
-                                 mesh-fname)))))))))))))
+                                 mesh-fname)|#
+                               ,(format nil "file://~A" mesh-fname)
+                               ))))))))))))
     (format f (cat-normal (sxml->xml sxml) ""))))
 
 (defun write-urdf-joint (f joint-spec name &key (scale 0.001) (namespace))
@@ -875,25 +882,38 @@ example:
   (format f "</robot>~%"))
 
 (defun link-to-faceset (link)
-  (if (or (get link :gl-vertices-bak)
-          (get link :gl-vertices))
-      (instance faceset
-                :init :faces
-                (mapcan
-                 #'(lambda (vv)
-                     (cond 
-                      ((assoc :color vv)
-                       nil)
-                      ((assoc :vertices vv)
-                       (list (instance
-                              face :init :vertices
-                              (cdr (cdr (assoc :vertices vv))))))))
-                 (or (get link :gl-vertices-bak)
-                     (get link :gl-vertices))))
+  (cond
+   ((or (get link :gl-vertices-bak)
+        (get link :gl-vertices))
+    (instance faceset
+              :init :faces
+              (mapcan
+               #'(lambda (vv)
+                   (cond 
+                    ((assoc :color vv)
+                     nil)
+                    ((assoc :vertices vv)
+                     (list (instance
+                            face :init :vertices
+                            (cdr (cdr (assoc :vertices vv))))))))
+               (or (get link :gl-vertices-bak)
+                   (get link :gl-vertices)))))
+   ((send link :bodies)
+    (let (bds)
+      (dolist (b (send link :bodies))
+        (if (and (assoc 'glvertices (send b :slots)) (b . glvertices))
+            (let* ((g (b . glvertices))
+                   (fs (send g :convert-to-faceset)))
+              (send fs :transform (send (send link :copy-worldcoords) :inverse-transformation) :world)
+              (push fs bds)
+              )))
+      (car bds)))
+   (t
     (send (instance faceset :init
                     :faces (send (geo::body-to-triangles link nil) :faces))
           :move-to (send (send link :copy-worldcoords)
-                         :inverse-transformation))))
+                         :inverse-transformation)))
+   ))
 
 (defun concat-class-name (obj)
   (let ((class-name (string (send (class obj) :name)))
