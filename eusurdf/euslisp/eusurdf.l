@@ -898,7 +898,9 @@ example:
                             (cdr (cdr (assoc :vertices vv))))))))
                (or (get link :gl-vertices-bak)
                    (get link :gl-vertices)))))
-   ((send link :bodies)
+   ((and (send link :bodies)
+         (find-if #'(lambda (b) (and (assoc 'glvertices (send b :slots))
+                                     (b . glvertices))) (send link :bodies)))
     (let (bds)
       (dolist (b (send link :bodies))
         (if (and (assoc 'glvertices (send b :slots)) (b . glvertices))
@@ -907,7 +909,8 @@ example:
               (send fs :transform (send (send link :copy-worldcoords) :inverse-transformation) :world)
               (push fs bds)
               )))
-      (car bds)))
+      (car bds) ;; why use last 1 faceset
+      ))
    (t
     (send (instance faceset :init
                     :faces (send (geo::body-to-triangles link nil) :faces))
