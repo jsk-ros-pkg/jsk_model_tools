@@ -958,7 +958,8 @@ example:
                    (concat-class-name link)
                  (send link :name))))
         (cons :origin (make-coords))
-        (if without-mesh nil (cons :mesh (link-to-faceset link)))
+        (if without-mesh nil
+          (let ((fs (link-to-faceset link))) (if fs (cons :mesh fs))))
         (cons :color (urdf-color-material-from-link-material link))))
 
 (defun serialize-eus-joint-name (_joint llinks rlinks)
