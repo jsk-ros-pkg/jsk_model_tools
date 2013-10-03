@@ -830,13 +830,13 @@ example:
                             (mesh
                              (@
                               (filename
-#|#+:jsk
+#+:jsk
                                ,(reg-replace ;JSKEUS
                                  package-path 
                                  (format nil "package://~A" 
                                          base-dir-package-name)
                                  mesh-fname)
-#-:jsk|#
+#-:jsk
                                ,(format nil "file://~A" mesh-fname)
                                ))))))))))))
     (format f (cat-normal (sxml->xml sxml) ""))))
