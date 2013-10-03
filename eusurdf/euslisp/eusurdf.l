@@ -787,11 +787,13 @@ example:
                             (mesh
                              (@
                               (filename
-                               #|,(reg-replace ;JSKEUS
+#+:jsk
+                               ,(reg-replace ;JSKEUS
                                  package-path 
                                  (format nil "package://~A" 
                                          base-dir-package-name)
-                                 mesh-fname)|#
+                                 mesh-fname)
+#-:jsk
                                ,(format nil "file://~A" mesh-fname)
                                ))))))
                      ,(when (cdr (assoc :color link-spec))
@@ -828,11 +830,13 @@ example:
                             (mesh
                              (@
                               (filename
-                               #|,(reg-replace ;JSKEUS
+#|#+:jsk
+                               ,(reg-replace ;JSKEUS
                                  package-path 
                                  (format nil "package://~A" 
                                          base-dir-package-name)
-                                 mesh-fname)|#
+                                 mesh-fname)
+#-:jsk|#
                                ,(format nil "file://~A" mesh-fname)
                                ))))))))))))
     (format f (cat-normal (sxml->xml sxml) ""))))
