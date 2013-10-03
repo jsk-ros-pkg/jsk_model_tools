@@ -1,6 +1,10 @@
 ;;
 ;; converting .stl file format object to eus
 ;;
+(defmacro elt_x (v) `(elt ,v 0))
+(defmacro elt_y (v) `(elt ,v 1))
+(defmacro elt_z (v) `(elt ,v 2))
+
 (defun stl2eus (fname &key debug (color #f(0.8 0.8 0.8))
                       (coords) (scale nil) (name "stlobject")
                       (use-edge t) (use-normal nil)
@@ -157,6 +161,7 @@
   (send _faceset :worldpos)
   (with-open-file (f fname :direction :output)
     (let ((faces (send _faceset :faces)))
+      (setq faces (mapcan #'geo::face-to-triangle-aux (flatten faces)))
       (write-stl-header f (length faces))
       (dolist (_face faces)
         (write-stl-face f _face :scale scale))))
