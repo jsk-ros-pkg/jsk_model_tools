@@ -79,12 +79,27 @@ void assimp_file_export(std::string fname, std::string ofname,
     }
   }
   const aiScene* scene = importer.ReadFile(fname.c_str(),
-                                           aiProcess_Triangulate            |
-                                           aiProcess_GenNormals             |
-                                           aiProcess_JoinIdenticalVertices  |
-                                           aiProcess_SplitLargeMeshes       |
-                                           aiProcess_OptimizeMeshes         |
-                                           aiProcess_SortByPType);
+                                           //aiProcessPreset_TargetRealtime_Fast
+                                           //aiProcessPreset_TargetRealtime_Quality
+                                           //aiProcessPreset_TargetRealtime_MaxQuality
+                                           aiProcess_CalcTangentSpace          |  // fast
+                                           //aiProcess_GenSmoothNormals          |
+                                           aiProcess_GenNormals                |  // fast
+                                           aiProcess_JoinIdenticalVertices     |  // fast
+                                           aiProcess_ImproveCacheLocality      |
+                                           aiProcess_LimitBoneWeights          |
+                                           aiProcess_RemoveRedundantMaterials  |
+                                           aiProcess_SplitLargeMeshes          |
+                                           aiProcess_Triangulate               |  // fast
+                                           aiProcess_GenUVCoords               |  // fast
+                                           aiProcess_SortByPType               |  // fast
+                                           aiProcess_FindDegenerates           |
+                                           aiProcess_FindInvalidData           |
+                                           aiProcess_FindInstances             | // max Q
+                                           aiProcess_ValidateDataStructure     | // max Q
+                                           aiProcess_OptimizeMeshes            | // max Q
+                                           aiProcess_Debone                      // max Q
+                                           );
 
   if (!scene) {
     std::string str( importer.GetErrorString() );
