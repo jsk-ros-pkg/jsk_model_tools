@@ -4,7 +4,7 @@
 (require :eus-assimp "package://eus_assimp/lib/eus_assimp.so")
 (defun load-mesh-file (fname &key ((:scale scl) 1.0) (gen-normal) (smooth-normal)
                              (split-large-mesh) (optimize-mesh) (identical-vertices) (fix-normal)
-                             (direction :z_up) (dump-filename))
+                             (direction :z_up) (dump-filename) &allow-other-keys)
   (case direction
     ((:x_up :x-up) (setq direction 0))
     ((:y_up :y-up) (setq direction 1))
@@ -30,7 +30,8 @@
 
 (defun store-glvertices (fname glvtcs
                                &key ((:scale scl) 1.0) (gen-normal) (smooth-normal)
-                               (split-large-mesh) (optimize-mesh) (identical-vertices))
+                               (split-large-mesh) (optimize-mesh) (identical-vertices)
+                               &allow-other-keys)
   (let ((mlst (glvtcs . gl::mesh-list))
         name-lst type-lst
         material-lst
@@ -156,6 +157,29 @@
         (push (list :material material) msh))
       (instance gl::glvertices :init (list msh)))
     ))
+
+(defun dump-to-meshfile (fname obj &rest args &key (material) &allow-other-keys)
+  (let (faces)
+    (cond
+     ((find-method obj :bodies)
+      (let (glv-lst)
+        (dolist (bd (send obj :bodies))
+          (let (mat)
+            (if material (setq mat material))
+            ;; TODO: get color and set matterial
+            (push (apply #'make-glvertices-from-faces faces :material mat args)
+                  glv-lst)))
+        (store-glvertices fname (append-glvertices glv-lst))
+        ))
+     ((find-method obj :faces)
+      (setq faces (send obj :faces))
+      (store-glvertices
+       fname
+       (apply #'make-glvertices-from-faces faces :material material args)))
+     (t
+      (warn ";; face not found~%")
+      ))
+    fname))
 
 (defun make-cube-from-bounding-box (bbox &rest args)
   (let ((cds (make-coords :pos (send bbox :center)))
