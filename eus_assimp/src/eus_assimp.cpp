@@ -572,14 +572,15 @@ static void register_all_nodes (register context *ctx, eusfloat_t base_scl,
 
 pointer GET_MESHES(register context *ctx,int n,pointer *argv)
 {
-  /* filename &optional scale (gen_normal nil) (smooth_normal nil) (split_large_mesh nil) (optimize_mesh nil) (identical_vert nil) (fix_normal nil) (direction) (dumpfilename) */
+  /* filename &optional scale options direction dumpfilename */
   eusfloat_t base_scl = 1.0;
   numunion nu;
 
-  ckarg2(1, 10);
+  ckarg2(1, 5);
   if (!isstring(argv[0])) error (E_NOSTRING);
   if (n > 1) {
     base_scl = ckfltval (argv[1]);
+    //fprintf(stderr, ";; scale = %f\n", base_scl);
   }
 
   Assimp::Importer importer;
@@ -597,36 +598,16 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
   int direction = 2; // :X_UP 0, :Y_UP 1, :Z_UP 2
 
   if (n > 2) {
-    if (argv[2] != NIL) {
-      post_proc |= (aiProcess_GenNormals | aiProcess_FindInvalidData);
-      recalc_normal = true;
-    }
+    post_proc = ckintval(argv[2]);
+    //fprintf(stderr, ";; option = %X\n", post_proc);
   }
   if (n > 3) {
-    if (argv[3] != NIL) {
-      post_proc |= (aiProcess_GenSmoothNormals | aiProcess_FindInvalidData);
-      recalc_normal = true;
-    }
+    direction = ckintval(argv[3]);
   }
   if (n > 4) {
-    if (argv[4] != NIL) { post_proc |= aiProcess_SplitLargeMeshes; }
-  }
-  if (n > 5) {
-    if (argv[5] != NIL) { post_proc |= aiProcess_OptimizeMeshes; }
-  }
-  if (n > 6) {
-    if (argv[6] != NIL) { post_proc |= aiProcess_JoinIdenticalVertices; }
-  }
-  if (n > 7) {
-    if (argv[7] != NIL) { post_proc |= aiProcess_FixInfacingNormals; }
-  }
-  if (n > 8) {
-    direction = intval(argv[8]);
-  }
-  if (n > 9) {
-    if (argv[9] != NIL) {
-      if (!isstring(argv[8])) error(E_NOSTRING);
-      dumpfile = (char *)get_string(argv[8]);
+    if (argv[4] != NIL) {
+      if (!isstring(argv[4])) error(E_NOSTRING);
+      dumpfile = (char *)get_string(argv[4]);
     }
   }
   const aiScene* raw_scene = importer.ReadFile ((char *)get_string(argv[0]), 0);

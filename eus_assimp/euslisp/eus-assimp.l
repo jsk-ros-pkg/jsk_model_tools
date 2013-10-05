@@ -2,9 +2,39 @@
 ;; assimp mesh reader for euslisp
 ;;
 (require :eus-assimp "package://eus_assimp/lib/eus_assimp.so")
+
+(defconstant *aiProcess_CalcTangentSpace*         #x1)
+(defconstant *aiProcess_JoinIdenticalVertices*    #x2)
+(defconstant *aiProcess_MakeLeftHanded*           #x4)
+(defconstant *aiProcess_Triangulate*              #x8)
+(defconstant *aiProcess_RemoveComponent*          #x10)
+(defconstant *aiProcess_GenNormals*               #x20)
+(defconstant *aiProcess_GenSmoothNormals*         #x40)
+(defconstant *aiProcess_SplitLargeMeshes*         #x80)
+(defconstant *aiProcess_PreTransformVertices*     #x100)
+(defconstant *aiProcess_LimitBoneWeights*         #x200)
+(defconstant *aiProcess_ValidateDataStructure*    #x400)
+(defconstant *aiProcess_ImproveCacheLocality*     #x800)
+(defconstant *aiProcess_RemoveRedundantMaterials* #x1000)
+(defconstant *aiProcess_FixInfacingNormals*       #x2000)
+(defconstant *aiProcess_SortByPType*              #x8000)
+(defconstant *aiProcess_FindDegenerates*          #x10000)
+(defconstant *aiProcess_FindInvalidData*          #x20000)
+(defconstant *aiProcess_GenUVCoords*              #x40000)
+(defconstant *aiProcess_TransformUVCoords*        #x80000)
+(defconstant *aiProcess_FindInstances*            #x100000)
+(defconstant *aiProcess_OptimizeMeshes*           #x200000)
+(defconstant *aiProcess_OptimizeGraph*            #x400000)
+(defconstant *aiProcess_FlipUVs*                  #x800000)
+(defconstant *aiProcess_FlipWindingOrder*         #x1000000)
+(defconstant *aiProcess_SplitByBoneCount*         #x2000000)
+(defconstant *aiProcess_Debone*                   #x4000000)
+
 (defun load-mesh-file (fname &key ((:scale scl) 1.0) (gen-normal) (smooth-normal)
                              (split-large-mesh) (optimize-mesh) (identical-vertices) (fix-normal)
+                             (process-fast) (process-quality) (process-max-quality)
                              (direction :z_up) (dump-filename) &allow-other-keys)
+  ;; detect direction
   (case direction
     ((:x_up :x-up) (setq direction 0))
     ((:y_up :y-up) (setq direction 1))
@@ -14,19 +44,64 @@
     ((numberp direction) );; do-nothing
     (t
      (warn ";; unknown direction ~A~%" direction)))
-
-  (let ((ret
-         (c-assimp-get-glvertices fname scl gen-normal smooth-normal split-large-mesh
-                                  optimize-mesh identical-vertices fix-normal direction dump-filename))
+  ;; parse option
+  (let ((post-process-options (list *aiProcess_Triangulate* *aiProcess_SortByPType*)))
+    (if gen-normal (push *aiProcess_GenNormals* post-process-options))
+    (if smooth-normal (push *aiProcess_GenSmoothNormals* post-process-options))
+    (if split-large-mesh (push *aiProcess_SplitLargeMeshes* post-process-options))
+    (if optimize-mesh (push *aiProcess_OptimizeMeshes* post-process-options))
+    (if identical-vertices (push *aiProcess_JoinIdenticalVertices* post-process-options))
+    (if fix-normal (push *aiProcess_FixInfacingNormals* post-process-options))
+    (if process-fast (setq post-process-options
+                           (append post-process-options
+                                   (list *aiProcess_CalcTangentSpace*
+                                         *aiProcess_GenNormals*
+                                         *aiProcess_JoinIdenticalVertices*
+                                         *aiProcess_GenUVCoords*))))
+    (if process-quality (setq post-process-options
+                              (append post-process-options
+                                      (list *aiProcess_CalcTangentSpace*
+                                            *aiProcess_GenNormals*
+                                            *aiProcess_JoinIdenticalVertices*
+                                            *aiProcess_ImproveCacheLocality*
+                                            *aiProcess_LimitBoneWeights*
+                                            *aiProcess_RemoveRedundantMaterials*
+                                            *aiProcess_SplitLargeMeshes*
+                                            *aiProcess_FindDegenerates*
+                                            *aiProcess_FindInvalidData*
+                                            *aiProcess_GenUVCoords*))))
+    (if process-max-quality (setq post-process-options
+                              (append post-process-options
+                                      (list *aiProcess_CalcTangentSpace*
+                                            *aiProcess_GenNormals*
+                                            *aiProcess_JoinIdenticalVertices*
+                                            *aiProcess_ImproveCacheLocality*
+                                            *aiProcess_LimitBoneWeights*
+                                            *aiProcess_RemoveRedundantMaterials*
+                                            *aiProcess_SplitLargeMeshes*
+                                            *aiProcess_FindDegenerates*
+                                            *aiProcess_FindInvalidData*
+                                            *aiProcess_GenUVCoords*
+                                            *aiProcess_FindInstances*
+                                            *aiProcess_ValidateDataStructure*
+                                            *aiProcess_OptimizeMeshes*
+                                            *aiProcess_Debone*))))
+    (setq post-process-options
+          (apply #'+
+                 (remove-duplicates post-process-options :test #'=)))
+    (let ((ret
+           (c-assimp-get-glvertices fname scl
+                                    post-process-options
+                                    direction dump-filename))
+          glv)
+      (when ret
+        (let ((fp (pathname fname)))
+          (setq glv (instance gl::glvertices :init ret))
+          (send glv :filename fname)
+          (send glv :load-texture-image
+                (pathname-directory (truename fp))))
         glv)
-    (when ret
-      (let ((fp (pathname fname)))
-        (setq glv (instance gl::glvertices :init ret))
-        (send glv :filename fname)
-        (send glv :load-texture-image
-              (pathname-directory (truename fp))))
-      glv)
-    ))
+      )))
 
 (defun store-glvertices (fname glvtcs
                                &key ((:scale scl) 1.0) (gen-normal) (smooth-normal)
