@@ -221,7 +221,11 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
   }
   fprintf(fp, "           )))\n");
   fprintf(fp, "    (send glvertices :calc-normals)\n");
-  fprintf(fp, "    (send self :assoc glvertices)\n    glvertices)\n");
+  if (points.size() > 0) {
+    fprintf(fp, "    (send self :assoc glvertices)\n    glvertices)\n");
+  } else {
+    fprintf(fp, "    glvertices)\n");
+  }
 
   // do qhull
   if ( points.size() > 0 ) {
@@ -261,6 +265,8 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       if (curlong || totlong) {
         fprintf (stderr, "qhull internal warning (user_eg, #1): did not free %d bytes of long memory (%d pieces)\n", totlong, curlong);
       }
+  } else {
+    fprintf(fp, "  (:qhull-faceset () self)\n");
   }
   fprintf(fp, "  )\n\n");
 
