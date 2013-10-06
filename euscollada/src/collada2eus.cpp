@@ -1177,9 +1177,9 @@ int main(int argc, char* argv[]){
       } catch(YAML::RepresentationException& e) {
       }
       if (add_link_suffix) {
-        fprintf(output_fp, "     (setq %s-end-coords (make-cascoords :coords (send %s_lk :copy-worldcoords)))\n", limb_name.c_str(), end_coords_parent_name.c_str());
+        fprintf(output_fp, "     (setq %s-end-coords (make-cascoords :coords (send %s_lk :copy-worldcoords) :name :%s-end-coords))\n", limb_name.c_str(), end_coords_parent_name.c_str(), limb_name.c_str());
       } else {
-        fprintf(output_fp, "     (setq %s-end-coords (make-cascoords :coords (send %s :copy-worldcoords)))\n", limb_name.c_str(), end_coords_parent_name.c_str());
+        fprintf(output_fp, "     (setq %s-end-coords (make-cascoords :coords (send %s :copy-worldcoords) :name %s-end-coords))\n", limb_name.c_str(), end_coords_parent_name.c_str(), limb_name.c_str());
       }
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
