@@ -995,7 +995,7 @@ int main(int argc, char* argv[]){
 	  domGeometry *thisGeometry;
 	  thisDatabase->getElement((daeElement**)&thisGeometry, currentGeometry, NULL, "geometry");
 
-	  fprintf(output_fp, " (instance %s-%s :init)", robot_name.c_str(), thisGeometry->getId());
+	  fprintf(output_fp, " (instance %s_%s :init)", robot_name.c_str(), thisGeometry->getId());
 	  fprintf(stderr, "geometry %d id:%s (%s)\n",
 		  currentGeometry, thisGeometry->getId(), thisGeometry->getName());
 
