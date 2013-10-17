@@ -242,15 +242,14 @@
           (let (mat)
             (if material (setq mat material))
             ;; TODO: get color and set matterial
-            (push (apply #'make-glvertices-from-faces faces :material mat args)
-                  glv-lst)))
-        (store-glvertices fname (append-glvertices glv-lst))
+            (push (funcall #'make-glvertices-from-faces faces :material mat) glv-lst)))
+        (apply #'store-glvertices fname (append-glvertices glv-lst) args)
         ))
      ((find-method obj :faces)
       (setq faces (send obj :faces))
-      (store-glvertices
-       fname
-       (apply #'make-glvertices-from-faces faces :material material args)))
+      (apply #'store-glvertices
+             fname
+             (funcall #'make-glvertices-from-faces faces :material material) args))
      (t
       (warn ";; face not found~%")
       ))
