@@ -600,6 +600,14 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
   if (n > 2) {
     post_proc = ckintval(argv[2]);
     //fprintf(stderr, ";; option = %X\n", post_proc);
+    if((post_proc & aiProcess_GenNormals) ||
+       (post_proc & aiProcess_GenSmoothNormals)) {
+      recalc_normal = true;
+      if((post_proc & aiProcess_GenNormals) &&
+         (post_proc & aiProcess_GenSmoothNormals)) {
+        post_proc &= ~aiProcess_GenNormals;
+      }
+    }
   }
   if (n > 3) {
     direction = ckintval(argv[3]);
