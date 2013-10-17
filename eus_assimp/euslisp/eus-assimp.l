@@ -263,7 +263,7 @@
     ret))
 
 ;; urdf_to_collada -> collada2eus ..
-(defun update-to-original-meshfile (robot &key (scale 1000.0) (direction :-y_up))
+(defun update-to-original-meshfile (robot &key (scale 1000.0) (direction :z_up))
   (dolist (bd (send robot :bodies))
     (let ((str (send bd :name)))
       (when (and (stringp str)
