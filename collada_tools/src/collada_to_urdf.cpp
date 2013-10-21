@@ -75,8 +75,13 @@ void assimp_file_export(std::string fname, std::string ofname,
     bool existing;
     importer.SetPropertyBool(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, true, &existing);
     if(existing) {
-      fprintf(stderr, ";; OverWrite : Ignore UP_DIRECTION", existing);
+      fprintf(stderr, ";; OverWrite : Ignore UP_DIRECTION");
     }
+    //importer.SetPropertyBool(AI_CONFIG_PP_FD_REMOVE, true, &existing); // remove points and lines, support with aiProcess_FindDegenerates
+    importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE,
+                                (int)aiPrimitiveType_POINT |
+                                (int)aiPrimitiveType_LINE, &existing);
+    // remove point and line, support with aiProcess_FindDegenerates and aiProcess_SortByPType
   }
   const aiScene* scene = importer.ReadFile(fname.c_str(),
                                            //aiProcessPreset_TargetRealtime_Fast
