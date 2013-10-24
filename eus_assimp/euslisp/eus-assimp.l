@@ -112,6 +112,7 @@
         material-lst
         vertices-lst
         normals-lst
+        texcoords-lst
         indices-lst)
     (dolist (m mlst)
       (push (case (cadr (assoc :type m))
@@ -122,18 +123,21 @@
         (push
          (mapcar #'(lambda (x)
                      (cadr (assoc x mat)))
-                 (list :ambient :diffuse :specular :emission :shininess :transparency))
+                 (list :ambient :diffuse :specular :emission :shininess :transparency :filename))
          material-lst))
       (push (cadr (assoc :vertices m)) vertices-lst)
       (push (cadr (assoc :normals m)) normals-lst)
+      (push (cadr (assoc :texcoords m)) texcoords-lst)
       (push (cadr (assoc :indices m)) indices-lst)
       (push (cadr (assoc :name m)) name-lst)
       )
-    ;;(pprint (list (nreverse type-lst) (nreverse material-lst)
+    ;;(pprint (nreverse material-lst))
+    ;;(pprint (nreverse texcoords-lst))
     ;;(nreverse vertices-lst) (nreverse normals-lst) (nreverse indices-lst)))
     (c-assimp-dump-glvertices fname
                               (nreverse type-lst) (nreverse material-lst)
-                              (nreverse vertices-lst) (nreverse normals-lst) (nreverse indices-lst)
+                              (nreverse vertices-lst) (nreverse normals-lst)
+                              (nreverse texcoords-lst) (nreverse indices-lst)
                               scl gen-normal smooth-normal
                               split-large-mesh optimize-mesh identical-vertices)
     ))

@@ -711,12 +711,12 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
 
 pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
 {
-  /* filename type-list material-list vertices-list normals-list indices-list
+  /* filename type-list material-list vertices-list normals-list texcoords-list indices-list
      (scale) (gen_normal nil) (smooth_normal nil) (split_large_mesh nil)
      (optimize_mesh nil) (identical_vert nil) (fix_normal) (direction)
   */
   // FIXME: name_list
-  ckarg2(6, 13);
+  ckarg2(7, 14);
   numunion nu;
   int direction = 2;
   char *dumpfile = NULL;
@@ -730,20 +730,21 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
   }
   if (list_len <= 0) return NIL;
   bool has_materials = false;
-  pointer ltype, linfo, lvertices, lnormals, lindices;
-  pointer mtype, minfo, mvertices, mnormals, mindices;
+  pointer ltype, linfo, lvertices, lnormals, ltexcoords, lindices;
+  pointer mtype, minfo, mvertices, mnormals, mtexcoords, mindices;
   eusfloat_t scale = 1.0;
 
   ltype = argv[1];
   linfo = argv[2];
   lvertices = argv[3];
   lnormals = argv[4];
-  lindices = argv[5];
-  if (n > 6) {
-    scale = fltval(argv[6]);
+  ltexcoords = argv[5];
+  lindices = argv[6];
+  if (n > 7) {
+    scale = fltval(argv[7]);
   }
-  if (n > 12) {
-    direction = intval(argv[12]);
+  if (n > 13) {
+    direction = intval(argv[13]);
   }
 
   // assimp loader
@@ -787,12 +788,14 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
     minfo = ccar (linfo);
     mvertices = ccar (lvertices);
     mnormals = ccar (lnormals);
+    mtexcoords = ccar (ltexcoords);
     mindices = ccar (lindices);
 
     ltype = ccdr (ltype);
     linfo = ccdr (linfo);
     lvertices = ccdr (lvertices);
     lnormals = ccdr (lnormals);
+    ltexcoords = ccdr (ltexcoords);
     lindices = ccdr (lindices);
 
     pScene->mRootNode->mMeshes[i] = i;
@@ -809,8 +812,8 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
       aiString s; s.Set (oss.str());
       pcMat->AddProperty(&s, AI_MATKEY_NAME);
 
-      for (int el = 0; el < 6; el++) {
-        // (list :ambient :diffuse :specular :emission :shininess :transparency)
+      for (int el = 0; el < 7; el++) {
+        // (list :ambient :diffuse :specular :emission :shininess :transparency :filename)
         pointer melem = ccar (minfo);
         minfo = ccdr (minfo);
         aiColor4D clr4d (0.0f, 0.0f, 0.0f, 1.0f);
@@ -874,6 +877,15 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
             pcMat->AddProperty(&clr4d, 1, AI_MATKEY_COLOR_TRANSPARENT);
           }
           break;
+        case 6: // texture
+          if (melem != NIL) {
+            if (isstring(melem)) {
+              //printf(";; texture file: %s\n", melem->c.str.chars);
+              aiString s; s.Set ((const char *)(melem->c.str.chars));
+              pcMat->AddProperty(&s, AI_MATKEY_TEXTURE_DIFFUSE(0));
+            }
+          }
+          break;
         }
       }
       pScene->mMaterials[i] = pcMat;
@@ -901,6 +913,20 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
         pMesh->mNormals[k].z = *fv++;
       }
     }
+    // texcoords
+    if (mtexcoords != NIL) {
+      printf(";; add texture coords\n");
+      eusinteger_t size = intval (mtexcoords->c.fvec.length);
+      eusfloat_t *fv = mtexcoords->c.fvec.fv;
+      if (size / 2 != pMesh->mNumVertices) { /* error */ }
+      // use just 1 texture
+      pMesh->mTextureCoords[0] = new aiVector3D [pMesh->mNumVertices];
+      for (unsigned int k = 0; k < pMesh->mNumVertices; k++) {
+        pMesh->mTextureCoords[0][k].x = *fv++;
+        pMesh->mTextureCoords[0][k].y = (1.0 - *fv++);
+      }
+    }
+
     unsigned int verts_per_face = intval(mtype);
     if (mindices != NIL) {
       if (verts_per_face != 4 && verts_per_face != 3) {
