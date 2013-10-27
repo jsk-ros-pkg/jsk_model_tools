@@ -20,7 +20,7 @@
   <depend package="urdf"/>
   <depend package="urdf_parser"/>
   <depend package="collada_parser"/>
-  <depend package="colladadom"/> <!-- on groovy please remove depend this line -->
+  <!-- depend package="colladadom"/ --> <!-- on fuerte  please include this line -->
 
   <!-- jsk ros pkg -->
   <depend package="assimp_devel"/>
