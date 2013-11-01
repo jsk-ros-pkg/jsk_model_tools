@@ -17,7 +17,7 @@
                                         (l . inertia-tensor))))
      )
    (send-super :init-ending)
-   (dolist (l (send self :links)) (send self :make-detail-collision-model-from-glvertices-for-one-link ll))
+   (dolist (l (send self :links)) (send self :make-detail-collision-model-from-glvertices-for-one-link l))
 
    ;;
    (dolist (j (mapcan #'(lambda (x) (if (and (derivedp (cdr x) joint)
