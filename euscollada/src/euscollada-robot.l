@@ -1,6 +1,6 @@
+(defclass euscollada-robot
 ;; This euscollada-robot class is for robots converted from collada files.
 ;; This class provides :init-ending override.
-(defclass euscollada-robot
   :super robot-model
   :slots ()
   )
@@ -91,4 +91,18 @@
                                                  (send x :faces))))
                                            (send ll :bodies)))))
    )
+  )
+
+;; copy euscollada-body class definition from euscollada/src/euscollada-robot.l
+(defclass collada-body
+  :super body
+  :slots (glvertices)
+  )
+(defmethod collada-body
+  (:draw (vwr)
+   (when glvertices
+     (send glvertices :draw vwr)))
+  (:set-color (&rest args)
+   (send-super* :set-color args)
+   (when glvertices (send* glvertices :set-color args)))
   )
