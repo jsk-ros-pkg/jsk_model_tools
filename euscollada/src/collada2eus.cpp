@@ -422,13 +422,19 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
     for(size_t i = 0; i < thisMotion->getTechnique_common()->getAxis_info_array().getCount(); ++i) {
       domMotion_axis_infoRef motion_axis_info = thisMotion->getTechnique_common()->getAxis_info_array()[i];
       // Sid name from Motion axis info
-      string axis_info_name(daeSafeCast<domKinematics_axis_info>(daeSidRef(motion_axis_info->getAxis(), thisMotion->getInstance_articulated_system()->getUrl().getElement()).resolve().elt)->getAxis());
+      string axis_info_name(daeSafeCast<domKinematics_axis_info>
+                            (daeSidRef(motion_axis_info->getAxis(),
+                                       thisMotion->getInstance_articulated_system()->getUrl().getElement()).resolve().elt)->getAxis());
       // Sid name from joint axis info
       string joint_name(string(daeSafeCast<domKinematics_model>(thisJoint->getParentElement()->getParentElement())->getId()) // kinamtics_model's id
-			+"/"+ string(thisJoint->getSid()) +"/"+ jointAxis_array[0]->getSid());
-      if (axis_info_name == joint_name && // if thisJoint corresponds to Motion_axis
-	  thisMotion->getTechnique_common()->getAxis_info_array()[i]->getSpeed()) {
-	fprintf(fp, "                     :max-joint-velocity %f\n", fabs(thisMotion->getTechnique_common()->getAxis_info_array()[i]->getSpeed()->getFloat()->getValue()));
+                        +"/"+ string(thisJoint->getSid()) +"/"+ jointAxis_array[0]->getSid());
+      if (axis_info_name == joint_name) { // if thisJoint corresponds to Motion_axis
+        if (thisMotion->getTechnique_common()->getAxis_info_array()[i]->getSpeed()) {
+          fprintf(fp, "                     :max-joint-velocity %f\n", fabs(thisMotion->getTechnique_common()->getAxis_info_array()[i]->getSpeed()->getFloat()->getValue()));
+        }
+        if (thisMotion->getTechnique_common()->getAxis_info_array()[i]->getAcceleration()) {
+          fprintf(fp, "                     :max-joint-torque %f\n", fabs(thisMotion->getTechnique_common()->getAxis_info_array()[i]->getAcceleration()->getFloat()->getValue()));
+        }
       }
     }
   }
