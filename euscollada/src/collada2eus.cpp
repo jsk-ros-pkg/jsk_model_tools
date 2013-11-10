@@ -379,6 +379,23 @@ const char* findLinkName(const char *link_name) {
   return link_name;
 }
 
+daeElementRef getActuatorTechnique(const domExtraRef pextra) {
+  std::string sensor_type;
+  for (size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
+    domExtra *tmpextra;
+    g_dae->getDatabase()->getElement((daeElement**)&tmpextra, ii, NULL, "extra");
+    if (tmpextra->getType() == std::string("library_actuators")) {
+      for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
+        if ((std::string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
+            pextra->getTechnique_array()[0]->getChild("instance_actuator")->getAttribute("url")) {
+          return tmpextra->getTechnique_array()[0]->getContents()[icon];
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
 // write euslisp joint instance from jointSid, parentLink, childLink
 void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *childLink) {
   //
@@ -399,6 +416,7 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
   }
   domAxis_constraint_Array jointAxis_array;
   float axis[3], min = FLT_MAX, max = -FLT_MAX, scale = 1.0;
+  float max_torque = -FLT_MAX;
   if ( thisJoint->getPrismatic_array().getCount() > 0 ) {
     jointAxis_array = thisJoint->getPrismatic_array();
     if ( jointAxis_array[0]->getLimits() ) {
@@ -433,10 +451,33 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
           fprintf(fp, "                     :max-joint-velocity %f\n", fabs(thisMotion->getTechnique_common()->getAxis_info_array()[i]->getSpeed()->getFloat()->getValue()));
         }
         if (thisMotion->getTechnique_common()->getAxis_info_array()[i]->getAcceleration()) {
-          fprintf(fp, "                     :max-joint-torque %f\n", fabs(thisMotion->getTechnique_common()->getAxis_info_array()[i]->getAcceleration()->getFloat()->getValue()));
+          max_torque = fabs(thisMotion->getTechnique_common()->getAxis_info_array()[i]->getAcceleration()->getFloat()->getValue());
         }
       }
     }
+  }
+
+  if (g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 && max_torque == -FLT_MAX) {
+    domArticulated_system *thisArticulated;
+    g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, 0, NULL, "articulated_system");
+    for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
+      domExtraRef pextra = thisArticulated->getExtra_array()[ie];
+      if(strcmp(pextra->getName(), thisJoint->getName()) == 0) {
+        if (strcmp(pextra->getType(), "attach_actuator") == 0) {
+          daeElementRef ref = getActuatorTechnique(pextra);
+          if(!!ref) {
+            daeElementRef pnomtrq = ref->getChild("nominal_torque");
+            if(!!pnomtrq) {
+              stringstream ss(pnomtrq->getCharData());
+              ss >> max_torque;
+            }
+          }
+        }
+      }
+    }
+  }
+  if (max_torque != -FLT_MAX) {
+    fprintf(fp, "                     :max-joint-torque %f\n", max_torque);
   }
   // use safety controller data
   domKinematics *thisKinematics;
