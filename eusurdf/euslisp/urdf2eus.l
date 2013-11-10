@@ -327,7 +327,7 @@
         (t
          (warn ";; WARN could not find urdf model file ~A~%" fname)
          (warn ";; type rosrun xacro xacro.py `rospack find pr2_description`/robots/pr2.urdf.xacro -o full_pr2.urdf or type `roscd eusurdf`; make~%")))
-  (let ((sxml (read (piped-fork (format nil "`rospack find eusurdf`/src/xml2sxml.scm ~A" fname)))))
+  (let ((sxml (read (piped-fork (format nil "`rospack find eusurdf`/scripts/xml2sxml.scm ~A" fname)))))
     (parse-urdf-sxml sxml :scale scale :output (format nil "~A.l" (pathname-name fname)))))
 
 ;; (load "urdf2eus.l")
