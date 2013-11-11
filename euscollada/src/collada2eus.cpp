@@ -1449,7 +1449,7 @@ int main(int argc, char* argv[]){
   ifstream fin2(yaml_filename);
   if (fin2.fail()) {
     fprintf(stderr, ";; generate lisp code without yaml file\n");
-    exit(-1);
+    exit(0);
   }
 
   fflush(output_fp);
