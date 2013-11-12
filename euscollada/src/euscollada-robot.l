@@ -27,8 +27,11 @@
      (send (send j :child-link) :add-parent-link (send j :parent-link))
      (send (send j :parent-link) :add-child-links (send j :child-link)))
    ;; add sensor method ;; e.g., (send self :camera 0), (send self :force-sensor :rasensor), ... etc
-   (dolist (sensor-name '(:force-sensor :imu-sensor))
-     (eval `(defmethod ,(send (class self) :name)
+   (dolist (sensor-name '(:force-sensor :imu-sensor)) (send self :define-get-sensor-method sensor-name))
+   )
+  (:define-get-sensor-method
+   (sensor-name)
+   (eval `(defmethod ,(send (class self) :name)
               (,sensor-name (&rest args)
                             (cond ((integerp (car args))
                                    (forward-message-to (elt (send self ,(read-from-string (format nil "~As" sensor-name)) ) (car args)) (cdr args)))
@@ -47,7 +50,6 @@
                                    (forward-message-to (car (send self ,(read-from-string (format nil "~As" sensor-name)))) args)
                                    )))
               )))
-   )
   ;; fullbody-inverse-kinematics overwrite
   ;;  reduce root-link's weight based on leg's joint limit
   ;;  increase stop and cog-gain
