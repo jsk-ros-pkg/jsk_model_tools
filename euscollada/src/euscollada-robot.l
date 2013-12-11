@@ -60,19 +60,18 @@
      (send-message* self robot-model :fullbody-inverse-kinematics
                     target-coords
                     :stop stop :cog-gain cog-gain
-                    :weight #'(lambda (ul)
-                                (let ((tw (fill (instantiate float-vector (send self :calc-target-joint-dimension ul)) 1.0)))
-                                  ;; set root-link 6dof-joint's weight based on legs' joint limit
-                                  (let* ((min-weight
-                                          (reduce #'(lambda (x y) (min x y))
-                                                  (coerce (send self :calc-inverse-kinematics-weight-from-link-list
-                                                                leg-ul :union-link-list leg-ul) cons))))
-                                    (dotimes (i 6) (setf (elt tw i) (* min-weight (elt tw i)))))
-                                  ;; additional weight setting
-                                  (if (memq :weight args)
-                                      (let ((tmp-weight2 (funcall (cadr (memq :weight args)) ul)))
-                                        (dotimes (i (length tmp-weight2)) (setf (elt tw i) (* (elt tw i) (elt tmp-weight2 i))))))
-                                  tw))
+                    :additional-weight-list
+                    (list
+                     (list (car (send self :links))
+                           #'(lambda ()
+                               ;; set root-link 6dof-joint's weight based on legs' joint limit
+                               (let* ((min-weight
+                                       (reduce #'(lambda (x y) (min x y))
+                                               (coerce (send self :calc-inverse-kinematics-weight-from-link-list
+                                                             leg-ul :union-link-list leg-ul) cons))))
+                                 (fill (instantiate float-vector 6) min-weight)))
+                           )
+                     )
                     args)
      ))
   ;; make collision model from gl-vertices
