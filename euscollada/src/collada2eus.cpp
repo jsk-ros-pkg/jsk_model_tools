@@ -823,7 +823,10 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       g_dae->getDatabase()->getElement((daeElement**)&thisKinematics, 0, NULL, "kinematics_model");
       domLink* thisLink = findLinkfromKinematics(thisKinematics->getTechnique_common()->getLink_array()[0], std::string(thisNode->getName()));
       domArticulated_system *thisArticulated;
-      g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, 0, NULL, "articulated_system");
+      for ( size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL); ii++) {
+        g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
+        if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
+      }
       for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
 	domExtraRef pextra = thisArticulated->getExtra_array()[ie];
 	// find element which type is attach_sensor and is attached to thisNode
@@ -1113,7 +1116,10 @@ int main(int argc, char* argv[]){
   // sensor
   if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
     domArticulated_system *thisArticulated;
-    g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, 0, NULL, "articulated_system");
+    for ( size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL); ii++) {
+      g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
+      if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
+    }
     for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
       domExtraRef pextra = thisArticulated->getExtra_array()[ie];
       // find element which type is attach_sensor and is attached to thisNode
@@ -1414,7 +1420,10 @@ int main(int argc, char* argv[]){
   fprintf(output_fp, "\n    ;; attach_sensor\n");
   if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
     domArticulated_system *thisArticulated;
-    g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, 0, NULL, "articulated_system");
+    for ( size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL); ii++) {
+      g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
+      if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
+    }
     std::vector<std::string> fsensor_list;
     std::vector<std::string> imusensor_list;
     for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
