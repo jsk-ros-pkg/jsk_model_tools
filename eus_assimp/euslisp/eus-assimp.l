@@ -103,7 +103,7 @@
         glv)
       )))
 
-(defun store-glvertices (fname glvtcs
+(defun save-mesh-file (fname glvtcs
                                &key ((:scale scl) 1.0) (gen-normal) (smooth-normal)
                                (split-large-mesh) (optimize-mesh) (identical-vertices)
                                &allow-other-keys)
@@ -141,6 +141,8 @@
                               scl gen-normal smooth-normal
                               split-large-mesh optimize-mesh identical-vertices)
     ))
+(setf (symbol-function 'store-glvertices)
+      (symbol-function 'save-mesh-file))
 ;;
 (defun append-glvertices (glv-lst)
   (let (ret)
@@ -203,6 +205,24 @@
         (setq r (assimp-read-image-file fname)))
       r))
   )
+
+(defun make-glvertices-from-faceset (fs &key (material))
+  (let (mat)
+    (cond
+     (material (setq mat material))
+     ((get fs :face-color)
+      (let ((col (get fs :face-color)))
+        (unless (vectorp col)
+          (setq col (gl::find-color col)))
+        (setq mat
+              (list (list :ambient (float-vector (elt col 0) (elt col 1) (elt col 2)))
+                    (list :diffuse (float-vector (elt col 0) (elt col 1) (elt col 2)))))))
+     (t
+      ;; default material
+      (setq mat
+            (list (list :ambient (float-vector 0.65 0.65 0.65))
+                  (list :diffuse (float-vector 0.65 0.65 0.65))))))
+    (make-glvertices-from-faces (send fs :faces) :material mat)))
 
 (defun make-glvertices-from-faces (flst &key (material))
   (setq flst (flatten (mapcar #'(lambda (f) (geometry::face-to-triangle-aux f)) flst)))
