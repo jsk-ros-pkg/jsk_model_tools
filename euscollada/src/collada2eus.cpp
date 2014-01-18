@@ -633,6 +633,45 @@ std::string getSensorType (const domExtraRef pextra) {
   return sensor_type;
 }
 
+void writeNodeMassFrames (FILE *fp, domRigid_body* thisRigidbody, const string &thisNodeName) {
+      if ( thisRigidbody && thisRigidbody->getTechnique_common()->getMass_frame() ) {
+	fprintf(fp, "       (send %s :weight %.3f)\n",
+                thisNodeName.c_str(),
+		/* weight : collada [kg] -> eus : [g] */
+		thisRigidbody->getTechnique_common()->getMass()->getValue()*1000);
+        domTranslate_Array translateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getTranslate_array();
+        domRotate_Array rotateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getRotate_array();
+        fprintf(fp, "       (let ((tmp-c-list (list\n");
+        for (size_t ii = 0; ii < translateArray.getCount(); ii++) {
+          domTranslateRef thisTranslate = translateArray[ii];
+          fprintf(fp, "                          (make-coords :pos (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") ",
+                  /* centroid : collada [m] -> eus : [mm] */
+                  thisTranslate->getValue()[0]*1000, thisTranslate->getValue()[1]*1000, thisTranslate->getValue()[2]*1000);
+          domRotateRef thisRotate = rotateArray[ii];
+          fprintf(fp, ":rot (matrix-exponent (scale "FLOAT_PRECISION_FINE" (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))))\n",
+                  thisRotate ? thisRotate->getValue()[3]*M_PI/180.0 : 0,
+                  thisRotate ? thisRotate->getValue()[0] : 0,
+                  thisRotate ? thisRotate->getValue()[1] : 0,
+                  thisRotate ? thisRotate->getValue()[2] : 1);
+        }
+        fprintf(fp, "                          ))\n");
+        fprintf(fp, "             (tmp-c (make-coords)))\n");
+        fprintf(fp, "         (dolist (cc tmp-c-list)\n");
+        fprintf(fp, "           (setq tmp-c (send tmp-c :transform cc)))\n");
+        fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNodeName.c_str());
+        fprintf(fp, "               (m* (m* (send tmp-c :worldrot) (diagonal (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (transpose (send tmp-c :worldrot))))\n",
+                /* inertia : collada [kg m^2] -> eus : [g mm^2] */
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
+                thisRigidbody->getTechnique_common()->getInertia()->getValue()[2]*1e9);
+        fprintf(fp, "         (setq (%s . acentroid) (send tmp-c :worldpos))\n", thisNodeName.c_str());
+        fprintf(fp, "        )\n");
+      } else {
+	fprintf(fp, "        (progn (send %s :weight 0.0) (send %s :centroid (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
+                thisNodeName.c_str(), thisNodeName.c_str(), thisNodeName.c_str());
+      }
+}
+
 void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisRigidbodyArray, const char* robot_name) {
   int nodeArrayCount = thisNodeArray.getCount();
   for(int currentNodeArray=0;currentNodeArray<nodeArrayCount;currentNodeArray++) {
@@ -726,42 +765,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       }
       fprintf(fp, ")\n");
       fprintf(fp, "                       :name \"%s\"))\n", thisNode->getName());
-      if ( thisRigidbody && thisRigidbody->getTechnique_common()->getMass_frame() ) {
-	fprintf(fp, "       (send %s :weight %.3f)\n",
-                thisNodeName.c_str(),
-		/* weight : collada [kg] -> eus : [g] */
-		thisRigidbody->getTechnique_common()->getMass()->getValue()*1000);
-        domTranslate_Array translateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getTranslate_array();
-        domRotate_Array rotateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getRotate_array();
-        fprintf(fp, "       (let ((tmp-c-list (list\n");
-        for (size_t ii = 0; ii < translateArray.getCount(); ii++) {
-          domTranslateRef thisTranslate = translateArray[ii];
-          fprintf(fp, "                          (make-coords :pos (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") ",
-                  /* centroid : collada [m] -> eus : [mm] */
-                  thisTranslate->getValue()[0]*1000, thisTranslate->getValue()[1]*1000, thisTranslate->getValue()[2]*1000);
-          domRotateRef thisRotate = rotateArray[ii];
-          fprintf(fp, ":rot (matrix-exponent (scale "FLOAT_PRECISION_FINE" (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))))\n",
-                  thisRotate ? thisRotate->getValue()[3]*M_PI/180.0 : 0,
-                  thisRotate ? thisRotate->getValue()[0] : 0,
-                  thisRotate ? thisRotate->getValue()[1] : 0,
-                  thisRotate ? thisRotate->getValue()[2] : 1);
-        }
-        fprintf(fp, "                          ))\n");
-        fprintf(fp, "             (tmp-c (make-coords)))\n");
-        fprintf(fp, "         (dolist (cc tmp-c-list)\n");
-        fprintf(fp, "           (setq tmp-c (send tmp-c :transform cc)))\n");
-        fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNodeName.c_str());
-        fprintf(fp, "               (m* (m* (send tmp-c :worldrot) (diagonal (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (transpose (send tmp-c :worldrot))))\n",
-                /* inertia : collada [kg m^2] -> eus : [g mm^2] */
-                thisRigidbody->getTechnique_common()->getInertia()->getValue()[0]*1e9,
-                thisRigidbody->getTechnique_common()->getInertia()->getValue()[1]*1e9,
-                thisRigidbody->getTechnique_common()->getInertia()->getValue()[2]*1e9);
-        fprintf(fp, "         (setq (%s . acentroid) (send tmp-c :worldpos))\n", thisNodeName.c_str());
-        fprintf(fp, "        )\n");
-      } else {
-	fprintf(fp, "        (progn (send %s :weight 0.0) (send %s :centroid (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
-                thisNodeName.c_str(), thisNodeName.c_str(), thisNodeName.c_str());
-      }
+      writeNodeMassFrames(fp, thisRigidbody, thisNodeName);
     } else if ( (thisNode->getNode_array().getCount() > 0 &&
                  strcmp(thisNode->getNode_array()[0]->getName(),"visual") != 0 ) ||
 		(thisNode->getNode_array().getCount() > 1 &&
@@ -769,7 +773,8 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       fprintf(fp, ")\n"); // let(
       cerr << ";; WARNING link without geometry : " << thisNode->getName() << endl;
       fprintf(fp, "       ;; define bodyset-link for %s\n", thisNodeName.c_str());
-      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :bodies (list (make-cube 10 10 10)) :name \"%s\" :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNodeName.c_str(), thisNode->getName());
+      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :bodies (list (make-cube 10 10 10)) :name \"%s\"))\n", thisNodeName.c_str(), thisNode->getName());
+      writeNodeMassFrames(fp, thisRigidbody, thisNodeName);
     } else {
       fprintf(fp, ")\n"); // let(
       cerr << ";; WARNING link without geometry nor node: " << thisNode->getName() << " geometry : " << thisNode->getInstance_geometry_array().getCount() << ", node : " << thisNode->getNode_array().getCount();;
@@ -778,7 +783,8 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       }
       cerr << endl;
       fprintf(fp, "       ;; define cascaded-coords for %s\n", thisNode->getName());
-      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :name \"%s\" :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n", thisNodeName.c_str(), thisNode->getName());
+      fprintf(fp, "       (setq %s (instance bodyset-link :init (make-cascoords) :name \"%s\"))\n", thisNodeName.c_str(), thisNode->getName());
+      writeNodeMassFrames(fp, thisRigidbody, thisNodeName);
       parentName = ":world";
     }
 
