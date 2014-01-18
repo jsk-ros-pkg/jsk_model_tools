@@ -725,9 +725,10 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	fprintf(fp, " %s", geometryName);
       }
       fprintf(fp, ")\n");
-      fprintf(fp, "                       :name \"%s\"\n", thisNode->getName());
+      fprintf(fp, "                       :name \"%s\"))\n", thisNode->getName());
       if ( thisRigidbody && thisRigidbody->getTechnique_common()->getMass_frame() ) {
-	fprintf(fp, "                       :weight %.3f))\n",
+	fprintf(fp, "       (send %s :weight %.3f)\n",
+                thisNodeName.c_str(),
 		/* weight : collada [kg] -> eus : [g] */
 		thisRigidbody->getTechnique_common()->getMass()->getValue()*1000);
         domTranslate_Array translateArray = thisRigidbody->getTechnique_common()->getMass_frame()->getTranslate_array();
@@ -758,7 +759,8 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
         fprintf(fp, "         (setq (%s . acentroid) (send tmp-c :worldpos))\n", thisNodeName.c_str());
         fprintf(fp, "        )\n");
       } else {
-	fprintf(fp, "                       :weight 0.0 :centroid (float-vector 0 0 0) :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n");
+	fprintf(fp, "        (progn (send %s :weight 0.0) (send %s :centroid (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
+                thisNodeName.c_str(), thisNodeName.c_str(), thisNodeName.c_str());
       }
     } else if ( (thisNode->getNode_array().getCount() > 0 &&
                  strcmp(thisNode->getNode_array()[0]->getName(),"visual") != 0 ) ||
