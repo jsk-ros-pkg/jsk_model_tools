@@ -844,7 +844,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
             std::string sensor_type = getSensorType(pextra);
             std::string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
 	    std::cerr << "Sensor " << pextra->getName() << " is attached to " << thisNode->getName() << " " << sensor_type << " " << sensor_url << std::endl;
-	    fprintf(fp, "       (setq %s-sensor-coords (make-cascoords :name :%s :coords (send %s :copy-worldcoords)))\n", pextra->getName(), pextra->getName(), thisNodeName.c_str());
+	    fprintf(fp, "       (setq %s-sensor-coords (make-cascoords :name \"%s\" :coords (send %s :copy-worldcoords)))\n", pextra->getName(), pextra->getName(), thisNodeName.c_str());
             fprintf(fp, "       (send %s-sensor-coords :put :sensor-type :%s)\n", pextra->getName(), sensor_type.c_str());
             fprintf(fp, "       (send %s-sensor-coords :put :sensor-id %s)\n", pextra->getName(), sensor_url.erase( sensor_url.find( "#sensor" ), 7 ).c_str());
 	    fprintf(fp, "       (send %s-sensor-coords :transform (make-coords ", pextra->getName());
