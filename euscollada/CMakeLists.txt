@@ -45,9 +45,6 @@ endif()
 rosbuild_add_executable(collada2eus src/collada2eus.cpp)
 target_link_libraries(collada2eus ${COLLADA2EUS_LIBRARIES})
 
-rosbuild_add_executable(test_col src/test_col.cpp)
-target_link_libraries(test_col ${COLLADA2EUS_LIBRARIES})
-
 ##
 find_package(assimp)
 if ( NOT ASSIMP_FOUND )
