@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include "collada_parser/collada_parser.h"
 #include "urdf/model.h"
+#include "urdf_parser/urdf_parser.h"
 
 #if 0
 // assimp 2
