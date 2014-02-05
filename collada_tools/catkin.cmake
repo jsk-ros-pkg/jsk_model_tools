@@ -1,13 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(collada_tools)
 
-find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser_plugin assimp_devel urdf collada_parser)
+if($ENV{ROS_DISTRO} STREQUAL "groovy")
+  find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser assimp_devel urdf collada_parser)
+else()
+  find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser_plugin assimp_devel urdf collada_parser)
+fi()
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 
 #set(CMAKE_MODULE_PATH  ${PROJECT_SOURCE_DIR}/cmake-extensions/ )
 find_package(PkgConfig)
 pkg_check_modules(COLLADADOM collada-dom-150)
-include_directories(${COLLADADOM_INCLUDE_DIRS})
+include_directories(${COLLADADOM_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 link_directories(${COLLADADOM_LIBRARY_DIRS})
 
 # check_function_exists(mkstemps HAVE_MKSTEMPS)
