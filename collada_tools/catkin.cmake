@@ -5,7 +5,7 @@ if($ENV{ROS_DISTRO} STREQUAL "groovy")
   find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser assimp_devel urdf collada_parser)
 else()
   find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser_plugin assimp_devel urdf collada_parser)
-fi()
+endif()
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 
 #set(CMAKE_MODULE_PATH  ${PROJECT_SOURCE_DIR}/cmake-extensions/ )
