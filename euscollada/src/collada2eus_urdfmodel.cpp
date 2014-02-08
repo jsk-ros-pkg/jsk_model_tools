@@ -188,6 +188,10 @@ public:
   ~ModelEuslisp ();
 
   void setRobotName (string &name) { arobot_name = name; };
+  void setUseCollision(bool &b) { use_collision = b; };
+  void setUseSimpleGeometry(bool &b) { use_simple_geometry = b; };
+  void setAddJointSuffix(bool &b) { add_joint_suffix = b; };
+  void setAddLinkSuffix(bool &b) { add_link_suffix = b; };
   void writeToFile (string &filename);
   void addLinkCoords();
   void addChildJointNames(boost::shared_ptr<const Link> link);
@@ -238,6 +242,10 @@ private:
 
 ModelEuslisp::ModelEuslisp (boost::shared_ptr<ModelInterface> r) {
   robot = r;
+  add_joint_suffix = false;
+  add_link_suffix = false;
+  use_simple_geometry = false;
+  use_collision = false;
 }
 
 ModelEuslisp::~ModelEuslisp () {
@@ -342,7 +350,7 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     float max = joint->limits->upper;
     fprintf(fp, "                     ");
     fprintf(fp, ":min "); if (min == FLT_MAX) fprintf(fp, "*-inf*"); else fprintf(fp, "%f", min);
-    fprintf(fp, ":max "); if (max ==-FLT_MAX) fprintf(fp,  "*inf*"); else fprintf(fp, "%f", max);
+    fprintf(fp, " :max "); if (max ==-FLT_MAX) fprintf(fp,  "*inf*"); else fprintf(fp, "%f", max);
     fprintf(fp, "\n");
     fprintf(fp, "                     :max-joint-velocity %f\n", joint->limits->velocity);
     fprintf(fp, "                     :max-joint-torque %f\n", joint->limits->effort);
@@ -483,6 +491,12 @@ void ModelEuslisp::writeToFile (string &filename) {
     return;
   }
 
+  fp = fopen(filename.c_str(),"w");
+
+  if (fp == NULL) {
+    return;
+  }
+
   addLinkCoords();
 
   // start print
@@ -610,7 +624,7 @@ int main(int argc, char** argv)
   }
   if (vm.count("config_file")) {
     vector<string> aa = vm["config_file"].as< vector<string> >();
-    cerr << ";; Input file is: "
+    cerr << ";; Config file is: "
          <<  aa[0] << endl;
     config_file = aa[0];
   }
