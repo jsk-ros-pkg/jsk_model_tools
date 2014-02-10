@@ -3,6 +3,8 @@
 #include "collada_parser/collada_parser.h"
 #include "urdf/model.h"
 
+#include <sys/utsname.h>
+
 #if IS_ASSIMP3
 // assimp 3 (assimp_devel)
 #include <assimp/Importer.hpp>
@@ -33,6 +35,12 @@
 #include <resource_retriever/retriever.h>
 
 #include "yaml-cpp/yaml.h"
+
+//extern "C" {
+//#include <qhull/qhull_a.h>
+//}
+
+#include "rospack/rospack.h"
 
 // copy from rviz/src/rviz/mesh_loader.cpp
 class ResourceIOStream : public Assimp::IOStream
@@ -187,14 +195,17 @@ public:
   ModelEuslisp (boost::shared_ptr<ModelInterface> r);
   ~ModelEuslisp ();
 
+  // accessor
   void setRobotName (string &name) { arobot_name = name; };
   void setUseCollision(bool &b) { use_collision = b; };
   void setUseSimpleGeometry(bool &b) { use_simple_geometry = b; };
   void setAddJointSuffix(bool &b) { add_joint_suffix = b; };
   void setAddLinkSuffix(bool &b) { add_link_suffix = b; };
-  void writeToFile (string &filename);
+
+  // methods for parsing robot model for euslisp
   void addLinkCoords();
-  void addChildJointNames(boost::shared_ptr<const Link> link);
+  void printMesh(const aiScene* scene, const aiNode* node);
+  void readYaml(string &config_file);
 
   Pose getLinkPose(boost::shared_ptr<const Link> link) {
     if (!link->parent_joint) {
@@ -211,12 +222,15 @@ public:
   }
   void printJoint (boost::shared_ptr<const Joint> joint);
   void printLink (boost::shared_ptr<const Link> Link, Pose &pose);
+
+  // print methods
+  void copyRobotClassDefinition ();
+  void printRobotDefinition();
   void printLinks ();
   void printJoints ();
   void printGeometries();
-  void printMesh(const aiScene* scene, const aiNode* node);
 
-  void readYaml(string &config_file);
+  void writeToFile (string &filename);
 private:
   typedef map <string, boost::shared_ptr<const Visual> > MapVisual;
   typedef map <string, boost::shared_ptr<const Collision> > MapCollision;
@@ -302,6 +316,170 @@ void ModelEuslisp::addLinkCoords() {
       }
     }
   }
+}
+
+void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node) {
+  aiMatrix4x4 transform = node->mTransformation;
+  aiNode *pnode = node->mParent;
+  while (pnode)  {
+    if (pnode->mParent != NULL) {
+      transform = pnode->mTransformation * transform;
+    }
+    pnode = pnode->mParent;
+  }
+
+  aiMatrix3x3 rotation(transform);
+  aiMatrix3x3 inverse_transpose_rotation(rotation);
+  inverse_transpose_rotation.Inverse();
+  inverse_transpose_rotation.Transpose();
+
+  for (uint32_t i = 0; i < node->mNumMeshes; i++) {
+    aiMesh* input_mesh = scene->mMeshes[node->mMeshes[i]];
+    // normals
+    if (input_mesh->HasNormals())  {
+
+    }
+    // texture coordinates (only support 1 for now)
+    if (input_mesh->HasTextureCoords(0))  {
+
+    }
+    // todo vertex colors
+    //input_mesh->mNumVertices;
+    // allocate the vertex buffer
+
+    // Add the vertices
+    for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
+      aiVector3D p = input_mesh->mVertices[j];
+      p *= transform;
+      //p *= scale;
+      //*vertices++ = p.x;
+      //*vertices++ = p.y;
+      //*vertices++ = p.z;
+
+      if (input_mesh->HasNormals()) {
+        aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
+        n.Normalize();
+        //*vertices++ = n.x;
+        //*vertices++ = n.y;
+        //*vertices++ = n.z;
+      }
+
+      if (input_mesh->HasTextureCoords(0)) {
+        //*vertices++ = input_mesh->mTextureCoords[0][j].x;
+        //*vertices++ = input_mesh->mTextureCoords[0][j].y;
+      }
+    }
+
+    // calculate index count
+    for (uint32_t j = 0; j < input_mesh->mNumFaces; j++) {
+      aiFace& face = input_mesh->mFaces[j];
+      for (uint32_t k = 0; k < face.mNumIndices; ++k) {
+        //*indices++ = face.mIndices[k];
+      }
+    }
+
+    for (uint32_t i=0; i < node->mNumChildren; ++i) {
+      printMesh(scene, node->mChildren[i]);
+    }
+  }
+}
+
+bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>& right) { return left.second < right.second; }
+void ModelEuslisp::readYaml (string &config_file) {
+  // read yaml
+  string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head"}; // candidates of limb names
+
+  vector<pair<string, size_t> > limb_order;
+  ifstream fin(config_file.c_str());
+  if (fin.fail()) {
+    fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, config_file.c_str(), 0x1b);
+  } else {
+    YAML::Parser parser(fin);
+    parser.GetNextDocument(doc);
+
+    /* re-order limb name by lines of yaml */
+    BOOST_FOREACH(string& limb, limb_candidates) {
+      if ( doc.FindValue(limb) ) {
+        std::cerr << limb << "@" << doc[limb].GetMark().line << std::endl;
+        limb_order.push_back(pair<string, size_t>(limb, doc[limb].GetMark().line));
+      }
+    }
+    std::sort(limb_order.begin(), limb_order.end(), limb_order_asc);
+  }
+
+  // generate limbs including limb_name, link_names, and joint_names
+  vector<link_joint_pair> limbs;
+  for (size_t i = 0; i < limb_order.size(); i++) {
+    string limb_name = limb_order[i].first;
+    vector<string> tmp_link_names, tmp_joint_names;
+    try {
+      const YAML::Node& limb_doc = doc[limb_name];
+      for(unsigned int i = 0; i < limb_doc.size(); i++) {
+        const YAML::Node& n = limb_doc[i];
+        for(YAML::Iterator it=n.begin();it!=n.end();it++) {
+          string key, value; it.first() >> key; it.second() >> value;
+          tmp_joint_names.push_back(key);
+          //tmp_link_names.push_back(findChildLinkFromJointName(key.c_str())->getName());
+          g_all_link_names.push_back(pair<string, string>(key, value));
+        }
+      }
+      limbs.push_back(link_joint_pair(limb_name, link_joint(tmp_link_names, tmp_joint_names)));
+    } catch(YAML::RepresentationException& e) {
+    }
+  }
+}
+
+void ModelEuslisp::copyRobotClassDefinition () {
+  // load class definition
+  fprintf(fp, ";;\n");
+  fprintf(fp, ";; copy euscollada-robot class definition from euscollada/src/euscollada-robot.l\n");
+  fprintf(fp, ";;\n");
+  try {
+    std::string euscollada_path;
+
+    rospack::Rospack rp;
+    std::vector<std::string> search_path;
+    rp.getSearchPathFromEnv(search_path);
+    rp.crawl(search_path, 1);
+    std::string path;
+    rp.find("euscollada",euscollada_path);
+
+    euscollada_path += "/src/euscollada-robot.l";
+    ifstream fin(euscollada_path.c_str());
+    std::string buf;
+    while(fin && getline(fin, buf)) {
+      fprintf(fp, "%s\n", buf.c_str());
+    }
+
+    fprintf(fp, ";;\n");
+    fprintf(fp, ";; end of copy from %s\n", euscollada_path.c_str());
+    fprintf(fp, ";;\n");
+  } catch (runtime_error &e) {
+    std::cerr << "cannot resolve euscollada package path" << std::endl;
+  }
+}
+
+void ModelEuslisp::printRobotDefinition() {
+  fprintf(fp, "(defun %s () (setq *%s* (instance %s-robot :init)))\n",
+          arobot_name.c_str(), arobot_name.c_str(), arobot_name.c_str());
+  fprintf(fp, "\n");
+  fprintf(fp, "(defclass %s-robot\n", arobot_name.c_str());
+  fprintf(fp, "  :super euscollada-robot\n");
+  fprintf(fp, "  :slots ( ;; link names\n");
+  fprintf(fp, "         ");
+  for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+       link != robot->links_.end(); link++) {
+    fprintf(fp," %s", link->second->name.c_str());
+  }
+  fprintf(fp, "\n         ;; joint names\n");
+  fprintf(fp, "         ");
+  for (std::map<std::string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+       joint != robot->joints_.end(); joint++) {
+    fprintf(fp, " %s", joint->second->name.c_str());
+  }
+  fprintf(fp, "\n         )\n  )\n");
+  // TODO: add openrave manipulator tip frame
+  // TODO: add sensor frames
 }
 
 void ModelEuslisp::printLinks () {
@@ -419,72 +597,6 @@ void ModelEuslisp::printGeometries () {
   }
 }
 
-void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node) {
-  aiMatrix4x4 transform = node->mTransformation;
-  aiNode *pnode = node->mParent;
-  while (pnode)  {
-    if (pnode->mParent != NULL) {
-      transform = pnode->mTransformation * transform;
-    }
-    pnode = pnode->mParent;
-  }
-
-  aiMatrix3x3 rotation(transform);
-  aiMatrix3x3 inverse_transpose_rotation(rotation);
-  inverse_transpose_rotation.Inverse();
-  inverse_transpose_rotation.Transpose();
-
-  for (uint32_t i = 0; i < node->mNumMeshes; i++) {
-    aiMesh* input_mesh = scene->mMeshes[node->mMeshes[i]];
-    // normals
-    if (input_mesh->HasNormals())  {
-
-    }
-    // texture coordinates (only support 1 for now)
-    if (input_mesh->HasTextureCoords(0))  {
-
-    }
-    // todo vertex colors
-    //input_mesh->mNumVertices;
-    // allocate the vertex buffer
-
-    // Add the vertices
-    for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
-      aiVector3D p = input_mesh->mVertices[j];
-      p *= transform;
-      //p *= scale;
-      //*vertices++ = p.x;
-      //*vertices++ = p.y;
-      //*vertices++ = p.z;
-
-      if (input_mesh->HasNormals()) {
-        aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
-        n.Normalize();
-        //*vertices++ = n.x;
-        //*vertices++ = n.y;
-        //*vertices++ = n.z;
-      }
-
-      if (input_mesh->HasTextureCoords(0)) {
-        //*vertices++ = input_mesh->mTextureCoords[0][j].x;
-        //*vertices++ = input_mesh->mTextureCoords[0][j].y;
-      }
-    }
-
-    // calculate index count
-    for (uint32_t j = 0; j < input_mesh->mNumFaces; j++) {
-      aiFace& face = input_mesh->mFaces[j];
-      for (uint32_t k = 0; k < face.mNumIndices; ++k) {
-        //*indices++ = face.mIndices[k];
-      }
-    }
-
-    for (uint32_t i=0; i < node->mNumChildren; ++i) {
-      printMesh(scene, node->mChildren[i]);
-    }
-  }
-}
-
 void ModelEuslisp::writeToFile (string &filename) {
   if (!robot) {
     cerr << ";; not robot" << std::endl;
@@ -497,63 +609,44 @@ void ModelEuslisp::writeToFile (string &filename) {
     return;
   }
 
+  // print header
+  utsname uname_buf;
+  uname(&uname_buf);
+  time_t tm;
+  time(&tm);
+  localtime(&tm);
+
+  fprintf(fp, ";;\n");
+  fprintf(fp, ";; DO NOT EDIT THIS FILE\n");
+  fprintf(fp, ";;\n");
+  fprintf(fp, ";; this file is automatically generated from %s on (%s %s %s %s) at %s\n",
+          filename.c_str(), uname_buf.sysname, uname_buf.nodename, uname_buf.release,
+          uname_buf.machine, ctime(&tm));
+  fprintf(fp, ";;\n");
+  fprintf(fp, ";; %s $ ", get_current_dir_name());
+  //for (int i = 0; i < argc; i++) fprintf(fp, "%s ", argv[i]); fprintf(fp, "\n");
+  fprintf(fp, ";;\n");
+  fprintf(fp, "\n");
+
+  // pase
   addLinkCoords();
 
-  // start print
+  // start printing
+  copyRobotClassDefinition();
+
+  printRobotDefinition();
+
   printLinks();
 
   printJoints();
 
   printGeometries();
+
   //printLinkAccessor();
   //printJointAccessor();
 }
 
-bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>& right) { return left.second < right.second; }
-void ModelEuslisp::readYaml (string &config_file) {
-  // read yaml
-  string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head"}; // candidates of limb names
-
-  vector<pair<string, size_t> > limb_order;
-  ifstream fin(config_file.c_str());
-  if (fin.fail()) {
-    fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, config_file.c_str(), 0x1b);
-  } else {
-    YAML::Parser parser(fin);
-    parser.GetNextDocument(doc);
-
-    /* re-order limb name by lines of yaml */
-    BOOST_FOREACH(string& limb, limb_candidates) {
-      if ( doc.FindValue(limb) ) {
-        std::cerr << limb << "@" << doc[limb].GetMark().line << std::endl;
-        limb_order.push_back(pair<string, size_t>(limb, doc[limb].GetMark().line));
-      }
-    }
-    std::sort(limb_order.begin(), limb_order.end(), limb_order_asc);
-  }
-
-  // generate limbs including limb_name, link_names, and joint_names
-  vector<link_joint_pair> limbs;
-  for (size_t i = 0; i < limb_order.size(); i++) {
-    string limb_name = limb_order[i].first;
-    vector<string> tmp_link_names, tmp_joint_names;
-    try {
-      const YAML::Node& limb_doc = doc[limb_name];
-      for(unsigned int i = 0; i < limb_doc.size(); i++) {
-        const YAML::Node& n = limb_doc[i];
-        for(YAML::Iterator it=n.begin();it!=n.end();it++) {
-          string key, value; it.first() >> key; it.second() >> value;
-          tmp_joint_names.push_back(key);
-          //tmp_link_names.push_back(findChildLinkFromJointName(key.c_str())->getName());
-          g_all_link_names.push_back(pair<string, string>(key, value));
-        }
-      }
-      limbs.push_back(link_joint_pair(limb_name, link_joint(tmp_link_names, tmp_joint_names)));
-    } catch(YAML::RepresentationException& e) {
-    }
-  }
-
-}
+//// main ////
 namespace po = boost::program_options;
 int main(int argc, char** argv)
 {
