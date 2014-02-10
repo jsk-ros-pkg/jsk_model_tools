@@ -96,8 +96,9 @@
    )
   )
 
-;; copy euscollada-body class definition from euscollada/src/euscollada-robot.l
 (defclass collada-body
+;; This euscollada-body class is for bodies in robot model converted from collada files.
+;; This class provides :draw override for displaying glvertices.
   :super body
   :slots (glvertices)
   )
