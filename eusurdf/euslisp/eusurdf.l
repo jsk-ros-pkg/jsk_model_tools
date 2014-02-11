@@ -1088,7 +1088,7 @@ example:
                                 :scale scale))))))
 
 ;; fram_id:
-;;   mesh_name: hoge.stl
+;;   mesh_name: model.stl
 ;;   color:
 ;;     r: 1.0
 ;;     g: 0.0
