@@ -13,12 +13,14 @@
     <rosdoc config="rosdoc.yaml" />
   </export>
 
-  <rosdep name="collada-dom"/>
+  <rosdep name="collada_urdf"/>
+
   <depend package="collada_urdf"/>
   <depend package="euslisp"/>
   <depend package="roseus" />
   <depend package="jsk_tools" />
 
+  <rosdep name="collada-dom"/>
   <rosdep name="yaml-cpp"/>
   <rosdep name="libqhull" />
   <rosdep name="assimp" />
