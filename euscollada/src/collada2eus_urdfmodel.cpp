@@ -222,13 +222,15 @@ public:
   }
   void printJoint (boost::shared_ptr<const Joint> joint);
   void printLink (boost::shared_ptr<const Link> Link, Pose &pose);
+  void printLinks ();
+  void printJoints ();
+  void printEndCoords();
+  void printGeometries();
 
   // print methods
   void copyRobotClassDefinition ();
   void printRobotDefinition();
-  void printLinks ();
-  void printJoints ();
-  void printGeometries();
+  void printRobotMethods();
 
   void writeToFile (string &filename);
 private:
@@ -244,6 +246,8 @@ private:
   map <boost::shared_ptr<const Link>, MapCollision > m_link_collision;
   map <string, boost::shared_ptr<const Material> > m_materials;
   vector<pair<string, string> > g_all_link_names;
+  vector<link_joint_pair> limbs;
+
   FILE *fp;
   YAML::Node doc;
 
@@ -343,7 +347,7 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node) {
     if (input_mesh->HasTextureCoords(0))  {
 
     }
-    // todo vertex colors
+    // TODO vertex colors
     //input_mesh->mNumVertices;
     // allocate the vertex buffer
 
@@ -401,14 +405,13 @@ void ModelEuslisp::readYaml (string &config_file) {
     BOOST_FOREACH(string& limb, limb_candidates) {
       if ( doc.FindValue(limb) ) {
         std::cerr << limb << "@" << doc[limb].GetMark().line << std::endl;
-        limb_order.push_back(pair<string, size_t>(limb, doc[limb].GetMark().line));
+        limb_order.push_back(pair<string, size_t> (limb, doc[limb].GetMark().line));
       }
     }
     std::sort(limb_order.begin(), limb_order.end(), limb_order_asc);
   }
 
   // generate limbs including limb_name, link_names, and joint_names
-  vector<link_joint_pair> limbs;
   for (size_t i = 0; i < limb_order.size(); i++) {
     string limb_name = limb_order[i].first;
     vector<string> tmp_link_names, tmp_joint_names;
@@ -419,7 +422,12 @@ void ModelEuslisp::readYaml (string &config_file) {
         for(YAML::Iterator it=n.begin();it!=n.end();it++) {
           string key, value; it.first() >> key; it.second() >> value;
           tmp_joint_names.push_back(key);
-          //tmp_link_names.push_back(findChildLinkFromJointName(key.c_str())->getName());
+          boost::shared_ptr<const Joint> jnt = robot->getJoint(key);
+          if (!!jnt) {
+            tmp_link_names.push_back(jnt->child_link_name);
+          } else {
+            // error
+          }
           g_all_link_names.push_back(pair<string, string>(key, value));
         }
       }
@@ -469,28 +477,149 @@ void ModelEuslisp::printRobotDefinition() {
   fprintf(fp, "         ");
   for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
        link != robot->links_.end(); link++) {
-    fprintf(fp," %s", link->second->name.c_str());
+    if (add_link_suffix) {
+      fprintf(fp," %s_lk", link->second->name.c_str());
+    } else {
+      fprintf(fp," %s", link->second->name.c_str());
+    }
   }
   fprintf(fp, "\n         ;; joint names\n");
   fprintf(fp, "         ");
   for (std::map<std::string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
-    fprintf(fp, " %s", joint->second->name.c_str());
+    if(add_joint_suffix) {
+      fprintf(fp, " %s_jt", joint->second->name.c_str());
+    } else {
+      fprintf(fp, " %s", joint->second->name.c_str());
+    }
   }
   fprintf(fp, "\n         )\n  )\n");
   // TODO: add openrave manipulator tip frame
   // TODO: add sensor frames
 }
 
-void ModelEuslisp::printLinks () {
+void ModelEuslisp::printRobotMethods() {
+  fprintf(fp, "(defmethod %s-robot\n", arobot_name.c_str());
+  fprintf(fp, "  (:init\n");
+  fprintf(fp, "   (&rest args)\n");
+  fprintf(fp, "   (let ()\n");
+  // send super :init
+  fprintf(fp, "     (send-super* :init :name \"%s\" args)\n", arobot_name.c_str());
+  fprintf(fp, "\n");
 
+  printLinks();
+
+  printJoints();
+
+  printEndCoords();
+
+  printGeometries();
+
+  fprintf(fp, "  )\n");
+}
+
+void ModelEuslisp::printLinks () {
+  for (std::map<boost::shared_ptr<const Link>, Pose >::iterator it = m_link_coords.begin();
+       it != m_link_coords.end(); it++) {
+    printLink(it->first, it->second);
+  }
+
+  if (add_link_suffix) {
+    fprintf(fp, "     (send self :assoc %s_lk)\n", robot->root_link_->name.c_str());
+  } else {
+    fprintf(fp, "     (send self :assoc %s)\n", robot->root_link_->name.c_str());
+  }
 }
 
 void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
+  string thisNodeName;
+  if (add_link_suffix) {
+    thisNodeName.assign(link->name);
+    thisNodeName += "_lk";
+  } else {
+    thisNodeName.assign(link->name);
+  }
+  fprintf(fp, "     ;; link: %s\n", thisNodeName.c_str());
+  fprintf(fp, "     (let ((geom-lst (list \n");
+  {
+    map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.find (link);
+    if (it != m_link_visual.end()) {
+      for( MapVisual::iterator vmap = it->second.begin();
+           vmap != it->second.end(); vmap++) {
+        fprintf(fp, "                       (send self :_make_instance_%s)", vmap->first.c_str());
+      }
+    }
+    fprintf(fp, ")))\n");
+  }
+  fprintf(fp, "       (dolist (g (cdr geom-lst)) (send (car geom-lst) :assoc g))\n");
+  fprintf(fp, "       (setq %s\n", thisNodeName.c_str());
+  fprintf(fp, "             (instance bodyset-link\n");
+  fprintf(fp, "                       :init (make-cascoords)\n");
+  fprintf(fp, "                       :bodies geom-lst\n");
+  fprintf(fp, "                       :name \"%s\"))\n", link->name.c_str());
 
+  if (!!link->inertial) {
+    fprintf(fp, "       ;; inertial parameter for %s\n", thisNodeName.c_str());
+    fprintf(fp, "       (let ((tmp-cds (make-coords :pos ");
+    fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+            link->inertial->origin.position.x * 1000,
+            link->inertial->origin.position.y * 1000,
+            link->inertial->origin.position.z * 1000);
+    {
+      double qx, qy, qz, qw;
+      link->inertial->origin.rotation.getQuaternion(qx, qy, qz, qw);
+      if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
+        fprintf(fp, "\n                                   :rot (quaternion2matrix ");
+        fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
+                qw, qx, qy, qz);
+      }
+      fprintf(fp, ")\n");
+    }
+    fprintf(fp, "                      ))\n");
+    //
+    fprintf(fp, "         (send %s :weight %.3f)\n", thisNodeName.c_str(), link->inertial->mass * 1000);
+    fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNodeName.c_str());
+    fprintf(fp, "               (matrix\n");
+    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
+            link->inertial->ixx * 1000 * 1000 * 1000,
+            link->inertial->ixy * 1000 * 1000 * 1000,
+            link->inertial->ixz * 1000 * 1000 * 1000);
+    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
+            link->inertial->ixy * 1000 * 1000 * 1000,
+            link->inertial->iyy * 1000 * 1000 * 1000,
+            link->inertial->iyz * 1000 * 1000 * 1000);
+    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")))\n",
+            link->inertial->ixz * 1000 * 1000 * 1000,
+            link->inertial->iyz * 1000 * 1000 * 1000,
+            link->inertial->izz * 1000 * 1000 * 1000);
+    fprintf(fp, "         (setq (%s . acentroid) (send tmp-cds :worldpos))\n", thisNodeName.c_str());
+    fprintf(fp, "         )\n");
+  } else {
+    fprintf(fp, "       (progn (send %s :weight 0.0) (send %s :centroid (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
+            thisNodeName.c_str(), thisNodeName.c_str(), thisNodeName.c_str());
+  }
+  //
+  fprintf(fp, "       ;; global coordinates for %s\n", thisNodeName.c_str());
+  fprintf(fp, "       (let ((world-cds (make-coords :pos ");
+  fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+          pose.position.x * 1000, pose.position.y * 1000, pose.position.z * 1000);
+  {
+    double qx, qy, qz, qw;
+    pose.rotation.getQuaternion(qx, qy, qz, qw);
+    if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
+      fprintf(fp, "\n                                   :rot (quaternion2matrix ");
+      fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
+              qw, qx, qy, qz);
+    }
+    fprintf(fp, ")\n");
+  }
+  fprintf(fp, "                        ))\n");
+  fprintf(fp, "         (send %s :transform world-cds))\n", thisNodeName.c_str());
+  fprintf(fp, "       )\n\n");
 }
 
 void ModelEuslisp::printJoints () {
+  fprintf(fp, "\n     ;; joint models\n");
   for (std::map<std::string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
     printJoint(joint->second);
@@ -503,12 +632,15 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
       && joint->type !=Joint::PRISMATIC && joint->type != Joint::FIXED) {
     // error
   }
-
+  string thisJointName;
   if (add_joint_suffix) {
-    fprintf(fp, "     (setq %s_jt\n", joint->name.c_str());
+    thisJointName.assign(joint->name);
+    thisJointName += "_jt";
   } else {
-    fprintf(fp, "     (setq %s\n", joint->name.c_str());
+    thisJointName.assign(joint->name);
   }
+  fprintf(fp, "     ;; joint: %s\n", thisJointName.c_str());
+  fprintf(fp, "     (setq %s\n", thisJointName.c_str());
   fprintf(fp, "           (instance %s :init\n", linear?"linear-joint":"rotational-joint");
   fprintf(fp, "                     :name \"%s\"\n", joint->name.c_str());
   if (add_link_suffix) {
@@ -536,16 +668,256 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
   fprintf(fp, "                     ))\n");
 }
 
+void ModelEuslisp::printEndCoords () {
+  // TODO: end coords from collada ...
+  fprintf(fp, "     ;; end coords from yaml file\n");
+  BOOST_FOREACH(link_joint_pair& limb, limbs) {
+    string limb_name = limb.first;
+    vector<string> link_names = limb.second.first;
+
+    if (link_names.size()>0) {
+      string end_coords_parent_name(link_names.back());
+      try {
+        const YAML::Node& n = doc[limb_name+"-end-coords"]["parent"];
+        n >> end_coords_parent_name;
+      } catch(YAML::RepresentationException& e) {
+      }
+      if (add_link_suffix) {
+        fprintf(fp, "     (setq %s-end-coords (make-cascoords :coords (send %s_lk :copy-worldcoords) :name :%s-end-coords))\n",
+                limb_name.c_str(), end_coords_parent_name.c_str(), limb_name.c_str());
+      } else {
+        fprintf(fp, "     (setq %s-end-coords (make-cascoords :coords (send %s :copy-worldcoords) :name %s-end-coords))\n",
+                limb_name.c_str(), end_coords_parent_name.c_str(), limb_name.c_str());
+      }
+      try {
+        const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
+        double value;
+        fprintf(fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
+        for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
+        fprintf(fp, "))\n");
+      } catch(YAML::RepresentationException& e) {
+      }
+      try {
+        const YAML::Node& n = doc[limb_name+"-end-coords"]["rotate"];
+        double value;
+        fprintf(fp, "     (send %s-end-coords :rotate", limb_name.c_str());
+        for(unsigned int i = 3; i < 4; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
+        fprintf(fp, " (float-vector");
+        for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", value);}
+        fprintf(fp, "))\n");
+      } catch(YAML::RepresentationException& e) {
+      }
+      if(add_link_suffix) {
+        fprintf(fp, "     (send %s_lk :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
+      } else {
+        fprintf(fp, "     (send %s :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
+      }
+    }
+  }
+  fprintf(fp, "\n");
+
+  // limb name
+  fprintf(fp, "     ;; limbs\n");
+  BOOST_FOREACH(link_joint_pair& limb, limbs) {
+    string limb_name = limb.first;
+    vector<string> link_names = limb.second.first;
+    if ( link_names.size() > 0 ) {
+      fprintf(fp, "     (setq %s (list", limb_name.c_str());
+      if (add_link_suffix) {
+        for (unsigned int i = 0; i < link_names.size(); i++)
+          fprintf(fp, " %s_lk", link_names[i].c_str());
+        fprintf(fp, "))\n");
+      } else {
+        for (unsigned int i = 0; i < link_names.size(); i++)
+          fprintf(fp, " %s", link_names[i].c_str());
+        fprintf(fp, "))\n");
+      }
+      fprintf(fp, "\n");
+      // find root link by tracing limb's link list
+      fprintf(fp, "     (setq %s-root-link\n", limb_name.c_str());
+      fprintf(fp, "           (labels ((find-parent (l) (if (find (send l :parent) %s) (find-parent (send l :parent)) l)))\n",
+              limb_name.c_str());
+      fprintf(fp, "             (find-parent (car %s))))\n", limb_name.c_str());
+    }
+  }
+  fprintf(fp, "\n");
+
+  // link name
+  fprintf(fp, "     ;; links\n");
+  if (add_link_suffix) {
+    fprintf(fp, "     (setq links (list %s_lk", robot->root_link_->name.c_str());
+  } else {
+    fprintf(fp, "     (setq links (list %s", robot->root_link_->name.c_str());
+  }
+  BOOST_FOREACH(link_joint_pair& limb, limbs) {
+    string limb_name = limb.first;
+    vector<string> link_names = limb.second.first;
+    if (add_link_suffix) {
+      for (unsigned int i = 0; i < link_names.size(); i++) {
+        fprintf(fp, " %s_lk", link_names[i].c_str());
+      }
+    } else {
+      for (unsigned int i = 0; i < link_names.size(); i++) {
+        fprintf(fp, " %s", link_names[i].c_str());
+      }
+    }
+  }
+  fprintf(fp, "))\n");
+
+  fprintf(fp, "     ;; joint-list\n");
+  fprintf(fp, "     (setq joint-list (list");
+  BOOST_FOREACH(link_joint_pair& limb, limbs) {
+    vector<string> joint_names = limb.second.second;
+    if(add_joint_suffix) {
+      for (unsigned int i = 0; i < joint_names.size(); i++) {
+        fprintf(fp, " %s_jt", joint_names[i].c_str());
+      }
+    } else {
+      for (unsigned int i = 0; i < joint_names.size(); i++) {
+        fprintf(fp, " %s", joint_names[i].c_str());
+      }
+    }
+  }
+  fprintf(fp, "))\n");
+  fprintf(fp, "\n");
+
+  // init ending
+  fprintf(fp, "     ;; init-ending\n");
+  fprintf(fp, "     (send self :init-ending)\n\n");
+
+  // bodies
+  fprintf(fp, "     ;; overwrite bodies to return draw-things links not (send link :bodies)\n");
+  fprintf(fp, "     (setq bodies (flatten (mapcar #'(lambda (b) (if (find-method b :bodies) (send b :bodies))) (list");
+  for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+       link != robot->links_.end(); link++) {
+    if (add_link_suffix) {
+      fprintf(fp, " %s_lk", link->first.c_str());
+    } else {
+      fprintf(fp, " %s", link->first.c_str());
+    }
+  }
+  fprintf(fp, "))))\n\n");
+
+  // when - angle-vector: reset-pose is defined in yaml file
+  try {
+    doc["angle-vector"]["reset-pose"];
+    fprintf(fp, "     (send self :reset-pose) ;; :set reset-pose\n\n");
+  } catch(YAML::RepresentationException& e) {
+  }
+
+  fprintf(fp, "     self)) ;; end of :init\n\n");
+
+  try {
+    const YAML::Node& n = doc["angle-vector"];
+    if ( n.size() > 0 ) fprintf(fp, "  ;; pre-defined pose methods\n");
+    for(YAML::Iterator it = n.begin(); it != n.end(); it++) {
+      string name; it.first() >> name;
+      fprintf(fp, "  (:%s () (send self :angle-vector (float-vector", name.c_str());
+      const YAML::Node& v = it.second();
+      for(unsigned int i = 0; i < v.size(); i++){
+        double d; v[i] >> d;
+        fprintf(fp, " %f", d);
+      }
+      fprintf(fp, ")))\n");
+    }
+  } catch(YAML::RepresentationException& e) {
+  }
+
+  // all joint and link name
+  fprintf(fp, "\n    ;; all joints\n");
+  for (std::map<std::string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+       joint != robot->joints_.end(); joint++) {
+    if(add_joint_suffix) {
+      fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_jt args))\n", joint->first.c_str(), joint->first.c_str());
+    } else {
+      fprintf(fp, "  (:%s (&rest args) (forward-message-to %s args))\n", joint->first.c_str(), joint->first.c_str());
+    }
+  }
+
+  if (add_link_suffix) {
+    fprintf(fp, "\n  ;; all links forwarding\n");
+    fprintf(fp, "  (:links (&rest args)\n");
+    fprintf(fp, "   (if (null args) (return-from :links (send-super :links)))\n");
+    fprintf(fp, "   (let ((key (car args))\n           (nargs (cdr args)))\n");
+    fprintf(fp, "     (unless (keywordp key)\n         (return-from :links (send-super* :links args)))\n       (case key\n");
+    for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+         link != robot->links_.end(); link++) {
+      fprintf(fp, "       (:%s (forward-message-to %s_lk nargs))\n", link->first.c_str(), link->first.c_str());
+    }
+    fprintf(fp, "       (t (send-super* :links args)))))\n");
+  }
+  fprintf(fp, "\n  ;; all links\n");
+
+  for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+       link != robot->links_.end(); link++) {
+    if (add_link_suffix) {
+      fprintf(fp, "  (:%s_lk (&rest args) (forward-message-to %s_lk args))\n", link->first.c_str(), link->first.c_str());
+    } else {
+      fprintf(fp, "  (:%s (&rest args) (forward-message-to %s args))\n", link->first.c_str(), link->first.c_str());
+    }
+  }
+
+  fprintf(fp, "\n    ;; user-defined joint\n");
+  for(vector<pair<string, string> >::iterator it = g_all_link_names.begin();
+      it != g_all_link_names.end(); it++){
+    if(add_joint_suffix) {
+      fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_jt args))\n", it->second.c_str(), it->first.c_str());
+    } else {
+      fprintf(fp, "  (:%s (&rest args) (forward-message-to %s args))\n", it->second.c_str(), it->first.c_str());
+    }
+  }
+
+#if 0
+  // TODO: print sensors
+  // sensor
+  fprintf(fp, "\n    ;; attach_sensor\n");
+  if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
+    domArticulated_system *thisArticulated;
+    for ( size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL); ii++) {
+      g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
+      if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
+    }
+    std::vector<std::string> fsensor_list;
+    std::vector<std::string> imusensor_list;
+    for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
+      domExtraRef pextra = thisArticulated->getExtra_array()[ie];
+      // find element which type is attach_sensor and is attached to thisNode
+      if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
+        fprintf(fp, "    (:%s (&rest args) (forward-message-to %s-sensor-coords args))\n", pextra->getName(), pextra->getName());
+        if (getSensorType(pextra) == "base_force6d" ) {
+          fsensor_list.push_back(string(pextra->getName()));
+        } else if (getSensorType(pextra) == "base_imu" ) {
+          imusensor_list.push_back(string(pextra->getName()));
+        }
+      }
+    }
+    fprintf(fp, "    (:force-sensors (&rest args) (forward-message-to-all (list ");
+    for (size_t i = 0; i < fsensor_list.size(); i++) {
+      fprintf(fp, "(send self :%s) ", fsensor_list[i].c_str());
+    }
+    fprintf(fp, ") args))\n");
+    fprintf(fp, "    (:imu-sensors (&rest args) (forward-message-to-all (list ");
+    for (size_t i = 0; i < imusensor_list.size(); i++) {
+      fprintf(fp, "(send self :%s) ", imusensor_list[i].c_str());
+    }
+    fprintf(fp, ") args))\n");
+  }
+  fprintf(fp, "  )\n\n");
+#endif
+}
+
 void ModelEuslisp::printGeometries () {
   if (use_collision) {
 
   } else {
+    //fprintf(fp, "(defmethod %s-robot\n", arobot_name.c_str());
     for(map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.begin();
         it != m_link_visual.end(); it++) {
       //it->first
       for( MapVisual::iterator vmap = it->second.begin();
            vmap != it->second.end(); vmap++) {
         string gname = vmap->first;
+#if 0
         fprintf(fp, "(defclass %s_%s\n", arobot_name.c_str(), gname.c_str());
         fprintf(fp, "  :super collada-body\n");
         fprintf(fp, "  :slots ())\n");
@@ -558,7 +930,7 @@ void ModelEuslisp::printGeometries () {
           fprintf(fp, "   )\n");
           return;
         }
-
+#endif
         // Pose p = vmap->second->origin;
         boost::shared_ptr<Geometry> g = vmap->second->geometry;
         if (g->type == Geometry::MESH) {
@@ -571,29 +943,53 @@ void ModelEuslisp::printGeometries () {
         } else if (g->type == Geometry::CYLINDER) {
           //
         } else {
-          fprintf(fp, "  (:init (&key (name \"%s\"))\n", gname.c_str());
-          fprintf(fp, "         (replace-object self (send self :qhull-faceset))\n");
-          fprintf(fp, "         (if name (send self :name name))\n");
-          fprintf(fp, "         (send self :def-gl-vertices)\n");
-          fprintf(fp, "         self)\n");
-
+          fprintf(fp, "  (:_make_instance_%s ()\n", vmap->first.c_str());
+          fprintf(fp, "    (let ((geom (instance collada-body :init :name \"%s\")) glvertices)\n", gname.c_str());
+          //TODO: qhull
+          //fprintf(fp, "      (replace-object geom (send geom :qhull-faceset))\n");
           Assimp::Importer importer;
           importer.SetIOHandler(new ResourceIOSystem());
           const aiScene* scene = importer.ReadFile(gname,
                                                    aiProcess_SortByPType|aiProcess_GenNormals|aiProcess_Triangulate|
                                                    aiProcess_GenUVCoords|aiProcess_FlipUVs);
           if (scene && scene->HasMeshes()) {
-            fprintf(fp, "  (:def-gl-vertices ()\n");
-            fprintf(fp, "    (setq glvertices\n");
+            fprintf(fp, "      (setq\n");
+            fprintf(fp, "       glvertices\n");
             fprintf(fp, "       (instance gl::glvertices :init\n");
-            fprintf(fp, "          (list\n"); // mesh-list
+            fprintf(fp, "                 (list\n");
             printMesh(scene, scene->mRootNode);
+            fprintf(fp, "                  )\n");
+            fprintf(fp, "                 ))\n");
+            //
+            fprintf(fp, "      (let ((local-cds (make-coords :pos ");
+            fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+                    vmap->second->origin.position.x * 1000,
+                    vmap->second->origin.position.y * 1000,
+                    vmap->second->origin.position.z * 1000);
+            {
+              double qx, qy, qz, qw;
+              vmap->second->origin.rotation.getQuaternion(qx, qy, qz, qw);
+              if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
+                fprintf(fp, "\n                                    :rot (quaternion2matrix ");
+                fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
+                        qw, qx, qy, qz);
+              }
+              fprintf(fp, ")\n");
+              fprintf(fp, "                       ))\n");
+            }
+            fprintf(fp, "        (send glvertices :transform local-cds))\n");
+            //
+            fprintf(fp, "      (send glvertices :calc-normals)\n");
+            fprintf(fp, "      (send geom :assoc glvertices)\n");
+            fprintf(fp, "      (setq (geom . glvertices) glvertices)\n");
           } else {
             // error
           }
+          fprintf(fp, "      geom))\n");
         }
       }
     }
+    //fprintf(fp, "  )\n");
   }
 }
 
@@ -636,14 +1032,11 @@ void ModelEuslisp::writeToFile (string &filename) {
 
   printRobotDefinition();
 
-  printLinks();
+  printRobotMethods();
 
-  printJoints();
-
-  printGeometries();
-
-  //printLinkAccessor();
-  //printJointAccessor();
+  //printLinks();
+  //printJoints();
+  //printGeometries();
 }
 
 //// main ////
@@ -758,5 +1151,8 @@ int main(int argc, char** argv)
 
   ModelEuslisp eusmodel(robot);
   eusmodel.setRobotName(arobot_name);
+  if (config_file.size() > 0) {
+    eusmodel.readYaml(config_file);
+  }
   eusmodel.writeToFile (output_file);
 }
