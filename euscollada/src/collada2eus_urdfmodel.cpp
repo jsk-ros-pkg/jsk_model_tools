@@ -4,6 +4,7 @@
 #include "urdf/model.h"
 
 #include <sys/utsname.h>
+#include <math.h>
 
 #if IS_ASSIMP3
 // assimp 3 (assimp_devel)
@@ -204,7 +205,7 @@ public:
 
   // methods for parsing robot model for euslisp
   void addLinkCoords();
-  void printMesh(const aiScene* scene, const aiNode* node);
+  void printMesh(const aiScene* scene, const aiNode* node, const string &material_name);
   void readYaml(string &config_file);
 
   Pose getLinkPose(boost::shared_ptr<const Link> link) {
@@ -220,8 +221,11 @@ public:
 
     return ret;
   }
-  void printJoint (boost::shared_ptr<const Joint> joint);
+
   void printLink (boost::shared_ptr<const Link> Link, Pose &pose);
+  void printJoint (boost::shared_ptr<const Joint> joint);
+  void printGeometry (boost::shared_ptr<Geometry> g, const Pose &pose,
+                      const string &name, const string &material_name);
   void printLinks ();
   void printJoints ();
   void printEndCoords();
@@ -322,7 +326,8 @@ void ModelEuslisp::addLinkCoords() {
   }
 }
 
-void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node) {
+void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
+                             const string &material_name) {
   aiMatrix4x4 transform = node->mTransformation;
   aiNode *pnode = node->mParent;
   while (pnode)  {
@@ -336,55 +341,66 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node) {
   aiMatrix3x3 inverse_transpose_rotation(rotation);
   inverse_transpose_rotation.Inverse();
   inverse_transpose_rotation.Transpose();
-
   for (uint32_t i = 0; i < node->mNumMeshes; i++) {
     aiMesh* input_mesh = scene->mMeshes[node->mMeshes[i]];
-    // normals
-    if (input_mesh->HasNormals())  {
-
+    fprintf(fp, "                  (list ;; mesh description\n");
+    fprintf(fp, "                   (list :type :triangles)\n");
+    fprintf(fp, "                   (list :material (list\n");
+    if (material_name.size() > 0) {
+      // TODO: using material_name on urdf
+      fprintf(fp, ";; material: %s not using\n", material_name.c_str());
+    } else {
+      if (!!scene->mMaterials) {
+        aiMaterial *am = scene->mMaterials[input_mesh->mMaterialIndex];
+        //fprintf(fp, "(list :color (float-vector %f %f %f))\n", );
+        //fprintf(fp, "(list :ambient (float-vector %f %f %f))\n", );
+        //fprintf(fp, "(list :diffuse (float-vector %f %f %f))\n", );
+      }
     }
-    // texture coordinates (only support 1 for now)
-    if (input_mesh->HasTextureCoords(0))  {
+    fprintf(fp, "))\n");
 
+    fprintf(fp, "                   (list :indices #i(");
+    for (uint32_t j = 0; j < input_mesh->mNumFaces; j++) {
+      aiFace& face = input_mesh->mFaces[j];
+      for (uint32_t k = 0; k < face.mNumIndices; ++k) {
+        fprintf(fp, " %d", face.mIndices[k]);
+      }
     }
-    // TODO vertex colors
-    //input_mesh->mNumVertices;
-    // allocate the vertex buffer
+    fprintf(fp, "))\n");
 
+    fprintf(fp, "                   (list :vertices #2f(");
     // Add the vertices
     for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
       aiVector3D p = input_mesh->mVertices[j];
       p *= transform;
       //p *= scale;
-      //*vertices++ = p.x;
-      //*vertices++ = p.y;
-      //*vertices++ = p.z;
+      fprintf(fp, "(%f %f %f)", 1000 * p.x, 1000 * p.y, 1000 * p.z);
+    }
+    fprintf(fp, "))");
 
-      if (input_mesh->HasNormals()) {
+    if (input_mesh->HasNormals()) {
+      fprintf(fp, "\n");
+      fprintf(fp, "                   (list :normals #2f(");
+      for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
         aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
         n.Normalize();
-        //*vertices++ = n.x;
-        //*vertices++ = n.y;
-        //*vertices++ = n.z;
+        fprintf(fp, "(%f %f %f)", n.x, n.y, n.z);
       }
-
-      if (input_mesh->HasTextureCoords(0)) {
+      fprintf(fp, "))");
+    }
+#if 0
+    if (input_mesh->HasTextureCoords(0)) {
+      for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
+        aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
         //*vertices++ = input_mesh->mTextureCoords[0][j].x;
         //*vertices++ = input_mesh->mTextureCoords[0][j].y;
       }
     }
-
-    // calculate index count
-    for (uint32_t j = 0; j < input_mesh->mNumFaces; j++) {
-      aiFace& face = input_mesh->mFaces[j];
-      for (uint32_t k = 0; k < face.mNumIndices; ++k) {
-        //*indices++ = face.mIndices[k];
-      }
-    }
-
-    for (uint32_t i=0; i < node->mNumChildren; ++i) {
-      printMesh(scene, node->mChildren[i]);
-    }
+#endif
+    fprintf(fp, ")\n");
+  }
+  for (uint32_t i = 0; i < node->mNumChildren; ++i) {
+    printMesh(scene, node->mChildren[i], material_name);
   }
 }
 
@@ -659,8 +675,12 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     float min = joint->limits->lower;
     float max = joint->limits->upper;
     fprintf(fp, "                     ");
-    fprintf(fp, ":min "); if (min == FLT_MAX) fprintf(fp, "*-inf*"); else fprintf(fp, "%f", min);
-    fprintf(fp, " :max "); if (max ==-FLT_MAX) fprintf(fp,  "*inf*"); else fprintf(fp, "%f", max);
+    fprintf(fp, ":min ");
+    if (min == -FLT_MAX) fprintf(fp, "*-inf*"); else
+      fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? min * 1000 : min * 180.0 / M_PI);
+    fprintf(fp, " :max ");
+    if (max == FLT_MAX) fprintf(fp,  "*inf*"); else
+      fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? max * 1000 : max * 180.0 / M_PI);
     fprintf(fp, "\n");
     fprintf(fp, "                     :max-joint-velocity %f\n", joint->limits->velocity);
     fprintf(fp, "                     :max-joint-torque %f\n", joint->limits->effort);
@@ -906,90 +926,80 @@ void ModelEuslisp::printEndCoords () {
 #endif
 }
 
+void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pose,
+                                  const string &name, const string &material_name) {
+  string gname(name);
+  if (g->type == Geometry::MESH) gname = ((Mesh *)(g.get()))->filename;
+  fprintf(fp, "  (:_make_instance_%s ()\n", name.c_str());
+  fprintf(fp, "    (let (geom glvertices qhull)\n");
+
+  if (g->type == Geometry::SPHERE) {
+    //
+  } else if (g->type == Geometry::BOX) {
+    //
+  } else if (g->type == Geometry::CYLINDER) {
+    //
+  } else { // g->type == Geometry::MESH
+    //TODO: qhull
+    //fprintf(fp, "      (replace-object geom (send geom :qhull-faceset))\n");
+    Assimp::Importer importer;
+    importer.SetIOHandler(new ResourceIOSystem());
+    const aiScene* scene = importer.ReadFile(gname,
+                                             aiProcess_SortByPType|aiProcess_GenNormals|aiProcess_Triangulate|
+                                             aiProcess_GenUVCoords|aiProcess_FlipUVs);
+    if (scene && scene->HasMeshes()) {
+      fprintf(fp, "      (setq\n");
+      fprintf(fp, "       glvertices\n");
+      fprintf(fp, "       (instance gl::glvertices :init\n");
+      fprintf(fp, "                 (list ;; mesh list\n");
+      printMesh(scene, scene->mRootNode, material_name);
+      fprintf(fp, "                  )\n");
+      fprintf(fp, "                 ))\n");
+      //
+      fprintf(fp, "      (let ((local-cds (make-coords :pos ");
+      fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+              pose.position.x * 1000,
+              pose.position.y * 1000,
+              pose.position.z * 1000);
+      {
+        double qx, qy, qz, qw;
+        pose.rotation.getQuaternion(qx, qy, qz, qw);
+        if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
+          fprintf(fp, "\n                                    :rot (quaternion2matrix ");
+          fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
+                  qw, qx, qy, qz);
+        }
+        fprintf(fp, ")\n");
+        fprintf(fp, "                       ))\n");
+      }
+      fprintf(fp, "        (send glvertices :transform local-cds))\n");
+      //
+      fprintf(fp, "      (send glvertices :calc-normals)\n");
+    } else {
+      // error
+    }
+    // qhull
+  }
+  fprintf(fp, "      (setq geom (instance collada-body :init :replace-obj qhull :name \"%s\"))\n", gname.c_str());
+  if (g->type == Geometry::MESH) {
+    fprintf(fp, "      (send geom :assoc glvertices)\n");
+    fprintf(fp, "      (setq (geom . glvertices) glvertices)\n");
+  }
+  fprintf(fp, "      geom))\n");
+}
+
 void ModelEuslisp::printGeometries () {
   if (use_collision) {
 
   } else {
-    //fprintf(fp, "(defmethod %s-robot\n", arobot_name.c_str());
     for(map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.begin();
         it != m_link_visual.end(); it++) {
-      //it->first
       for( MapVisual::iterator vmap = it->second.begin();
            vmap != it->second.end(); vmap++) {
-        string gname = vmap->first;
-#if 0
-        fprintf(fp, "(defclass %s_%s\n", arobot_name.c_str(), gname.c_str());
-        fprintf(fp, "  :super collada-body\n");
-        fprintf(fp, "  :slots ())\n");
-        fprintf(fp, "(defmethod %s_%s\n", arobot_name.c_str(), gname.c_str());
-        if (false)  {
-          fprintf(fp, "  (:init (&key (name))\n");
-          fprintf(fp, "         (replace-object self (make-cube 10 10 10))\n");
-          fprintf(fp, "         (if name (send self :name name))\n");
-          fprintf(fp, "         self)\n");
-          fprintf(fp, "   )\n");
-          return;
-        }
-#endif
-        // Pose p = vmap->second->origin;
-        boost::shared_ptr<Geometry> g = vmap->second->geometry;
-        if (g->type == Geometry::MESH) {
-          gname = ((Mesh *)(g.get()))->filename;
-        }
-        if (g->type == Geometry::SPHERE) {
-          //
-        } else if (g->type == Geometry::BOX) {
-          //
-        } else if (g->type == Geometry::CYLINDER) {
-          //
-        } else {
-          fprintf(fp, "  (:_make_instance_%s ()\n", vmap->first.c_str());
-          fprintf(fp, "    (let ((geom (instance collada-body :init :name \"%s\")) glvertices)\n", gname.c_str());
-          //TODO: qhull
-          //fprintf(fp, "      (replace-object geom (send geom :qhull-faceset))\n");
-          Assimp::Importer importer;
-          importer.SetIOHandler(new ResourceIOSystem());
-          const aiScene* scene = importer.ReadFile(gname,
-                                                   aiProcess_SortByPType|aiProcess_GenNormals|aiProcess_Triangulate|
-                                                   aiProcess_GenUVCoords|aiProcess_FlipUVs);
-          if (scene && scene->HasMeshes()) {
-            fprintf(fp, "      (setq\n");
-            fprintf(fp, "       glvertices\n");
-            fprintf(fp, "       (instance gl::glvertices :init\n");
-            fprintf(fp, "                 (list\n");
-            printMesh(scene, scene->mRootNode);
-            fprintf(fp, "                  )\n");
-            fprintf(fp, "                 ))\n");
-            //
-            fprintf(fp, "      (let ((local-cds (make-coords :pos ");
-            fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
-                    vmap->second->origin.position.x * 1000,
-                    vmap->second->origin.position.y * 1000,
-                    vmap->second->origin.position.z * 1000);
-            {
-              double qx, qy, qz, qw;
-              vmap->second->origin.rotation.getQuaternion(qx, qy, qz, qw);
-              if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
-                fprintf(fp, "\n                                    :rot (quaternion2matrix ");
-                fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
-                        qw, qx, qy, qz);
-              }
-              fprintf(fp, ")\n");
-              fprintf(fp, "                       ))\n");
-            }
-            fprintf(fp, "        (send glvertices :transform local-cds))\n");
-            //
-            fprintf(fp, "      (send glvertices :calc-normals)\n");
-            fprintf(fp, "      (send geom :assoc glvertices)\n");
-            fprintf(fp, "      (setq (geom . glvertices) glvertices)\n");
-          } else {
-            // error
-          }
-          fprintf(fp, "      geom))\n");
-        }
+        printGeometry(vmap->second->geometry, vmap->second->origin,
+                      vmap->first, vmap->second->material_name);
       }
     }
-    //fprintf(fp, "  )\n");
   }
 }
 
@@ -1033,10 +1043,6 @@ void ModelEuslisp::writeToFile (string &filename) {
   printRobotDefinition();
 
   printRobotMethods();
-
-  //printLinks();
-  //printJoints();
-  //printGeometries();
 }
 
 //// main ////
