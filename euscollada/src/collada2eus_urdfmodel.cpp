@@ -345,16 +345,29 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
     aiMesh* input_mesh = scene->mMeshes[node->mMeshes[i]];
     fprintf(fp, "                  (list ;; mesh description\n");
     fprintf(fp, "                   (list :type :triangles)\n");
-    fprintf(fp, "                   (list :material (list\n");
+    fprintf(fp, "                   (list :material (list");
     if (material_name.size() > 0) {
       // TODO: using material_name on urdf
       fprintf(fp, ";; material: %s not using\n", material_name.c_str());
     } else {
       if (!!scene->mMaterials) {
         aiMaterial *am = scene->mMaterials[input_mesh->mMaterialIndex];
-        //fprintf(fp, "(list :color (float-vector %f %f %f))\n", );
-        //fprintf(fp, "(list :ambient (float-vector %f %f %f))\n", );
-        //fprintf(fp, "(list :diffuse (float-vector %f %f %f))\n", );
+        aiReturn ar;
+        aiColor4D clr4d( 0.0, 0.0, 0.0, 0.0);
+        ar = am->Get (AI_MATKEY_COLOR_AMBIENT, clr4d);
+        if (ar == aiReturn_SUCCESS) {
+          fprintf(fp, "\n                    (list :ambient (float-vector %f %f %f %f))",
+                  clr4d[0], clr4d[1], clr4d[2], clr4d[3]);
+        }
+        ar = am->Get (AI_MATKEY_COLOR_DIFFUSE, clr4d);
+        if (ar == aiReturn_SUCCESS) {
+          fprintf(fp, "\n                    (list :diffuse (float-vector %f %f %f %f))",
+                  clr4d[0], clr4d[1], clr4d[2], clr4d[3]);
+        }
+        // ar = am->Get (AI_MATKEY_COLOR_SPECULAR, clr4d);
+        // ar = am->Get (AI_MATKEY_COLOR_EMISSIVE, clr4d);
+        // float val;
+        // ar = am->Get (AI_MATKEY_SHININESS, val);
       }
     }
     fprintf(fp, "))\n");
@@ -538,6 +551,17 @@ void ModelEuslisp::printLinks () {
   for (std::map<boost::shared_ptr<const Link>, Pose >::iterator it = m_link_coords.begin();
        it != m_link_coords.end(); it++) {
     printLink(it->first, it->second);
+  }
+
+  for (std::map<std::string, boost::shared_ptr<Joint> >::iterator it = robot->joints_.begin();
+       it != robot->joints_.end(); it++) {
+    if (add_link_suffix) {
+      fprintf(fp, "     (send %s_lk :assoc %s_lk)\n",
+              it->second->parent_link_name.c_str(), it->second->child_link_name.c_str());
+    } else {
+      fprintf(fp, "     (send %s :assoc %s)\n",
+              it->second->parent_link_name.c_str(), it->second->child_link_name.c_str());
+    }
   }
 
   if (add_link_suffix) {
