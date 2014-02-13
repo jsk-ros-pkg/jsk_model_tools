@@ -14,5 +14,9 @@ link_directories(${catkin_LIBRARY_DIRS})
 
 add_executable(collada2eus src/collada2eus.cpp)
 target_link_libraries(collada2eus ${catkin_LIBRARIES} qhull ${yaml_cpp_LIBRARIES} ${colladadom_LIBRARIES})
+install(TARGETS collada2eus
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 
