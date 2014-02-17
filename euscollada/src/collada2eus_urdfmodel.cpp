@@ -37,9 +37,9 @@
 
 #include "yaml-cpp/yaml.h"
 
-//extern "C" {
-//#include <qhull/qhull_a.h>
-//}
+extern "C" {
+#include <qhull/qhull_a.h>
+}
 
 #include "rospack/rospack.h"
 
@@ -205,7 +205,8 @@ public:
 
   // methods for parsing robot model for euslisp
   void addLinkCoords();
-  void printMesh(const aiScene* scene, const aiNode* node, const string &material_name);
+  void printMesh(const aiScene* scene, const aiNode* node,
+                 const string &material_name, std::vector<coordT> &store_pt);
   void readYaml(string &config_file);
 
   Pose getLinkPose(boost::shared_ptr<const Link> link) {
@@ -264,8 +265,8 @@ private:
 
 ModelEuslisp::ModelEuslisp (boost::shared_ptr<ModelInterface> r) {
   robot = r;
-  add_joint_suffix = false;
-  add_link_suffix = false;
+  add_joint_suffix = true;
+  add_link_suffix = true;
   use_simple_geometry = false;
   use_collision = false;
 }
@@ -291,8 +292,27 @@ void ModelEuslisp::addLinkCoords() {
     std::cerr << p.rotation.z << ")" << std::endl;
 #endif
     if (use_collision) {
-      //link->second->collision;
-      //link->second->collision_array;
+      if(!!link->second->collision) {
+        MapCollision mc;
+        string gname(link->second->name);
+        gname += "_geom0";
+        mc.insert(MapCollision::value_type (gname, link->second->collision));
+
+        m_link_collision.insert
+          (map <boost::shared_ptr<const Link>, MapCollision >::value_type
+           (link->second, mc));
+      } else {
+        int counter = 0;
+        MapCollision mc;
+        for (std::vector<boost::shared_ptr <Collision> >::iterator it = link->second->collision_array.begin();
+             it != link->second->collision_array.end(); it++) {
+          MapCollision mc;
+          stringstream ss;
+          ss << link->second->name << "_geom" << counter;
+          mc.insert(MapCollision::value_type (ss.str(), (*it)));
+          counter++;
+        }
+      }
     } else {
       if(!!link->second->visual) {
         m_materials.insert
@@ -308,7 +328,6 @@ void ModelEuslisp::addLinkCoords() {
            (link->second, mv));
       } else {
         int counter = 0;
-        MapVisual mv;
         for (std::vector<boost::shared_ptr <Visual> >::iterator it = link->second->visual_array.begin();
              it != link->second->visual_array.end(); it++) {
           m_materials.insert
@@ -319,15 +338,13 @@ void ModelEuslisp::addLinkCoords() {
           mv.insert(MapVisual::value_type (ss.str(), (*it)));
           counter++;
         }
-        m_link_visual.insert
-          (map <boost::shared_ptr<const Link>, MapVisual >::value_type (link->second, mv));
       }
     }
   }
 }
 
 void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
-                             const string &material_name) {
+                             const string &material_name, std::vector<coordT> &store_pt) {
   aiMatrix4x4 transform = node->mTransformation;
   aiNode *pnode = node->mParent;
   while (pnode)  {
@@ -377,6 +394,10 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
       aiFace& face = input_mesh->mFaces[j];
       for (uint32_t k = 0; k < face.mNumIndices; ++k) {
         fprintf(fp, " %d", face.mIndices[k]);
+        aiVector3D p = input_mesh->mVertices[face.mIndices[k]];
+        store_pt.push_back(p.x);
+        store_pt.push_back(p.y);
+        store_pt.push_back(p.z);
       }
     }
     fprintf(fp, "))\n");
@@ -413,7 +434,7 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
     fprintf(fp, ")\n");
   }
   for (uint32_t i = 0; i < node->mNumChildren; ++i) {
-    printMesh(scene, node->mChildren[i], material_name);
+    printMesh(scene, node->mChildren[i], material_name, store_pt);
   }
 }
 
@@ -958,28 +979,31 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
   fprintf(fp, "    (let (geom glvertices qhull)\n");
 
   if (g->type == Geometry::SPHERE) {
-    //
+    // TODO: make eus geometry
+    // g->radius
   } else if (g->type == Geometry::BOX) {
-    //
+    // TODO: make eus geometry
+    // g->dim
   } else if (g->type == Geometry::CYLINDER) {
-    //
+    // TODO: make eus geometry
+    // g->length
+    // g->radius
   } else { // g->type == Geometry::MESH
-    //TODO: qhull
-    //fprintf(fp, "      (replace-object geom (send geom :qhull-faceset))\n");
     Assimp::Importer importer;
     importer.SetIOHandler(new ResourceIOSystem());
     const aiScene* scene = importer.ReadFile(gname,
                                              aiProcess_SortByPType|aiProcess_GenNormals|aiProcess_Triangulate|
                                              aiProcess_GenUVCoords|aiProcess_FlipUVs);
+    std::vector<coordT> points;
     if (scene && scene->HasMeshes()) {
       fprintf(fp, "      (setq\n");
       fprintf(fp, "       glvertices\n");
       fprintf(fp, "       (instance gl::glvertices :init\n");
       fprintf(fp, "                 (list ;; mesh list\n");
-      printMesh(scene, scene->mRootNode, material_name);
+      // TODO: use g->scale
+      printMesh(scene, scene->mRootNode, material_name, points);
       fprintf(fp, "                  )\n");
       fprintf(fp, "                 ))\n");
-      //
       fprintf(fp, "      (let ((local-cds (make-coords :pos ");
       fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
               pose.position.x * 1000,
@@ -1003,6 +1027,45 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       // error
     }
     // qhull
+    if (points.size() > 0) {
+      char qhull_attr[] = "qhull C-0.001";
+      int ret = qh_new_qhull (3, points.size()/3, &points[0], 0, qhull_attr, NULL, stderr);
+      fprintf(fp, "      (setq qhull ()\n");
+      if ( ret ) {
+        fprintf(fp, "            (instance faceset :init :faces (list\n");
+        for (unsigned int i = 0; i < points.size()/9; i++ ) {
+          fprintf(fp, "              (instance face :init :vertices (list (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")))\n",
+                  1000*points[i*9+0], 1000*points[i*9+1], 1000*points[i*9+2],
+                  1000*points[i*9+3], 1000*points[i*9+4], 1000*points[i*9+5],
+                  1000*points[i*9+6], 1000*points[i*9+7], 1000*points[i*9+8]);
+        }
+        fprintf(fp, "              ))\n");
+      } else {
+        fprintf(fp, "            ;; qhull %zd -> %d faces\n", points.size()/3, qh num_facets);
+        fprintf(fp, "            (instance faceset :init :faces (list\n");
+        // get faces
+        facetT *facet;
+        vertexT *vertex, **vertexp;
+        FORALLfacets {
+          fprintf(fp, "              (instance face :init :vertices (list");
+          setT *vertices = qh_facet3vertex(facet); // ccw?
+          FOREACHvertex_(vertices) {
+            fprintf(fp, " (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+                    1000*vertex->point[0], 1000*vertex->point[1], 1000*vertex->point[2]);
+          }
+          fprintf(fp, "))\n");
+          qh_settempfree(&vertices);
+        }
+        fprintf(fp, "              ))\n");
+      }
+      fprintf(fp, "             )\n");
+      qh_freeqhull(!qh_ALL);
+      int curlong, totlong;    // memory remaining after qh_memfreeshort
+      qh_memfreeshort (&curlong, &totlong);    // free short memory and memory allocator
+      if (curlong || totlong) {
+        fprintf (stderr, "qhull internal warning (user_eg, #1): did not free %d bytes of long memory (%d pieces)\n", totlong, curlong);
+      }
+    }
   }
   fprintf(fp, "      (setq geom (instance collada-body :init :replace-obj qhull :name \"%s\"))\n", gname.c_str());
   if (g->type == Geometry::MESH) {
@@ -1014,7 +1077,14 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
 
 void ModelEuslisp::printGeometries () {
   if (use_collision) {
-
+    for(map <boost::shared_ptr<const Link>, MapCollision >::iterator it = m_link_collision.begin();
+        it != m_link_collision.end(); it++) {
+      for( MapCollision::iterator cmap = it->second.begin();
+           cmap != it->second.end(); cmap++) {
+        printGeometry(cmap->second->geometry, cmap->second->origin,
+                      cmap->first, "");
+      }
+    }
   } else {
     for(map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.begin();
         it != m_link_visual.end(); it++) {
@@ -1073,8 +1143,8 @@ void ModelEuslisp::writeToFile (string &filename) {
 namespace po = boost::program_options;
 int main(int argc, char** argv)
 {
-  bool use_simple_geometry;
   bool use_collision;
+  bool use_simple_geometry;
   string arobot_name;
 
   string input_file;
@@ -1176,11 +1246,16 @@ int main(int argc, char** argv)
     arobot_name = robot->getName();
   }
   if (output_file == "") {
-    output_file =  arobot_name + ".urdf";
+    output_file =  arobot_name + ".l";
   }
 
   ModelEuslisp eusmodel(robot);
   eusmodel.setRobotName(arobot_name);
+  eusmodel.setUseCollision(use_collision);
+  eusmodel.setUseSimpleGeometry(use_simple_geometry);
+  //eusmodel.setAddJointSuffix();
+  //eusmodel.setAddLinkSuffix();
+
   if (config_file.size() > 0) {
     eusmodel.readYaml(config_file);
   }
