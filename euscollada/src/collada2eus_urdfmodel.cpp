@@ -1030,7 +1030,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     if (points.size() > 0) {
       char qhull_attr[] = "qhull C-0.001";
       int ret = qh_new_qhull (3, points.size()/3, &points[0], 0, qhull_attr, NULL, stderr);
-      fprintf(fp, "      (setq qhull ()\n");
+      fprintf(fp, "      (setq qhull\n");
       if ( ret ) {
         fprintf(fp, "            (instance faceset :init :faces (list\n");
         for (unsigned int i = 0; i < points.size()/9; i++ ) {
@@ -1143,8 +1143,10 @@ void ModelEuslisp::writeToFile (string &filename) {
 namespace po = boost::program_options;
 int main(int argc, char** argv)
 {
-  bool use_collision;
-  bool use_simple_geometry;
+  bool use_collision = false;
+  bool use_simple_geometry = false;
+  bool use_loadable_mesh_file = false;
+
   string arobot_name;
 
   string input_file;
