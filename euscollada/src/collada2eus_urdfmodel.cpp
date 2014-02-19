@@ -992,8 +992,13 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     Assimp::Importer importer;
     importer.SetIOHandler(new ResourceIOSystem());
     const aiScene* scene = importer.ReadFile(gname,
-                                             aiProcess_SortByPType|aiProcess_GenNormals|aiProcess_Triangulate|
-                                             aiProcess_GenUVCoords|aiProcess_FlipUVs);
+                                             aiProcessPreset_TargetRealtime_Fast |
+                                             aiProcess_ImproveCacheLocality |
+                                             aiProcess_SplitLargeMeshes |
+                                             aiProcess_FindDegenerates |
+                                             aiProcess_FindInstances |
+                                             //aiProcess_FindInvalidData |
+                                             aiProcess_OptimizeMeshes);
     std::vector<coordT> points;
     if (scene && scene->HasMeshes()) {
       fprintf(fp, "      (setq\n");
