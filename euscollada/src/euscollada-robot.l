@@ -5,7 +5,8 @@
   :slots ()
   )
 (defmethod euscollada-robot
-  (:init-ending ()
+  (:init-ending
+   ()
    ;; fix all links' mass properties ;; root link relative (collada) -> link local (euslisp)
    (dolist (l links)
      (setq (l . acentroid) (send l :inverse-transform-vector
@@ -20,8 +21,8 @@
 
    ;;
    (dolist (j (mapcan #'(lambda (x) (if (and (derivedp (cdr x) joint)
-                                             (not (memq (cdr x) (send self :joint-list))))
-                                        (list (cdr x)))) (send self :slots)))
+					     (not (memq (cdr x) (send self :joint-list))))
+					(list (cdr x)))) (send self :slots)))
      (send (send j :child-link) :add-joint j)
      (send (send j :child-link) :add-parent-link (send j :parent-link))
      (send (send j :parent-link) :add-child-links (send j :child-link)))
@@ -95,19 +96,12 @@
    )
   )
 
+;; copy euscollada-body class definition from euscollada/src/euscollada-robot.l
 (defclass collada-body
-;; This euscollada-body class is for bodies in robot model converted from collada files.
-;; This class provides :draw override for displaying glvertices.
   :super body
   :slots (glvertices)
   )
 (defmethod collada-body
-  (:init (&key (name) (replace-obj))
-    (if replace-obj
-        (replace-object self replace-obj)
-      (replace-object self (make-cube 10 10 10)))
-    (if name (send self :name name))
-    self)
   (:draw (vwr)
    (when glvertices
      (send glvertices :draw vwr)))
