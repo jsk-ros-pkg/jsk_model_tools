@@ -502,7 +502,7 @@ void ModelEuslisp::copyRobotClassDefinition () {
     std::string path;
     rp.find("euscollada",euscollada_path);
 
-    euscollada_path += "/src/euscollada-robot.l";
+    euscollada_path += "/src/euscollada-robot_urdfmodel.l";
     ifstream fin(euscollada_path.c_str());
     std::string buf;
     while(fin && getline(fin, buf)) {
