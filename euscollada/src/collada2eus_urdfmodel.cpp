@@ -43,6 +43,13 @@ extern "C" {
 
 #include "rospack/rospack.h"
 
+// using collada just for parsing sensors
+#include "dae.h"
+#include "dom/domCOLLADA.h"
+#ifdef __dom150COLLADA_h__
+using namespace ColladaDOM150;
+#endif
+
 // copy from rviz/src/rviz/mesh_loader.cpp
 class ResourceIOStream : public Assimp::IOStream
 {
@@ -202,11 +209,12 @@ public:
   void setUseSimpleGeometry(bool &b) { use_simple_geometry = b; };
   void setAddJointSuffix(bool &b) { add_joint_suffix = b; };
   void setAddLinkSuffix(bool &b) { add_link_suffix = b; };
+  void setAddSensorSuffix(bool &b) { add_sensor_suffix = b; };
 
   // methods for parsing robot model for euslisp
   void addLinkCoords();
   void printMesh(const aiScene* scene, const aiNode* node,
-                 const string &material_name, std::vector<coordT> &store_pt);
+                 const string &material_name, vector<coordT> &store_pt);
   void readYaml(string &config_file);
 
   Pose getLinkPose(boost::shared_ptr<const Link> link) {
@@ -230,6 +238,7 @@ public:
   void printLinks ();
   void printJoints ();
   void printEndCoords();
+  void printSensors();
   void printGeometries();
 
   // print methods
@@ -238,6 +247,26 @@ public:
   void printRobotMethods();
 
   void writeToFile (string &filename);
+
+  // temporary using collada file directly for sensors
+  string collada_file;
+  daeDocument *g_document;
+  //boost::shared_ptr< DAE> dae;
+  DAE dae;
+  string getSensorType (const domExtraRef pextra);
+  domLink* findLinkfromKinematics (domLink* thisLink, const string& link_name);
+  void parseSensors();
+  class daeSensor {
+  public:
+    string sensor_type;
+    string parent_link;
+    string sensor_id;
+    string name;
+    domTranslateRef ptrans;
+    domRotateRef prot;
+  };
+  vector<daeSensor> m_sensors;
+
 private:
   typedef map <string, boost::shared_ptr<const Visual> > MapVisual;
   typedef map <string, boost::shared_ptr<const Collision> > MapCollision;
@@ -259,14 +288,17 @@ private:
   //
   bool add_joint_suffix;
   bool add_link_suffix;
+  bool add_sensor_suffix;
   bool use_simple_geometry;
   bool use_collision;
+
 };
 
 ModelEuslisp::ModelEuslisp (boost::shared_ptr<ModelInterface> r) {
   robot = r;
   add_joint_suffix = true;
   add_link_suffix = true;
+  add_sensor_suffix = false;
   use_simple_geometry = false;
   use_collision = false;
 }
@@ -276,20 +308,20 @@ ModelEuslisp::~ModelEuslisp () {
 }
 
 void ModelEuslisp::addLinkCoords() {
-  for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+  for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
        link != robot->links_.end(); link++) {
     Pose p = getLinkPose(link->second);
     m_link_coords.insert
       (map<boost::shared_ptr<const Link>, Pose >::value_type (link->second, p));
 #if DEBUG
-    std::cerr << "name: " << link->first;
-    std::cerr << ", #f(" << p.position.x << " ";
-    std::cerr << p.position.y << " ";
-    std::cerr << p.position.z << ") #f(";
-    std::cerr << p.rotation.w << " ";
-    std::cerr << p.rotation.x << " ";
-    std::cerr << p.rotation.y << " ";
-    std::cerr << p.rotation.z << ")" << std::endl;
+    cerr << "name: " << link->first;
+    cerr << ", #f(" << p.position.x << " ";
+    cerr << p.position.y << " ";
+    cerr << p.position.z << ") #f(";
+    cerr << p.rotation.w << " ";
+    cerr << p.rotation.x << " ";
+    cerr << p.rotation.y << " ";
+    cerr << p.rotation.z << ")" << endl;
 #endif
     if (use_collision) {
       if(!!link->second->collision) {
@@ -304,7 +336,7 @@ void ModelEuslisp::addLinkCoords() {
       } else {
         int counter = 0;
         MapCollision mc;
-        for (std::vector<boost::shared_ptr <Collision> >::iterator it = link->second->collision_array.begin();
+        for (vector<boost::shared_ptr <Collision> >::iterator it = link->second->collision_array.begin();
              it != link->second->collision_array.end(); it++) {
           MapCollision mc;
           stringstream ss;
@@ -328,7 +360,7 @@ void ModelEuslisp::addLinkCoords() {
            (link->second, mv));
       } else {
         int counter = 0;
-        for (std::vector<boost::shared_ptr <Visual> >::iterator it = link->second->visual_array.begin();
+        for (vector<boost::shared_ptr <Visual> >::iterator it = link->second->visual_array.begin();
              it != link->second->visual_array.end(); it++) {
           m_materials.insert
             (map <string, boost::shared_ptr<const Material> >::value_type ((*it)->material_name, (*it)->material));
@@ -344,7 +376,7 @@ void ModelEuslisp::addLinkCoords() {
 }
 
 void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
-                             const string &material_name, std::vector<coordT> &store_pt) {
+                             const string &material_name, vector<coordT> &store_pt) {
   aiMatrix4x4 transform = node->mTransformation;
   aiNode *pnode = node->mParent;
   while (pnode)  {
@@ -454,11 +486,11 @@ void ModelEuslisp::readYaml (string &config_file) {
     /* re-order limb name by lines of yaml */
     BOOST_FOREACH(string& limb, limb_candidates) {
       if ( doc.FindValue(limb) ) {
-        std::cerr << limb << "@" << doc[limb].GetMark().line << std::endl;
+        cerr << limb << "@" << doc[limb].GetMark().line << endl;
         limb_order.push_back(pair<string, size_t> (limb, doc[limb].GetMark().line));
       }
     }
-    std::sort(limb_order.begin(), limb_order.end(), limb_order_asc);
+    sort(limb_order.begin(), limb_order.end(), limb_order_asc);
   }
 
   // generate limbs including limb_name, link_names, and joint_names
@@ -493,18 +525,18 @@ void ModelEuslisp::copyRobotClassDefinition () {
   fprintf(fp, ";; copy euscollada-robot class definition from euscollada/src/euscollada-robot.l\n");
   fprintf(fp, ";;\n");
   try {
-    std::string euscollada_path;
+    string euscollada_path;
 
     rospack::Rospack rp;
-    std::vector<std::string> search_path;
+    vector<string> search_path;
     rp.getSearchPathFromEnv(search_path);
     rp.crawl(search_path, 1);
-    std::string path;
+    string path;
     rp.find("euscollada",euscollada_path);
 
     euscollada_path += "/src/euscollada-robot_urdfmodel.l";
     ifstream fin(euscollada_path.c_str());
-    std::string buf;
+    string buf;
     while(fin && getline(fin, buf)) {
       fprintf(fp, "%s\n", buf.c_str());
     }
@@ -513,7 +545,7 @@ void ModelEuslisp::copyRobotClassDefinition () {
     fprintf(fp, ";; end of copy from %s\n", euscollada_path.c_str());
     fprintf(fp, ";;\n");
   } catch (runtime_error &e) {
-    std::cerr << "cannot resolve euscollada package path" << std::endl;
+    cerr << "cannot resolve euscollada package path" << endl;
   }
 }
 
@@ -525,7 +557,7 @@ void ModelEuslisp::printRobotDefinition() {
   fprintf(fp, "  :super euscollada-robot\n");
   fprintf(fp, "  :slots ( ;; link names\n");
   fprintf(fp, "         ");
-  for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+  for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
        link != robot->links_.end(); link++) {
     if (add_link_suffix) {
       fprintf(fp," %s_lk", link->second->name.c_str());
@@ -535,7 +567,7 @@ void ModelEuslisp::printRobotDefinition() {
   }
   fprintf(fp, "\n         ;; joint names\n");
   fprintf(fp, "         ");
-  for (std::map<std::string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+  for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
     if(add_joint_suffix) {
       fprintf(fp, " %s_jt", joint->second->name.c_str());
@@ -543,9 +575,13 @@ void ModelEuslisp::printRobotDefinition() {
       fprintf(fp, " %s", joint->second->name.c_str());
     }
   }
+  fprintf(fp, "\n         ;; sensor names\n");
+  fprintf(fp, "         ");
+  for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
+    fprintf(fp, " %s-sensor-coords", it->name.c_str());
+  }
   fprintf(fp, "\n         )\n  )\n");
   // TODO: add openrave manipulator tip frame
-  // TODO: add sensor frames
 }
 
 void ModelEuslisp::printRobotMethods() {
@@ -563,18 +599,20 @@ void ModelEuslisp::printRobotMethods() {
 
   printEndCoords();
 
+  printSensors();
+
   printGeometries();
 
   fprintf(fp, "  )\n");
 }
 
 void ModelEuslisp::printLinks () {
-  for (std::map<boost::shared_ptr<const Link>, Pose >::iterator it = m_link_coords.begin();
+  for (map<boost::shared_ptr<const Link>, Pose >::iterator it = m_link_coords.begin();
        it != m_link_coords.end(); it++) {
     printLink(it->first, it->second);
   }
 
-  for (std::map<std::string, boost::shared_ptr<Joint> >::iterator it = robot->joints_.begin();
+  for (map<string, boost::shared_ptr<Joint> >::iterator it = robot->joints_.begin();
        it != robot->joints_.end(); it++) {
     if (add_link_suffix) {
       fprintf(fp, "     (send %s_lk :assoc %s_lk)\n",
@@ -681,7 +719,7 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
 
 void ModelEuslisp::printJoints () {
   fprintf(fp, "\n     ;; joint models\n");
-  for (std::map<std::string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+  for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
     printJoint(joint->second);
   }
@@ -828,6 +866,7 @@ void ModelEuslisp::printEndCoords () {
     }
   }
   fprintf(fp, "))\n");
+  fprintf(fp, "\n");
 
   fprintf(fp, "     ;; joint-list\n");
   fprintf(fp, "     (setq joint-list (list");
@@ -845,6 +884,39 @@ void ModelEuslisp::printEndCoords () {
   }
   fprintf(fp, "))\n");
   fprintf(fp, "\n");
+  fprintf(fp, "     ;; sensor-coords\n");
+  for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
+    string plink;
+    if (add_link_suffix) {
+      plink = it->parent_link + "_lk";
+    } else {
+      plink = it->parent_link;
+    }
+    string name = it->name;
+
+    fprintf(fp, "     ;;\n");
+    fprintf(fp, "     (setq %s-sensor-coords (make-cascoords :name \"%s\" :coords (send %s :copy-worldcoords)))\n",
+            name.c_str(), name.c_str(), plink.c_str());
+    fprintf(fp, "     (send %s-sensor-coords :put :sensor-type :%s)\n", name.c_str(), it->sensor_type.c_str());
+    fprintf(fp, "     (send %s-sensor-coords :put :sensor-id %s)\n", name.c_str(), it->sensor_id.c_str());
+    fprintf(fp, "     (send %s-sensor-coords :transform (make-coords ", name.c_str());
+
+    if ( !!(it->ptrans) ) {
+      fprintf(fp, ":pos (float-vector ");
+      for(size_t i = 0; i < 3; i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*(it->ptrans->getValue()[i])); }
+      fprintf(fp, ") ");
+    }
+    if ( !!(it->prot) ) {
+      fprintf(fp, ":axis ");
+      fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+              (it->prot)->getValue()[0], (it->prot)->getValue()[1], (it->prot)->getValue()[2]);
+      fprintf(fp, " :angle");
+      fprintf(fp, " "FLOAT_PRECISION_FINE"", (it->prot)->getValue()[3]*(M_PI/180.0));
+    }
+    fprintf(fp, "))\n");
+    fprintf(fp, "     (send %s :assoc %s-sensor-coords)\n", plink.c_str(), name.c_str());
+  }
+  fprintf(fp, "\n");
 
   // init ending
   fprintf(fp, "     ;; init-ending\n");
@@ -853,7 +925,7 @@ void ModelEuslisp::printEndCoords () {
   // bodies
   fprintf(fp, "     ;; overwrite bodies to return draw-things links not (send link :bodies)\n");
   fprintf(fp, "     (setq bodies (flatten (mapcar #'(lambda (b) (if (find-method b :bodies) (send b :bodies))) (list");
-  for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+  for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
        link != robot->links_.end(); link++) {
     if (add_link_suffix) {
       fprintf(fp, " %s_lk", link->first.c_str());
@@ -889,8 +961,8 @@ void ModelEuslisp::printEndCoords () {
   }
 
   // all joint and link name
-  fprintf(fp, "\n    ;; all joints\n");
-  for (std::map<std::string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+  fprintf(fp, "\n  ;; all joints\n");
+  for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
     if(add_joint_suffix) {
       fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_jt args))\n", joint->first.c_str(), joint->first.c_str());
@@ -905,7 +977,7 @@ void ModelEuslisp::printEndCoords () {
     fprintf(fp, "   (if (null args) (return-from :links (send-super :links)))\n");
     fprintf(fp, "   (let ((key (car args))\n           (nargs (cdr args)))\n");
     fprintf(fp, "     (unless (keywordp key)\n         (return-from :links (send-super* :links args)))\n       (case key\n");
-    for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+    for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
          link != robot->links_.end(); link++) {
       fprintf(fp, "       (:%s (forward-message-to %s_lk nargs))\n", link->first.c_str(), link->first.c_str());
     }
@@ -913,7 +985,7 @@ void ModelEuslisp::printEndCoords () {
   }
   fprintf(fp, "\n  ;; all links\n");
 
-  for (std::map<std::string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+  for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
        link != robot->links_.end(); link++) {
     if (add_link_suffix) {
       fprintf(fp, "  (:%s_lk (&rest args) (forward-message-to %s_lk args))\n", link->first.c_str(), link->first.c_str());
@@ -922,7 +994,7 @@ void ModelEuslisp::printEndCoords () {
     }
   }
 
-  fprintf(fp, "\n    ;; user-defined joint\n");
+  fprintf(fp, "\n  ;; user-defined joint\n");
   for(vector<pair<string, string> >::iterator it = g_all_link_names.begin();
       it != g_all_link_names.end(); it++){
     if(add_joint_suffix) {
@@ -931,44 +1003,120 @@ void ModelEuslisp::printEndCoords () {
       fprintf(fp, "  (:%s (&rest args) (forward-message-to %s args))\n", it->second.c_str(), it->first.c_str());
     }
   }
+}
 
-#if 0
-  // TODO: print sensors
-  // sensor
-  fprintf(fp, "\n    ;; attach_sensor\n");
-  if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
-    domArticulated_system *thisArticulated;
-    for ( size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL); ii++) {
-      g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
-      if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
-    }
-    std::vector<std::string> fsensor_list;
-    std::vector<std::string> imusensor_list;
-    for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
-      domExtraRef pextra = thisArticulated->getExtra_array()[ie];
-      // find element which type is attach_sensor and is attached to thisNode
-      if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
-        fprintf(fp, "    (:%s (&rest args) (forward-message-to %s-sensor-coords args))\n", pextra->getName(), pextra->getName());
-        if (getSensorType(pextra) == "base_force6d" ) {
-          fsensor_list.push_back(string(pextra->getName()));
-        } else if (getSensorType(pextra) == "base_imu" ) {
-          imusensor_list.push_back(string(pextra->getName()));
+string ModelEuslisp::getSensorType (const domExtraRef pextra) {
+  // get sensor_type from extra tag
+  string sensor_type;
+  for (size_t ii = 0; ii < dae.getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
+    domExtra *tmpextra;
+    dae.getDatabase()->getElement((daeElement**)&tmpextra, ii, NULL, "extra");
+    if (tmpextra->getType() == string("library_sensors")) {
+      for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
+        if ((string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
+            pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
+          sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
         }
       }
     }
-    fprintf(fp, "    (:force-sensors (&rest args) (forward-message-to-all (list ");
-    for (size_t i = 0; i < fsensor_list.size(); i++) {
-      fprintf(fp, "(send self :%s) ", fsensor_list[i].c_str());
-    }
-    fprintf(fp, ") args))\n");
-    fprintf(fp, "    (:imu-sensors (&rest args) (forward-message-to-all (list ");
-    for (size_t i = 0; i < imusensor_list.size(); i++) {
-      fprintf(fp, "(send self :%s) ", imusensor_list[i].c_str());
-    }
-    fprintf(fp, ") args))\n");
   }
-  fprintf(fp, "  )\n\n");
-#endif
+  return sensor_type;
+}
+domLink* ModelEuslisp::findLinkfromKinematics (domLink* thisLink, const string& link_name) {
+  if (thisLink->getName()==link_name) return thisLink;
+  for(size_t ii = 0; ii < thisLink->getAttachment_full_array().getCount(); ++ii) {
+    domLink* tmpLink = findLinkfromKinematics(thisLink->getAttachment_full_array()[ii]->getLink(), link_name);
+    if (tmpLink) return tmpLink;
+  }
+  return NULL;
+}
+void ModelEuslisp::parseSensors () {
+  int iRet = dae.load(collada_file.c_str());
+
+  if ( iRet != DAE_OK ) {
+    ROS_WARN("This file (%s) is not collada file.", collada_file.c_str());
+    return;
+  }
+  if ( dae.getDatabase()->getDocumentCount() != 1 ) {
+    ROS_WARN("Number of documnet is not 1 / %d", dae.getDatabase()->getDocumentCount());
+    return;
+  }
+  g_document = dae.getDatabase()->getDocument((daeUInt)0);
+
+  if ( dae.getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
+    domKinematics_model *thisKinematics;
+    dae.getDatabase()->getElement((daeElement**)&thisKinematics, 0, NULL, "kinematics_model");
+
+    for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+         link != robot->links_.end(); link++) {
+
+      domLink* thisLink = findLinkfromKinematics(thisKinematics->getTechnique_common()->getLink_array()[0],
+                                                 link->second->name);
+      if (!thisLink) continue;
+      domArticulated_system *thisArticulated;
+      for ( size_t ii = 0; ii < dae.getDatabase()->getElementCount(NULL, "articulated_system", NULL); ii++) {
+        dae.getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
+        if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
+      }
+      for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
+        domExtraRef pextra = thisArticulated->getExtra_array()[ie];
+        // find element which type is attach_sensor and is attached to thisNode
+        if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
+
+          daeElement* frame_origin = pextra->getTechnique_array()[0]->getChild("frame_origin");
+          if ( string(thisKinematics->getId())+string("/")+string(thisLink->getSid()) ==
+               frame_origin->getAttribute("link") ) {
+            daeSensor dsensor;
+            dsensor.name = pextra->getName();
+            dsensor.parent_link = link->second->name;
+            dsensor.sensor_type = getSensorType(pextra);
+            string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
+            dsensor.sensor_id = sensor_url.erase(sensor_url.find( "#sensor" ), 7);
+            dsensor.ptrans = daeSafeCast<domTranslate>(frame_origin->getChild("translate"));
+            dsensor.prot = daeSafeCast<domRotate>(frame_origin->getChild("rotate"));
+            m_sensors.push_back(dsensor);
+            ROS_WARN_STREAM("Sensor " << pextra->getName() << " is attached to " << link->second->name
+                            << " " << dsensor.sensor_type << " " << sensor_url);
+          }
+        }
+      }
+    }
+  }
+}
+
+void ModelEuslisp::printSensors() {
+  fprintf(fp, "\n  ;; attach_sensor\n");
+  for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
+    if(add_sensor_suffix) {
+      fprintf(fp, "  (:%s_sn (&rest args) (forward-message-to %s-sensor-coords args))\n",
+              it->name.c_str(), it->name.c_str());
+    } else {
+      fprintf(fp, "  (:%s (&rest args) (forward-message-to %s-sensor-coords args))\n",
+              it->name.c_str(), it->name.c_str());
+    }
+  }
+  fprintf(fp, "  (:force-sensors (&rest args) (forward-message-to-all (list ");
+  for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
+    if (it->sensor_type == "base_force6d") {
+      if(add_sensor_suffix) {
+        fprintf(fp, "(send self :%s_sn) ", it->name.c_str());
+      } else {
+        fprintf(fp, "(send self :%s) ", it->name.c_str());
+      }
+    }
+  }
+  fprintf(fp, ") args))\n");
+  fprintf(fp, "  (:imu-sensors (&rest args) (forward-message-to-all (list ");
+  for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
+    if (it->sensor_type == "base_imu") {
+      if(add_sensor_suffix) {
+        fprintf(fp, "(send self :%s_sn) ", it->name.c_str());
+      } else {
+        fprintf(fp, "(send self :%s) ", it->name.c_str());
+      }
+    }
+  }
+  fprintf(fp, ") args))\n");
 }
 
 void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pose,
@@ -999,7 +1147,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
                                              aiProcess_FindInstances |
                                              //aiProcess_FindInvalidData |
                                              aiProcess_OptimizeMeshes);
-    std::vector<coordT> points;
+    vector<coordT> points;
     if (scene && scene->HasMeshes()) {
       fprintf(fp, "      (setq\n");
       fprintf(fp, "       glvertices\n");
@@ -1038,6 +1186,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       fprintf(fp, "      (setq qhull\n");
       if ( ret ) {
         fprintf(fp, "            (instance faceset :init :faces (list\n");
+        std::cerr << ";; points " << points.size() << std::endl; 
         for (unsigned int i = 0; i < points.size()/9; i++ ) {
           fprintf(fp, "              (instance face :init :vertices (list (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")))\n",
                   1000*points[i*9+0], 1000*points[i*9+1], 1000*points[i*9+2],
@@ -1081,6 +1230,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
 }
 
 void ModelEuslisp::printGeometries () {
+  fprintf(fp, "\n  ;; geometries\n");
   if (use_collision) {
     for(map <boost::shared_ptr<const Link>, MapCollision >::iterator it = m_link_collision.begin();
         it != m_link_collision.end(); it++) {
@@ -1104,7 +1254,7 @@ void ModelEuslisp::printGeometries () {
 
 void ModelEuslisp::writeToFile (string &filename) {
   if (!robot) {
-    cerr << ";; not robot" << std::endl;
+    cerr << ";; not robot" << endl;
     return;
   }
 
@@ -1135,6 +1285,7 @@ void ModelEuslisp::writeToFile (string &filename) {
 
   // pase
   addLinkCoords();
+  parseSensors();
 
   // start printing
   copyRobotClassDefinition();
@@ -1222,18 +1373,18 @@ int main(int argc, char** argv)
     config_file = aa[0];
   }
 
-  std::string xml_string;
-  std::fstream xml_file(input_file.c_str(), std::fstream::in);
+  string xml_string;
+  fstream xml_file(input_file.c_str(), fstream::in);
   while ( xml_file.good() )
   {
-    std::string line;
-    std::getline( xml_file, line);
+    string line;
+    getline( xml_file, line);
     xml_string += (line + "\n");
   }
   xml_file.close();
 
   boost::shared_ptr<ModelInterface> robot;
-  if( xml_string.find("<COLLADA") != std::string::npos )
+  if( xml_string.find("<COLLADA") != string::npos )
   {
     ROS_DEBUG("Parsing robot collada xml string");
     robot = parseCollada(xml_string);
@@ -1245,7 +1396,7 @@ int main(int argc, char** argv)
   }
 
   if (!robot){
-    std::cerr << "ERROR: Model Parsing the xml failed" << std::endl;
+    cerr << "ERROR: Model Parsing the xml failed" << endl;
     return -1;
   }
 
@@ -1260,6 +1411,7 @@ int main(int argc, char** argv)
   eusmodel.setRobotName(arobot_name);
   eusmodel.setUseCollision(use_collision);
   eusmodel.setUseSimpleGeometry(use_simple_geometry);
+  eusmodel.collada_file = input_file;
   //eusmodel.setAddJointSuffix();
   //eusmodel.setAddLinkSuffix();
 
