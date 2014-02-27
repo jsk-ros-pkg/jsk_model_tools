@@ -1,0 +1,16 @@
+<package>
+  <description brief="euslisp_model_conversion_tester">
+
+     euslisp_model_conversion_tester
+
+  </description>
+  <author>nozawa</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/euslisp_model_conversion_tester</url>
+  <depend package="rtmbuild"/>
+  <!-- <depend package="euscollada"/> -->
+
+</package>
+
+

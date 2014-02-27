@@ -1,0 +1,12 @@
+<launch>
+  <arg name="INPUT" />
+  <arg name="OUTPUT" />
+  <arg name="CORBA_PORT" default="2809" /> <!-- previous CORBA_PORT is 2800 -->
+  <env name="LANG" value="C" />
+  <env name="ORBgiopMaxMsgSize" value="2147483648" />
+
+  <node name="modelloader" pkg="openhrp3" type="openhrp-model-loader" args="-ORBInitRef NameService=corbaloc:iiop:localhost:$(arg CORBA_PORT)/NameService" respawn="true"/>
+
+  <test test-name="write_openhrp3_robot_model" pkg="euslisp_model_conversion_tester" type="WriteOpenHRP3RobotModel" args='-o "corba.nameservers:localhost:$(arg CORBA_PORT)" --input $(arg INPUT) --output $(arg OUTPUT)'/>
+
+</launch>
