@@ -641,14 +641,20 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
   fprintf(fp, "     ;; link: %s\n", thisNodeName.c_str());
   fprintf(fp, "     (let ((geom-lst (list \n");
   {
+    int geom_counter = 0;
     map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.find (link);
     if (it != m_link_visual.end()) {
       for( MapVisual::iterator vmap = it->second.begin();
            vmap != it->second.end(); vmap++) {
         fprintf(fp, "                       (send self :_make_instance_%s)", vmap->first.c_str());
+        geom_counter++;
       }
     }
-    fprintf(fp, ")))\n");
+    if(geom_counter == 0) {
+      fprintf(fp, "(make-cube 10 10 10)))) ;; no geometry in this link\n");
+    } else {
+      fprintf(fp, ")))\n");
+    }
   }
   fprintf(fp, "       (dolist (g (cdr geom-lst)) (send (car geom-lst) :assoc g))\n");
   fprintf(fp, "       (setq %s\n", thisNodeName.c_str());
@@ -1139,14 +1145,12 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
   } else { // g->type == Geometry::MESH
     Assimp::Importer importer;
     importer.SetIOHandler(new ResourceIOSystem());
+
+    //const aiScene* scene = importer.ReadFile(gname, aiProcessPreset_TargetRealtime_MaxQuality);
     const aiScene* scene = importer.ReadFile(gname,
-                                             aiProcessPreset_TargetRealtime_Fast |
-                                             aiProcess_ImproveCacheLocality |
-                                             aiProcess_SplitLargeMeshes |
-                                             aiProcess_FindDegenerates |
-                                             aiProcess_FindInstances |
-                                             //aiProcess_FindInvalidData |
-                                             aiProcess_OptimizeMeshes);
+                                             (aiProcessPreset_TargetRealtime_MaxQuality & ~aiProcess_GenSmoothNormals)
+                                             | aiProcess_GenNormals);
+
     vector<coordT> points;
     if (scene && scene->HasMeshes()) {
       fprintf(fp, "      (setq\n");
