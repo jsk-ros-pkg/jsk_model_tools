@@ -46,13 +46,12 @@ rosbuild_add_executable(collada2eus src/collada2eus.cpp)
 target_link_libraries(collada2eus ${COLLADA2EUS_LIBRARIES})
 
 ##
-find_package(assimp)
+# use assimp_devel
+#set(ASSIMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../assimp_devel/lib/cmake/assimp-3.0" )
+find_package(ASSIMP)
 if ( NOT ASSIMP_FOUND )
-  find_package(Assimp)
-  if ( NOT ASSIMP_FOUND )
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(ASSIMP assimp)
-  endif()
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(ASSIMP assimp)
 endif()
 if( ASSIMP_FOUND )
   if( ${ASSIMP_VERSION} STRGREATER "2.0.0" )
