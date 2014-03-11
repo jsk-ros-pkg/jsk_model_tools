@@ -24,6 +24,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -264,6 +265,9 @@ public:
     string name;
     domTranslateRef ptrans;
     domRotateRef prot;
+    static bool compare(const daeSensor& a, const daeSensor& b) {
+      return (a.sensor_id < b.sensor_id);
+    }
   };
   vector<daeSensor> m_sensors;
 
@@ -1087,6 +1091,8 @@ void ModelEuslisp::parseSensors () {
         }
       }
     }
+    // sort sensor
+    stable_sort(m_sensors.begin(), m_sensors.end(), ModelEuslisp::daeSensor::compare);
   }
 }
 
