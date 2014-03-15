@@ -35,6 +35,7 @@
 ;;   )
 
 (deftest pr2-weight-test
+  (if (not (boundp '*pr2*)) (pr2))
   (let* ((strm (piped-fork "echo $(grep \"<mass\" `rospack find pr2_mechanism_model`/pr2.urdf | cut -d\\\" -f2)"))
 	 (urdf-weight (reduce #'+ (read-from-string (format nil "(~A )" (read-line strm nil nil)))))
 	 (euslisp-weight (* 1e-3 (send *pr2* :weight)))) ;; [g] -> [kg]

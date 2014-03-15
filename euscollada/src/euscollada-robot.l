@@ -88,7 +88,8 @@
                    :fat fat
                    :faces (flatten (mapcar #'(lambda (x)
                                                (cond
-                                                ((derivedp x collada-body)
+                                                ((and (derivedp x collada-body)
+                                                      (x . glvertices))
                                                  (send (x . glvertices) :convert-to-faces :wrt :world))
                                                 (t
                                                  (send x :faces))))
