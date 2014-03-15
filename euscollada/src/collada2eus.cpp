@@ -492,15 +492,6 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
 			+"/"+ string(thisJoint->getSid()) +"/"+ jointAxis_array[0]->getSid());
       if (axis_info_name == joint_name && // if thisJoint corresponds to kinematics_axis
           thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()) {
-        if(!!thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()) {
-          fprintf(stderr, "get A\n");
-        }
-        if(!!thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()->getFloat()) {
-          fprintf(stderr, "get B\n");
-        }
-        if(!!thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()->getFloat()->getValue()) {
-          fprintf(stderr, "get C\n");
-        }
         if((!!thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()) &&
            (!!thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()->getFloat()) &&
            (!!thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()->getFloat()->getValue()) &&
