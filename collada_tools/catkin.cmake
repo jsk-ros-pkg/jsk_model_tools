@@ -19,7 +19,9 @@ link_directories(${COLLADADOM_LIBRARY_DIRS})
 #   add_definitions("-DHAVE_MKSTEMPS")
 # endif()
 
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS assimp_devel
+  )
 
 set(SOURCE_FILES
   src/collada_gazebo_gen.cpp
