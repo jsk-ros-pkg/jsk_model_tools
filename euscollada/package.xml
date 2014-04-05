@@ -21,7 +21,6 @@
   <build_depend>yaml-cpp</build_depend>
   <build_depend>assimp_devel</build_depend>
   <build_depend>urdf</build_depend>
-  <build_depend>urdf_parser</build_depend>
   <build_depend>resource_retriever</build_depend>
   <build_depend>collada-dom</build_depend>
   <build_depend>collada_parser</build_depend>
@@ -32,7 +31,6 @@
   <run_depend>yaml-cpp</run_depend>
   <run_depend>assimp_devel</run_depend>
   <run_depend>urdf</run_depend>
-  <run_depend>urdf_parser</run_depend>
   <run_depend>resource_retriever</run_depend>
   <run_depend>collada-dom</run_depend>
   <run_depend>collada_parser</run_depend>
