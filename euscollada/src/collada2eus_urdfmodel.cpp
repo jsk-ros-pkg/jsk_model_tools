@@ -6,21 +6,12 @@
 #include <sys/utsname.h>
 #include <math.h>
 
-#if IS_ASSIMP3
 // assimp 3 (assimp_devel)
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
-#else
-// assimp 2
-#include <assimp/assimp.hpp>
-#include <assimp/aiScene.h>
-#include <assimp/aiPostProcess.h>
-#include <assimp/IOStream.h>
-#include <assimp/IOSystem.h>
-#endif
 
 #include <iostream>
 #include <fstream>

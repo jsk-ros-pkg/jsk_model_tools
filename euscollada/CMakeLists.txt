@@ -5,33 +5,12 @@ endif()
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
-
 rosbuild_init()
 
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
-
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
 
 rosbuild_find_ros_package(colladadom)
 if(NOT "${colladadom_PACKAGE_PATH}" STREQUAL "")
@@ -45,38 +24,10 @@ endif()
 rosbuild_add_executable(collada2eus src/collada2eus.cpp)
 target_link_libraries(collada2eus ${COLLADA2EUS_LIBRARIES})
 
-##
-# use assimp_devel
-#set(ASSIMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../assimp_devel/lib/cmake/assimp-3.0" )
-find_package(ASSIMP)
-if ( NOT ASSIMP_FOUND )
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(ASSIMP assimp)
-endif()
-if( ASSIMP_FOUND )
-  if( ${ASSIMP_VERSION} STRGREATER "2.0.0" )
-    set(IS_ASSIMP3 1)
-    add_definitions(-DIS_ASSIMP3)
-  endif()
-  include_directories(${ASSIMP_INCLUDE_DIRS})
-  link_directories(${ASSIMP_LIBRARY_DIRS})
-else()
-  message(STATUS "could not find assimp (perhaps available thorugh ROS package?), so assuming assimp v2")
-  set(ASSIMP_LIBRARIES assimp)
-  set(ASSIMP_LIBRARY_DIRS)
-  set(ASSIMP_CXX_FLAGS)
-  set(ASSIMP_CFLAGS_OTHER)
-  set(ASSIMP_LINK_FLAGS)
-  set(ASSIMP_INCLUDE_DIRS)
-  set(IS_ASSIMP3 0) # most likely not
-endif()
-
 rosbuild_add_boost_directories()
 rosbuild_add_executable(collada2eus_urdfmodel src/collada2eus_urdfmodel.cpp)
-target_link_libraries(collada2eus_urdfmodel ${COLLADA2EUS_LIBRARIES} ${ASSIMP_LIBRARIES})
+target_link_libraries(collada2eus_urdfmodel ${COLLADA2EUS_LIBRARIES})
 rosbuild_link_boost(collada2eus_urdfmodel filesystem program_options)
-set_target_properties(collada2eus_urdfmodel PROPERTIES COMPILER_FLAGS "${ASSIMP_CXX_FLAGS} ${ASSIMP_CFLAGS_OTHER}")
-set_target_properties(collada2eus_urdfmodel PROPERTIES LINK_FLAGS "${ASSIMP_LINK_FLAGS}") 
 
 rosbuild_find_ros_package(euslisp)
 macro(convert_to_collada)
