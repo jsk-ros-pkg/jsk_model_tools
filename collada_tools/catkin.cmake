@@ -27,8 +27,6 @@ set(SOURCE_FILES
   src/collada_to_urdf.cpp
   )
 
-
-
 add_executable(collada_gazebo_gen src/collada_gazebo_gen.cpp)
 set_target_properties(collada_gazebo_gen PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
 target_link_libraries(collada_gazebo_gen ${catkin_LIBRARIES} ${Boost_LIBRARIES})
