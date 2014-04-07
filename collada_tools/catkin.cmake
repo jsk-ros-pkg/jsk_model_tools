@@ -32,14 +32,17 @@ set(SOURCE_FILES
 add_executable(collada_gazebo_gen src/collada_gazebo_gen.cpp)
 set_target_properties(collada_gazebo_gen PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
 target_link_libraries(collada_gazebo_gen ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(collada_gazebo_gen libassimp)
 
 add_executable(collada_to_graphviz src/collada_to_graphviz.cpp)
 set_target_properties(collada_to_graphviz PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
 target_link_libraries(collada_to_graphviz ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(collada_to_graphviz libassimp)
 
 add_executable(collada_to_urdf src/collada_to_urdf.cpp)
 set_target_properties(collada_to_urdf PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
 target_link_libraries(collada_to_urdf ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(collada_to_urdf libassimp)
 
 install(TARGETS collada_to_urdf collada_to_graphviz collada_gazebo_gen
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
