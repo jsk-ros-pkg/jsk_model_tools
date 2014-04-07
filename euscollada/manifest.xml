@@ -19,9 +19,8 @@
   <depend package="euslisp"/>
   <depend package="roseus" />
   <depend package="jsk_tools" />
-
+  <depend package="assimp_devel" />
   <rosdep name="collada-dom"/>
   <rosdep name="yaml-cpp"/>
   <rosdep name="libqhull" />
-  <rosdep name="assimp" />
 </package>

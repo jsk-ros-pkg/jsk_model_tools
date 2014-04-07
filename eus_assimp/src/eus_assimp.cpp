@@ -6,10 +6,10 @@
 #endif
 
 // assimp 3
-#include <assimp3/Importer.hpp>
-#include <assimp3/Exporter.hpp>
-#include <assimp3/postprocess.h>
-#include <assimp3/scene.h>
+#include <assimp/Importer.hpp>
+#include <assimp/Exporter.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 // convex decomposition
 #if COMPILE_CONVEX_DECOMPOSITION
