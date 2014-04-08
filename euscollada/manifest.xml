@@ -18,7 +18,7 @@
   <depend package="collada_urdf"/>
   <depend package="euslisp"/>
   <depend package="roseus" />
-  <depend package="jsk_tools" />
+  <!-- <depend package="jsk_tools" /> -->
   <depend package="assimp_devel" />
   <rosdep name="collada-dom"/>
   <rosdep name="yaml-cpp"/>
