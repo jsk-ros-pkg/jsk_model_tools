@@ -8,7 +8,7 @@ compiler:
   - gcc
 env:
   #- ROS_DISTRO=groovy ROSWS=rosws BUILDER=rosbuild BUILD_PACKAGES="assimp_devel collada_tools eus_assimp euscollada eusurdf"
-  - ROS_DISTRO=groovy ROSWS=rosws BUILDER=rosbuild BUILD_PACKAGES="assimp_devel collada_tools eus_assimp eusurdf jsk_tools"
+  - ROS_DISTRO=groovy ROSWS=rosws BUILDER=rosbuild BUILD_PACKAGES="collada_tools eus_assimp eusurdf jsk_tools"
   - ROS_DISTRO=hydro ROSWS=wstool BUILDER=catkin
   - ROS_DISTRO=groovy ROSWS=wstool BUILDER=catkin
 #notifications:
