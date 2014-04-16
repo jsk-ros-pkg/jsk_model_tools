@@ -7,12 +7,12 @@
 #include <sys/utsname.h>
 #include <math.h>
 
-// assimp 3 (assimp_devel)
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/IOStream.hpp>
-#include <assimp/IOSystem.hpp>
+// assimp_devel
+#include <Importer.hpp>
+#include <scene.h>
+#include <postprocess.h>
+#include <IOStream.hpp>
+#include <IOSystem.hpp>
 
 #include <iostream>
 #include <fstream>
