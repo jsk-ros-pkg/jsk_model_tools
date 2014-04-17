@@ -11,7 +11,6 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>actionlib_msgs</build_depend>
   <build_depend>actionlib</build_depend>
-  <build_depend>pr2_controllers_msgs</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>urdf</build_depend>
   <build_depend>urdf_parser_plugin</build_depend>
