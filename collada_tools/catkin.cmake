@@ -2,17 +2,23 @@ cmake_minimum_required(VERSION 2.8.3)
 project(collada_tools)
 
 if($ENV{ROS_DISTRO} STREQUAL "groovy")
-  find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser assimp_devel urdf collada_parser)
+  find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser urdf collada_parser)
 else()
-  find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser_plugin assimp_devel urdf collada_parser)
+  find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser_plugin urdf collada_parser)
 endif()
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 
 #set(CMAKE_MODULE_PATH  ${PROJECT_SOURCE_DIR}/cmake-extensions/ )
+set(ENV{PKG_CONFIG_PATH} ${CATKIN_DEVEL_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
 find_package(PkgConfig)
 pkg_check_modules(COLLADADOM collada-dom-150)
 include_directories(${COLLADADOM_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 link_directories(${COLLADADOM_LIBRARY_DIRS})
+
+pkg_check_modules(assimp_devel assimp_devel REQUIRED)
+include_directories(${assimp_devel_INCLUDE_DIRS})
+link_directories(${assimp_devel_LIBRARY_DIRS})
+
 
 # check_function_exists(mkstemps HAVE_MKSTEMPS)
 # if( HAVE_MKSTEMPS )
@@ -20,7 +26,6 @@ link_directories(${COLLADADOM_LIBRARY_DIRS})
 # endif()
 
 catkin_package(
-  CATKIN_DEPENDS assimp_devel
   )
 
 set(SOURCE_FILES
@@ -41,8 +46,8 @@ add_dependencies(collada_to_graphviz libassimp)
 
 add_executable(collada_to_urdf src/collada_to_urdf.cpp)
 set_target_properties(collada_to_urdf PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
-target_link_libraries(collada_to_urdf ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(collada_to_urdf libassimp)
+target_link_libraries(collada_to_urdf ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${assimp_devel_LIBRARIES})
+add_dependencies(collada_to_urdf libassimp_devel)
 
 install(TARGETS collada_to_urdf collada_to_graphviz collada_gazebo_gen
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

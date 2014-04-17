@@ -5,12 +5,12 @@
 #include "urdf_parser/urdf_parser.h"
 
 // assimp 3 (assimp_devel)
-#include <assimp/IOSystem.hpp>
-#include <assimp/IOStream.hpp>
-#include <assimp/Importer.hpp>
-#include <assimp/Exporter.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
+#include <IOSystem.hpp>
+#include <IOStream.hpp>
+#include <Importer.hpp>
+#include <Exporter.hpp>
+#include <postprocess.h>
+#include <scene.h>
 
 #include <iostream>
 #include <fstream>
