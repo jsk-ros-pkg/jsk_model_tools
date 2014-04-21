@@ -4,21 +4,13 @@
 #include "urdf/model.h"
 #include "urdf_parser/urdf_parser.h"
 
-#if 0
-// assimp 2
-#include <assimp/assimp.hpp>
-#include <assimp/export.hpp>
-#include <assimp/aiScene.h>
-#include <assimp/aiPostProcess.h>
-#else
 // assimp 3 (assimp_devel)
-#include <assimp3/IOSystem.hpp>
-#include <assimp3/IOStream.hpp>
-#include <assimp3/Importer.hpp>
-#include <assimp3/Exporter.hpp>
-#include <assimp3/postprocess.h>
-#include <assimp3/scene.h>
-#endif
+#include <IOSystem.hpp>
+#include <IOStream.hpp>
+#include <Importer.hpp>
+#include <Exporter.hpp>
+#include <postprocess.h>
+#include <scene.h>
 
 #include <iostream>
 #include <fstream>

@@ -22,6 +22,12 @@ pkg_check_modules(COLLADADOM collada15dom)
 include_directories(${COLLADADOM_INCLUDE_DIRS})
 link_directories(${COLLADADOM_LIBRARY_DIRS})
 
+rosbuild_find_ros_package(assimp_devel)
+set(ENV{PKG_CONFIG_PATH} ${assimp_devel_PACKAGE_PATH}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
+pkg_check_modules(assimp assimp_devel REQUIRED)
+include_directories(${assimp_INCLUDE_DIRS})
+link_directories(${assimp_LIBRARY_DIRS})
+
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
@@ -46,3 +52,5 @@ rosbuild_add_link_flags(collada_to_graphviz -Wl,--no-as-needed )
 rosbuild_add_executable(collada_to_urdf src/collada_to_urdf.cpp)
 rosbuild_link_boost(collada_to_urdf filesystem program_options)
 rosbuild_add_link_flags(collada_to_urdf -Wl,--no-as-needed )
+target_link_libraries(collada_to_urdf ${assimp_LIBRARIES})
+

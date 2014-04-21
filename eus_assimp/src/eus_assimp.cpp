@@ -1,15 +1,8 @@
-#if 0
-// assimp 2
-#include <assimp/assimp.hpp>
-#include <assimp/aiScene.h>
-#include <assimp/aiPostProcess.h>
-#endif
-
-// assimp 3
-#include <assimp3/Importer.hpp>
-#include <assimp3/Exporter.hpp>
-#include <assimp3/postprocess.h>
-#include <assimp3/scene.h>
+// assimp_devel
+#include <Importer.hpp>
+#include <Exporter.hpp>
+#include <postprocess.h>
+#include <scene.h>
 
 // convex decomposition
 #if COMPILE_CONVEX_DECOMPOSITION
