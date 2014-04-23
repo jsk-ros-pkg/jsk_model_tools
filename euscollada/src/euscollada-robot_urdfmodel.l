@@ -37,6 +37,8 @@
                                   ((keywordp (car args))
                                    ;;(warn ";; no such sensor ~A~%" (car args))
                                    nil)
+                                  ((stringp (car args))
+                                   (find-if #'(lambda (x) (string= (send x :name) (car args))) (send self ,(read-from-string (format nil "~As" sensor-name)))))
                                   (t
                                    (forward-message-to (car (send self ,(read-from-string (format nil "~As" sensor-name)))) args)
                                    )))

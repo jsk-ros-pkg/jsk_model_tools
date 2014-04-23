@@ -1,7 +1,7 @@
 ;;
 ;; assimp mesh reader for euslisp
 ;;
-(require :eus-assimp "package://eus_assimp/lib/eus_assimp.so")
+(require :eus-assimp "package://eus_assimp/euslisp/eus_assimp.so")
 
 (defconstant *aiProcess_CalcTangentSpace*         #x1)
 (defconstant *aiProcess_JoinIdenticalVertices*    #x2)

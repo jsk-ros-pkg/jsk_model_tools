@@ -2,25 +2,17 @@
 #include <ros/ros.h>
 #include "collada_parser/collada_parser.h"
 #include "urdf/model.h"
+#include "urdf_parser/urdf_parser.h"
 
 #include <sys/utsname.h>
 #include <math.h>
 
-#if IS_ASSIMP3
-// assimp 3 (assimp_devel)
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/IOStream.hpp>
-#include <assimp/IOSystem.hpp>
-#else
-// assimp 2
-#include <assimp/assimp.hpp>
-#include <assimp/aiScene.h>
-#include <assimp/aiPostProcess.h>
-#include <assimp/IOStream.h>
-#include <assimp/IOSystem.h>
-#endif
+// assimp_devel
+#include <Importer.hpp>
+#include <scene.h>
+#include <postprocess.h>
+#include <IOStream.hpp>
+#include <IOSystem.hpp>
 
 #include <iostream>
 #include <fstream>
