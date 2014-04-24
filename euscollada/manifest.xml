@@ -13,8 +13,6 @@
     <rosdoc config="rosdoc.yaml" />
   </export>
 
-  <rosdep name="collada_urdf"/>
-
   <depend package="collada_urdf"/>
   <depend package="euslisp"/>
   <depend package="roseus" />

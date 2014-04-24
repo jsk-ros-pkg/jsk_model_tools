@@ -13,7 +13,9 @@
   <build_depend>actionlib</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>urdf</build_depend>
+  <build_depend>urdf_parser</build_depend>
   <build_depend>urdf_parser_plugin</build_depend>
+  <build_depend>collada_urdf</build_depend>
   <build_depend>collada_parser</build_depend>
   <build_depend>rosbuild</build_depend>
   <build_depend>mk</build_depend>
