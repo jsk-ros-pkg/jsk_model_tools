@@ -52,5 +52,5 @@ rosbuild_add_link_flags(collada_to_graphviz -Wl,--no-as-needed )
 rosbuild_add_executable(collada_to_urdf src/collada_to_urdf.cpp)
 rosbuild_link_boost(collada_to_urdf filesystem program_options)
 rosbuild_add_link_flags(collada_to_urdf -Wl,--no-as-needed )
-target_link_libraries(collada_to_urdf ${assimp_LIBRARIES})
+target_link_libraries(collada_to_urdf ${assimp_LIBRARIES} ${COLLADADOM_LIBRARIES})
 
