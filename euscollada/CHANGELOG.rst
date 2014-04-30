@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2014-05-01)
+------------------
 * check if pr2_mechanism_model exists
 * add rosboost_cfg, qhull and cmake_modules to depends
 * use assimp_devel pkgconfig

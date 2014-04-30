@@ -2,8 +2,8 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2014-05-01)
+------------------
 * (eus_assimp) update files for using assimp_devel in jsk_common (`#20 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/20>`_)
 * fix eus_assimp
 * change store-glvertices to save-mesh-file
