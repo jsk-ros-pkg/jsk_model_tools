@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.3 (2014-05-01)
+------------------
 * Merge pull request `#35 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/35>`_ from k-okada/add_tf_depends
   add tf to depend
 * Contributors: Kei Okada
