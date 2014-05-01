@@ -2,8 +2,8 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.2 (2014-05-01)
+------------------
 * Merge pull request `#34 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/34>`_ from k-okada/fix_to_pass_buildfirm
   Fix to pass buildfirm
 * Contributors: Kei Okada
