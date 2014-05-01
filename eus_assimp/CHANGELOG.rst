@@ -2,6 +2,15 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#34 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/34>`_ from k-okada/fix_to_pass_buildfirm
+  Fix to pass buildfirm
+* Contributors: Kei Okada
+* add depends to euslisp
+* added euslisp_SOURCE_PREFIX for finding eusisp package path in catkin.cmake
+* Contributors: Masaki Murooka
+
 0.1.1 (2014-05-01)
 ------------------
 * (eus_assimp) update files for using assimp_devel in jsk_common (`#20 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/20>`_)
