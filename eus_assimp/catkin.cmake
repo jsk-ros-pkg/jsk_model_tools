@@ -47,6 +47,7 @@ if(SDLIMG_FOUND)
 #  message(STATUS "SDL_image found")
   add_definitions(-DUSE_SDL_IMAGE=1)
   add_definitions(${SDLIMG_CFLAGS_OTHER})
+  include_directories(${SDLIMG_INCLUDE_DIRS})
   target_link_libraries(eus_assimp ${SDLIMG_LIBRARIES})
 endif(SDLIMG_FOUND)
 
