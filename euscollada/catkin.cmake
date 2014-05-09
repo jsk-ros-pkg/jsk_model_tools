@@ -2,9 +2,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(euscollada)
 
-catkin_package()
-
 find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser urdfdom resource_retriever)
+
+catkin_package()
 
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CATKIN_DEVEL_PREFIX}/lib/pkgconfig")
 
