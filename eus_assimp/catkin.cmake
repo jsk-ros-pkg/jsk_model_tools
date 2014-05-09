@@ -41,6 +41,15 @@ else()
  add_definitions(-Di486)
 endif()
 
+## for image file loading using SDL
+pkg_check_modules (SDLIMG SDL_image)
+if(SDLIMG_FOUND)
+#  message(STATUS "SDL_image found")
+  add_definitions(-DUSE_SDL_IMAGE=1)
+  add_definitions(${SDLIMG_CFLAGS_OTHER})
+  target_link_libraries(eus_assimp ${SDLIMG_LIBRARIES})
+endif(SDLIMG_FOUND)
+
 if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
  add_definitions(-Dx86_64)
  set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS} -flat_namespace -undefined suppress")
