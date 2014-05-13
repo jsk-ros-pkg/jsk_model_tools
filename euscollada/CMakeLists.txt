@@ -71,11 +71,14 @@ endmacro(convert_to_collada)
 convert_to_collada()
 
 ## pr2.l
-ADD_CUSTOM_COMMAND(
-  OUTPUT ${CMAKE_SOURCE_DIR}/pr2.l
-  COMMAND rosrun euscollada pr2.sh
-  DEPENDS collada2eus)
-ADD_CUSTOM_TARGET(pr2model ALL DEPENDS ${CMAKE_SOURCE_DIR}/pr2.l)
+rosbuild_find_ros_package(pr2_mechanism_model)
+if(pr2_mechanism_model_FOUND)
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${CMAKE_SOURCE_DIR}/pr2.l
+    COMMAND rosrun euscollada pr2.sh
+    DEPENDS collada2eus)
+  ADD_CUSTOM_TARGET(pr2model ALL DEPENDS ${CMAKE_SOURCE_DIR}/pr2.l)
+endif()
 
 ## test
 rosbuild_download_test_data(https://openrave.svn.sourceforge.net/svnroot/openrave/data/robots/mitsubishi-pa10.zae test/mitsubishi-pa10.zae 2e995a1356befd581028b9fd0d55b10f)
@@ -90,9 +93,10 @@ rosbuild_download_test_data(https://openrave.svn.sourceforge.net/svnroot/openrav
 
 rosbuild_add_pyunit(test/collada2eus_test.py)
 rosbuild_check_for_display(disp)
-if(disp)
+rosbuild_find_ros_package(pr2_mechanism_model)
+if(disp AND pr2_mechanism_model_FOUND)
   rosbuild_add_rostest(test/euscollada-test.launch)
-endif(disp)
+endif()
 
 # roslaunch documentation
 # rosbuild_find_ros_package("jsk_tools")

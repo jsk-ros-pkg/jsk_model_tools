@@ -255,8 +255,8 @@ public:
     string parent_link;
     string sensor_id;
     string name;
-    domTranslateRef ptrans;
-    domRotateRef prot;
+    vector<daeElementRef> ptrans;
+
     static bool compare(const daeSensor& a, const daeSensor& b) {
       return (a.sensor_id < b.sensor_id);
     }
@@ -901,21 +901,28 @@ void ModelEuslisp::printEndCoords () {
             name.c_str(), name.c_str(), plink.c_str());
     fprintf(fp, "     (send %s-sensor-coords :put :sensor-type :%s)\n", name.c_str(), it->sensor_type.c_str());
     fprintf(fp, "     (send %s-sensor-coords :put :sensor-id %s)\n", name.c_str(), it->sensor_id.c_str());
-    fprintf(fp, "     (send %s-sensor-coords :transform (make-coords ", name.c_str());
 
-    if ( !!(it->ptrans) ) {
-      fprintf(fp, ":pos (float-vector ");
-      for(size_t i = 0; i < 3; i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*(it->ptrans->getValue()[i])); }
-      fprintf(fp, ") ");
+    fprintf(fp, "     (send %s-sensor-coords :transform (let ((cds (make-coords)))\n", name.c_str());
+    for (size_t i = 0; i < it->ptrans.size(); i++) {
+      domRotateRef protate = daeSafeCast<domRotate>(it->ptrans[i]);
+      if( !!protate ) {
+        fprintf(fp, "                                               (send cds :transform (make-coords :axis ");
+        fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+                protate->getValue()[0], protate->getValue()[1], protate->getValue()[2]);
+        fprintf(fp, " :angle");
+        fprintf(fp, " "FLOAT_PRECISION_FINE"))\n", protate->getValue()[3]*(M_PI/180.0));
+        continue;
+      }
+      domTranslateRef ptrans = daeSafeCast<domTranslate>(it->ptrans[i]);
+      if( !!ptrans ) {
+        fprintf(fp, "                                               (send cds :transform (make-coords :pos (float-vector ");
+        for(size_t i = 0; i < 3; i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*(ptrans->getValue()[i])); }
+        fprintf(fp, ")))\n");
+        continue;
+      }
     }
-    if ( !!(it->prot) ) {
-      fprintf(fp, ":axis ");
-      fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
-              (it->prot)->getValue()[0], (it->prot)->getValue()[1], (it->prot)->getValue()[2]);
-      fprintf(fp, " :angle");
-      fprintf(fp, " "FLOAT_PRECISION_FINE"", (it->prot)->getValue()[3]*(M_PI/180.0));
-    }
-    fprintf(fp, "))\n");
+    fprintf(fp, "                                               ))\n");
+
     fprintf(fp, "     (send %s :assoc %s-sensor-coords)\n", plink.c_str(), name.c_str());
   }
   fprintf(fp, "\n");
@@ -1074,8 +1081,11 @@ void ModelEuslisp::parseSensors () {
             dsensor.sensor_type = getSensorType(pextra);
             string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
             dsensor.sensor_id = sensor_url.erase(sensor_url.find( "#sensor" ), 7);
-            dsensor.ptrans = daeSafeCast<domTranslate>(frame_origin->getChild("translate"));
-            dsensor.prot = daeSafeCast<domRotate>(frame_origin->getChild("rotate"));
+            daeTArray<daeElementRef> children;
+            frame_origin->getChildren(children);
+            for(size_t i = 0; i < children.getCount(); ++i) {
+              dsensor.ptrans.push_back(children[i]);
+            }
             m_sensors.push_back(dsensor);
             ROS_WARN_STREAM("Sensor " << pextra->getName() << " is attached to " << link->second->name
                             << " " << dsensor.sensor_type << " " << sensor_url);

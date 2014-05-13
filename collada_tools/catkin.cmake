@@ -46,7 +46,7 @@ add_dependencies(collada_to_graphviz libassimp)
 
 add_executable(collada_to_urdf src/collada_to_urdf.cpp)
 set_target_properties(collada_to_urdf PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
-target_link_libraries(collada_to_urdf ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${assimp_devel_LIBRARIES})
+target_link_libraries(collada_to_urdf ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${assimp_devel_LIBRARIES} ${COLLADADOM_LIBRARIES})
 add_dependencies(collada_to_urdf libassimp_devel)
 
 install(TARGETS collada_to_urdf collada_to_graphviz collada_gazebo_gen
