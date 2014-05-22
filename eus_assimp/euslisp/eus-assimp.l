@@ -155,9 +155,14 @@
     (instance gl::glvertices :init ret)))
 
 (defun convex-decomposition-glvertices (glvtcs
-                                        &key ((:scale scl) 1.0)
-                                        (skinwidth 0.0) (decomposition-depth 4) (max-hull-vertices 64)
-                                        (concavity-threshold 0.1) (merge-threshold 20.0) (volume-split-threshold 2.0))
+                                        &key (add-color nil) (color-num 8)
+                                        (skinwidth 0.0)
+                                        (decomposition-depth 4) ;; if larger, reduce faces
+                                        (max-hull-vertices 48) ;; if larger, increase faces
+                                        (concavity-threshold 10) ;; if larger, reduce faces
+                                        (merge-threshold 20.0) ;; if larger, reduce faces
+                                        (volume-split-threshold 4.0) ;; if larger, reduce faces
+                                        )
   (let ((mlst (glvtcs . gl::mesh-list))
         ;;name-lst ;; type-lst
         ;;material-lst ;;normals-lst
@@ -174,6 +179,28 @@
                concavity-threshold merge-threshold volume-split-threshold))
     (when ret
       (setq glv (instance gl::glvertices :init ret))
+      (when add-color
+        (let ((mlst (glv . gl::mesh-list))
+              (cntr 0) (mesh-num 0))
+          (dolist (m mlst)
+            (let ((mat (cadr (assoc :material m))))
+              (if mat
+                  (setf (cdr mat)
+                        (list :material
+                              (list (llist :ambient (scale (* 0.8 (/ 1 255.0)) (coerce (his2rgb (* (/ (mod cntr color-num)
+                                                                                              (float color-num)) 360) 1 1) float-vector)))
+                                    (list :diffuse (scale (* 0.8 (/ 1 255.0)) (coerce (his2rgb (* (/ (mod cntr color-num)
+                                                                                             (float color-num)) 360) 1 1) float-vector))))))
+                (nconc m
+                       (list (list :material
+                                   (list (list :ambient (scale (* 0.8 (/ 1 255.0)) (coerce (his2rgb (* (/ (mod cntr color-num)
+                                                                                                  (float color-num)) 360) 1 1) float-vector)))
+                                         (list :diffuse (scale (* 0.8 (/ 1 255.0)) (coerce (his2rgb (* (/ (mod cntr color-num)
+                                                                                                  (float color-num)) 360) 1 1) float-vector)))))))))
+            (incf mesh-num (/ (length (cadr (assoc :indices m))) 3))
+            (incf cntr))
+          (format t ";; result: ~A meshes, total ~A faces~%" cntr mesh-num)
+          ))
       glv)
     ))
 
