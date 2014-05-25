@@ -17,7 +17,7 @@
                                         (l . inertia-tensor))))
      )
    (send-super :init-ending)
-   (dolist (l (send self :links)) (send self :make-detail-collision-model-from-glvertices-for-one-link l))
+   (send self :make-collision-model-for-links)
 
    ;;
    (dolist (j (mapcan #'(lambda (x) (if (and (derivedp (cdr x) joint)
@@ -53,25 +53,6 @@
                       ))
                     args)
      ))
-  ;; make collision model from gl-vertices
-  (:make-detail-collision-model-from-glvertices-for-one-link
-   (ll &key (fat 0) (collision-func 'pqp-collision-check))
-   (unless (send ll :get (read-from-string (format nil ":~Amodel"
-                                                   (string-right-trim "-COLLISION-CHECK" (string collision-func)))))
-     (send-message ll cascaded-coords
-                   (read-from-string
-                    (format nil ":make-~Amodel"
-                            (string-right-trim "-COLLISION-CHECK" (string collision-func))))
-                   :fat fat
-                   :faces (flatten (mapcar #'(lambda (x)
-                                               (cond
-                                                ((and (derivedp x collada-body)
-                                                      (x . glvertices))
-                                                 (send (x . glvertices) :convert-to-faces :wrt :world))
-                                                (t
-                                                 (send x :faces))))
-                                           (send ll :bodies)))))
-   )
   )
 
 ;; copy euscollada-body class definition from euscollada/src/euscollada-robot.l
