@@ -1327,6 +1327,44 @@ int main(int argc, char* argv[]){
   }
   fprintf(output_fp, "))\n");
   fprintf(output_fp, "\n");
+  // sensor
+  fprintf(output_fp, "    ;; attach_sensor\n");
+  if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
+    domArticulated_system *thisArticulated;
+    for ( size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL); ii++) {
+      g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
+      if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
+    }
+    std::vector<std::string> fsensor_list, imusensor_list, camera_list;
+    for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
+      domExtraRef pextra = thisArticulated->getExtra_array()[ie];
+      // find element which type is attach_sensor and is attached to thisNode
+      if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
+        if (getSensorType(pextra) == "base_force6d" ) {
+          fsensor_list.push_back(string(pextra->getName()));
+        } else if (getSensorType(pextra) == "base_imu" ) {
+	  imusensor_list.push_back(string(pextra->getName()));
+	} else if (getSensorType(pextra) == "base_pinhole_camera" ) {
+	  camera_list.push_back(string(pextra->getName()));
+	}
+      }
+    }
+    fprintf(output_fp, "    (setq force-sensors (list ");
+    for (size_t i = 0; i < fsensor_list.size(); i++) {
+      fprintf(output_fp, "%s-sensor-coords ", fsensor_list[i].c_str());
+    }
+    fprintf(output_fp, "))\n");
+    fprintf(output_fp, "    (setq imu-sensors (list ");
+    for (size_t i = 0; i < imusensor_list.size(); i++) {
+      fprintf(output_fp, "%s-sensor-coords ", imusensor_list[i].c_str());
+    }
+    fprintf(output_fp, "))\n");
+    fprintf(output_fp, "    (setq cameras (list ");
+    for (size_t i = 0; i < camera_list.size(); i++) {
+      fprintf(output_fp, "%s-sensor-coords ", camera_list[i].c_str());
+    }
+    fprintf(output_fp, "))\n");
+  }
 
   // init ending
   fprintf(output_fp, "     ;; init-ending\n");
@@ -1439,30 +1477,13 @@ int main(int argc, char* argv[]){
       g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
       if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
     }
-    std::vector<std::string> fsensor_list;
-    std::vector<std::string> imusensor_list;
     for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
       domExtraRef pextra = thisArticulated->getExtra_array()[ie];
       // find element which type is attach_sensor and is attached to thisNode
       if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
 	fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s-sensor-coords args))\n", pextra->getName(), pextra->getName());
-        if (getSensorType(pextra) == "base_force6d" ) {
-          fsensor_list.push_back(string(pextra->getName()));
-        } else if (getSensorType(pextra) == "base_imu" ) {
-	  imusensor_list.push_back(string(pextra->getName()));
-	}
       }
     }
-    fprintf(output_fp, "    (:force-sensors (&rest args) (forward-message-to-all (list ");
-    for (size_t i = 0; i < fsensor_list.size(); i++) {
-      fprintf(output_fp, "(send self :%s) ", fsensor_list[i].c_str());
-    }
-    fprintf(output_fp, ") args))\n");
-    fprintf(output_fp, "    (:imu-sensors (&rest args) (forward-message-to-all (list ");
-    for (size_t i = 0; i < imusensor_list.size(); i++) {
-      fprintf(output_fp, "(send self :%s) ", imusensor_list[i].c_str());
-    }
-    fprintf(output_fp, ") args))\n");
   }
   fprintf(output_fp, "  )\n\n");
 
