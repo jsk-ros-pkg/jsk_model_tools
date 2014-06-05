@@ -232,6 +232,7 @@ public:
   void printJoints ();
   void printEndCoords();
   void printSensors();
+  void printSensorLists();
   void printGeometries();
 
   // print methods
@@ -925,8 +926,9 @@ void ModelEuslisp::printEndCoords () {
 
     fprintf(fp, "     (send %s :assoc %s-sensor-coords)\n", plink.c_str(), name.c_str());
   }
+  // sensors
+  printSensorLists();
   fprintf(fp, "\n");
-
   // init ending
   fprintf(fp, "     ;; init-ending\n");
   fprintf(fp, "     (send self :init-ending)\n\n");
@@ -1099,7 +1101,7 @@ void ModelEuslisp::parseSensors () {
 }
 
 void ModelEuslisp::printSensors() {
-  fprintf(fp, "\n  ;; attach_sensor\n");
+  fprintf(fp, "\n  ;; attach_sensor methods\n");
   for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
     if(add_sensor_suffix) {
       fprintf(fp, "  (:%s_sn (&rest args) (forward-message-to %s-sensor-coords args))\n",
@@ -1109,28 +1111,31 @@ void ModelEuslisp::printSensors() {
               it->name.c_str(), it->name.c_str());
     }
   }
-  fprintf(fp, "  (:force-sensors (&rest args) (forward-message-to-all (list ");
+}
+
+void ModelEuslisp::printSensorLists() {
+  fprintf(fp, "\n     ;; attach_sensor lists\n");
+  fprintf(fp, "     (setq force-sensors (list ");
   for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
     if (it->sensor_type == "base_force6d") {
-      if(add_sensor_suffix) {
-        fprintf(fp, "(send self :%s_sn) ", it->name.c_str());
-      } else {
-        fprintf(fp, "(send self :%s) ", it->name.c_str());
-      }
+      fprintf(fp, "%s-sensor-coords ", it->name.c_str());
     }
   }
-  fprintf(fp, ") args))\n");
-  fprintf(fp, "  (:imu-sensors (&rest args) (forward-message-to-all (list ");
+  fprintf(fp, "))\n");
+  fprintf(fp, "     (setq imu-sensors (list ");
   for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
     if (it->sensor_type == "base_imu") {
-      if(add_sensor_suffix) {
-        fprintf(fp, "(send self :%s_sn) ", it->name.c_str());
-      } else {
-        fprintf(fp, "(send self :%s) ", it->name.c_str());
-      }
+      fprintf(fp, "%s-sensor-coords ", it->name.c_str());
     }
   }
-  fprintf(fp, ") args))\n");
+  fprintf(fp, "))\n");
+  fprintf(fp, "     (setq cameras (list ");
+  for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
+    if (it->sensor_type == "base_pinhole_camera") {
+      fprintf(fp, "%s-sensor-coords ", it->name.c_str());
+    }
+  }
+  fprintf(fp, "))\n");
 }
 
 void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pose,
