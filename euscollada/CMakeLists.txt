@@ -72,7 +72,7 @@ convert_to_collada()
 
 ## pr2.l
 rosbuild_find_ros_package(pr2_mechanism_model)
-if(pr2_mechanism_model_FOUND)
+if(EXISTS "${pr2_mechanism_model_PACKAGE_PATH}")
   ADD_CUSTOM_COMMAND(
     OUTPUT ${CMAKE_SOURCE_DIR}/pr2.l
     COMMAND rosrun euscollada pr2.sh

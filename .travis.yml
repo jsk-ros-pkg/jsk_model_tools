@@ -18,6 +18,12 @@ matrix:
   allow_failures:
     - env: ROS_DISTRO=indigo  ROSWS=wstool BUILDER=catkin   USE_DEB=true
     - env: ROS_DISTRO=indigo  ROSWS=wstool BUILDER=catkin   USE_DEB=false
+before_install: # Use this to prepare the system to install prerequisites or dependencies
+  - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+  - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+  - sudo apt-get update -qq
+install:
+  - sudo apt-get install -qq -y ros-$ROS_DISTRO-pr2-mechanism;
 script: source .travis/travis.sh
 notifications:
   email:
