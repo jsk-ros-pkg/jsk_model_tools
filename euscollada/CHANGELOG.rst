@@ -2,6 +2,17 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* revert codes for collision model making according to https://github.com/euslisp/jskeus/pull/93 and https://github.com/jsk-ros-pkg/jsk_model_tools/pull/46
+* Enable euscollada conversion test ;; Add dependency on pr2_mechanism_model to travis.yaml ;; Fix cmake and use unittest.l in pr2.sh to trap Euslisp error
+* (https://github.com/jsk-ros-pkg/jsk_model_tools/issues/18) euscollada/src/collada2eus_urdfmodel.cpp : do not overwrite sensor methods
+* (jsk-ros-pkg/jsk_model_tools/issues/18) euscollada/src/collada2eus.cpp : do not overwrite sensors methods ;; sensors method are supported from euslisp/jskeus/pull/92
+* (jsk-ros-pkg/jsk_model_tools/issues/41) euscollada/src/euscollada-robot*.l : move collision model codes to irtrobot.l https://github.com/euslisp/jskeus/pull/93
+* (jsk-ros-pkg/jsk_model_tools/issues/18) euscollada/src/euscollada*.l : remove deprecate sensor methods ;; latest sensor methods are added and testes by https://github.com/euslisp/jskeus/pull/92
+* fix sensor coords
+* Contributors: YoheiKakiuchi, Shunichi Nozawa
+
 0.1.3 (2014-05-01)
 ------------------
 * Merge pull request `#35 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/35>`_ from k-okada/add_tf_depends
