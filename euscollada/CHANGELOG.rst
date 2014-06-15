@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.4 (2014-06-15)
+------------------
 * revert codes for collision model making according to https://github.com/euslisp/jskeus/pull/93 and https://github.com/jsk-ros-pkg/jsk_model_tools/pull/46
 * Enable euscollada conversion test ;; Add dependency on pr2_mechanism_model to travis.yaml ;; Fix cmake and use unittest.l in pr2.sh to trap Euslisp error
 * (https://github.com/jsk-ros-pkg/jsk_model_tools/issues/18) euscollada/src/collada2eus_urdfmodel.cpp : do not overwrite sensor methods

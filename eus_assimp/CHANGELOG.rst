@@ -2,8 +2,8 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.4 (2014-06-15)
+------------------
 * update convex-decomposition parameters
 * add include directory for SDL
 * using SDL in hydro if exists
