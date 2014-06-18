@@ -1,5 +1,4 @@
 (load "unittest.l")
-(load "package://euscollada/pr2.l")
 ;;(load "package://pr2eus/pr2-utils.l")
 
 (init-unit-test)
@@ -34,16 +33,21 @@
 ;;     (send-all (send *pr2* :links) :draw-on :flush t))
 ;;   )
 
+(deftest pr2-model-test
+  (assert (= (unix:system "DISPLAY= rosrun euscollada pr2.sh") 0))
+  (assert (progn (load "/tmp/pr2.l") t)))
+
+#|
 (deftest pr2-weight-test
-  (if (not (boundp '*pr2*)) (pr2))
   (let* ((strm (piped-fork "echo $(grep \"<mass\" `rospack find pr2_mechanism_model`/pr2.urdf | cut -d\\\" -f2)"))
 	 (urdf-weight (reduce #'+ (read-from-string (format nil "(~A )" (read-line strm nil nil)))))
 	 (euslisp-weight (* 1e-3 (send *pr2* :weight)))) ;; [g] -> [kg]
     (close strm)
     (assert (eps= urdf-weight euslisp-weight) (format nil "check weight urdf:~A euslisp:~A" urdf-weight euslisp-weight))))
-
+|#
 (load "irteus/irtmodel.l")
 (deftest pr2-eusmodel-validity-check
+  (if (not (boundp '*pr2*)) (pr2))
   (eusmodel-validity-check-one *pr2*))
 
 (run-all-tests)

@@ -5,19 +5,19 @@ cd `rospack find euscollada`
 #rosrun collada_urdf_jsk_patch urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf pr2.dae
 if [ -e `rospack find pr2_mechanism_model`/pr2.urdf ];
 then
-    rosrun collada_urdf urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf pr2.dae
+    rosrun collada_urdf urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf /tmp/pr2.dae
 else
     rosrun xacro xacro.py `rospack find pr2_description`/robots/pr2.urdf.xacro > /tmp/pr2.$$.urdf
-    rosrun collada_urdf urdf_to_collada /tmp/pr2.$$.urdf pr2.dae
+    rosrun collada_urdf urdf_to_collada /tmp/pr2.$$.urdf /tmp/pr2.dae
 fi
 if [ "$?" != 0 ] ;  then exit ; fi
 
-rosrun euscollada collada2eus pr2.dae pr2.yaml pr2.l.$$.tmp; mv pr2.l.$$.tmp pr2.l
+rosrun euscollada collada2eus /tmp/pr2.dae pr2.yaml /tmp/pr2.l.$$.tmp; mv /tmp/pr2.l.$$.tmp /tmp/pr2.l
 if [ "$?" != 0 ] ;  then exit ; fi
 
 rosrun roseus roseus lib/llib/unittest.l "(init-unit-test)" "\
 (progn									\
-  (load \"package://euscollada/pr2.l\")					\
+  (load \"/tmp/pr2.l\")					\
   (if (and x::*display* (> x::*display* 0) (not (boundp '*irtviewer*))) (make-irtviewer :title \"pr2.sh\"))			\
   (if (not (boundp '*pr2*)) (pr2))					\
 									\

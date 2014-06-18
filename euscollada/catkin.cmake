@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(euscollada)
 
-find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser urdfdom resource_retriever)
+find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser urdfdom resource_retriever rostest)
 
 catkin_package()
 
@@ -30,6 +30,14 @@ install(TARGETS collada2eus collada2eus_urdfmodel
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
-install(DIRECTORY src
+install(DIRECTORY src test
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   PATTERN ".svn" EXCLUDE)
+
+install(FILES pr2.yaml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+install(PROGRAMS pr2.sh
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+add_rostest(test/euscollada-test.test)

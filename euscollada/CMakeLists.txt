@@ -72,7 +72,8 @@ convert_to_collada()
 
 ## pr2.l
 rosbuild_find_ros_package(pr2_mechanism_model)
-if(EXISTS "${pr2_mechanism_model_PACKAGE_PATH}")
+rosbuild_find_ros_package(pr2_description)
+if(EXISTS "${pr2_mechanism_model_PACKAGE_PATH}" OR EXISTS "${pr2_description_PACKAGE_PATH}")
   ADD_CUSTOM_COMMAND(
     OUTPUT ${CMAKE_SOURCE_DIR}/pr2.l
     COMMAND rosrun euscollada pr2.sh
@@ -92,9 +93,7 @@ rosbuild_download_test_data(https://openrave.svn.sourceforge.net/svnroot/openrav
 rosbuild_download_test_data(https://openrave.svn.sourceforge.net/svnroot/openrave/data/robots/barrett-wam.zae test/barrett-wam.zae 7d59cad7186b3fb516c3dd75303c52f2)
 
 rosbuild_add_pyunit(test/collada2eus_test.py)
-rosbuild_check_for_display(disp)
-rosbuild_find_ros_package(pr2_mechanism_model)
-if(disp AND pr2_mechanism_model_FOUND)
+if(EXISTS "${pr2_mechanism_model_PACKAGE_PATH}" OR EXISTS "${pr2_description_PACKAGE_PATH}")
   rosbuild_add_rostest(test/euscollada-test.launch)
 endif()
 
