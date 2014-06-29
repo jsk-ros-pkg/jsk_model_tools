@@ -2,6 +2,12 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* catkin.cmake: add *.yaml and *.sh to install
+* pr2.sh: Support Hydro pr2 model path
+* Contributors: Kei Okada, Shunichi Nozawa
+
 0.1.4 (2014-06-15)
 ------------------
 * revert codes for collision model making according to https://github.com/euslisp/jskeus/pull/93 and https://github.com/jsk-ros-pkg/jsk_model_tools/pull/46
