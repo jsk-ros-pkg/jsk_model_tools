@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.5 (2014-06-29)
+------------------
 * catkin.cmake: add *.yaml and *.sh to install
 * pr2.sh: Support Hydro pr2 model path
 * Contributors: Kei Okada, Shunichi Nozawa
