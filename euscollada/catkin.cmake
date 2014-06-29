@@ -33,3 +33,8 @@ install(TARGETS collada2eus collada2eus_urdfmodel
 install(DIRECTORY src
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   PATTERN ".svn" EXCLUDE)
+
+
+file(GLOB _install_files RELATIVE ${PROJECT_SOURCE_DIR} *.yaml *.sh)
+install(FILES ${_install_files}
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
