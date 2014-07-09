@@ -854,22 +854,24 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	    fprintf(fp, "       (setq %s-sensor-coords (make-cascoords :name \"%s\" :coords (send %s :copy-worldcoords)))\n", pextra->getName(), pextra->getName(), thisNodeName.c_str());
             fprintf(fp, "       (send %s-sensor-coords :put :sensor-type :%s)\n", pextra->getName(), sensor_type.c_str());
             fprintf(fp, "       (send %s-sensor-coords :put :sensor-id %s)\n", pextra->getName(), sensor_url.erase( sensor_url.find( "#sensor" ), 7 ).c_str());
-	    fprintf(fp, "       (send %s-sensor-coords :transform (make-coords ", pextra->getName());
-	    domTranslateRef ptrans = daeSafeCast<domTranslate>(frame_origin->getChild("translate"));
-	    domRotateRef prot = daeSafeCast<domRotate>(frame_origin->getChild("rotate"));
-	    if ( ptrans ) {
-	      fprintf(fp, ":pos #f(");
-	      for(unsigned int i=0;i<3;i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*ptrans->getValue()[i]);}
-	      fprintf(fp, ") ");
-	    }
-	    if ( prot ) {
-              fprintf(fp, ":axis ");
-              fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
-                      prot->getValue()[0], prot->getValue()[1], prot->getValue()[2]);
-              fprintf(fp, " :angle");
-	      fprintf(fp, " "FLOAT_PRECISION_FINE"", prot->getValue()[3]*(M_PI/180.0));
-	    }
-	    fprintf(fp, "))\n");
+            for (size_t i = 0; i < frame_origin->getChildren().getCount(); i++) {
+              if ( std::string(frame_origin->getChildren()[i]->getElementName()) == "translate" ) {
+                domTranslateRef ptrans = daeSafeCast<domTranslate>(frame_origin->getChildren()[i]);
+                fprintf(fp, "       (send %s-sensor-coords :transform (make-coords ", pextra->getName());
+                fprintf(fp, ":pos #f(");
+                for(unsigned int i=0;i<3;i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*ptrans->getValue()[i]);}
+                fprintf(fp, ")))\n");
+              } else if ( std::string(frame_origin->getChildren()[i]->getElementName()) == "rotate") {
+                domRotateRef prot = daeSafeCast<domRotate>(frame_origin->getChildren()[i]);
+                fprintf(fp, "       (send %s-sensor-coords :transform (make-coords ", pextra->getName());
+                fprintf(fp, ":axis ");
+                fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+                        prot->getValue()[0], prot->getValue()[1], prot->getValue()[2]);
+                fprintf(fp, " :angle");
+                fprintf(fp, " "FLOAT_PRECISION_FINE"", prot->getValue()[3]*(M_PI/180.0));
+                fprintf(fp, "))\n");
+              }
+            }
 	    fprintf(fp, "       (send %s :assoc %s-sensor-coords)\n", thisNodeName.c_str(), pextra->getName());
 	  }
 	}
