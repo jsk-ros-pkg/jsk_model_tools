@@ -1,0 +1,236 @@
+<?xml version="1.0"?>
+<robot name="shelf"
+       xmlns:xi="http://www.w3.org/2001/XInclude"
+       xmlns:gazebo="http://playerstage.sourceforge.net/gazebo/xmlschema/#gz"
+       xmlns:model="http://playerstage.sourceforge.net/gazebo/xmlschema/#model"
+       xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+       xmlns:body="http://playerstage.sourceforge.net/gazebo/xmlschema/#body"
+       xmlns:geom="http://playerstage.sourceforge.net/gazebo/xmlschema/#geom"
+       xmlns:joint="http://playerstage.sourceforge.net/gazebo/xmlschema/#joint"
+       xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+       xmlns:rendering="http://playerstage.sourceforge.net/gazebo/xmlschema/#rendering"
+       xmlns:renderable="http://playerstage.sourceforge.net/gazebo/xmlschema/#renderable"
+       xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+       xmlns:physics="http://playerstage.sourceforge.net/gazebo/xmlschema/#physics">
+  <gazebo>
+    <static>false</static>
+  </gazebo>
+  <link name="ROOT_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/ROOT_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/ROOT_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="ROOT_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="SHELF-BODYSET6_link">
+    <visual>
+      <origin xyz="0.0055 0 0.175" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET6_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0055 0 0.175" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET6_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="SHELF-BODYSET6_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="SHELF-BODYSET5_link">
+    <visual>
+      <origin xyz="0.0055 0 0.45625" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET5_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0055 0 0.45625" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET5_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="SHELF-BODYSET5_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="SHELF-BODYSET4_link">
+    <visual>
+      <origin xyz="0.0055 0 0.63875" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET4_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0055 0 0.63875" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET4_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="SHELF-BODYSET4_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="SHELF-BODYSET3_link">
+    <visual>
+      <origin xyz="0.0055 0 0.82125" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET3_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0055 0 0.82125" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET3_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="SHELF-BODYSET3_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="SHELF-BODYSET2_link">
+    <visual>
+      <origin xyz="0.0055 0 1.00375" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET2_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0055 0 1.00375" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://shelf/meshes/SHELF-BODYSET2_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="SHELF-BODYSET2_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <joint name="DRAWER0" type="prismatic">
+    <parent link="ROOT_link"/>
+    <child  link="SHELF-BODYSET6_link"/>
+    <origin xyz="0.0055 0 0.175" rpy="0 -0 0 "/>
+    <axis   xyz="1 0 0"/>
+    <limit lower="0" upper="0.405" effort="100" velocity="0.01" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="DRAWER0_trans" >
+    <actuator name="DRAWER0_motor" />
+    <joint name="DRAWER0" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="DRAWER0">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+  <joint name="DRAWER1" type="prismatic">
+    <parent link="ROOT_link"/>
+    <child  link="SHELF-BODYSET5_link"/>
+    <origin xyz="0.0055 0 0.45625" rpy="0 -0 0 "/>
+    <axis   xyz="1 0 0"/>
+    <limit lower="0" upper="0.405" effort="100" velocity="0.01" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="DRAWER1_trans" >
+    <actuator name="DRAWER1_motor" />
+    <joint name="DRAWER1" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="DRAWER1">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+  <joint name="DRAWER2" type="prismatic">
+    <parent link="ROOT_link"/>
+    <child  link="SHELF-BODYSET4_link"/>
+    <origin xyz="0.0055 0 0.63875" rpy="0 -0 0 "/>
+    <axis   xyz="1 0 0"/>
+    <limit lower="0" upper="0.405" effort="100" velocity="0.01" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="DRAWER2_trans" >
+    <actuator name="DRAWER2_motor" />
+    <joint name="DRAWER2" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="DRAWER2">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+  <joint name="DRAWER3" type="prismatic">
+    <parent link="ROOT_link"/>
+    <child  link="SHELF-BODYSET3_link"/>
+    <origin xyz="0.0055 0 0.82125" rpy="0 -0 0 "/>
+    <axis   xyz="1 0 0"/>
+    <limit lower="0" upper="0.405" effort="100" velocity="0.01" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="DRAWER3_trans" >
+    <actuator name="DRAWER3_motor" />
+    <joint name="DRAWER3" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="DRAWER3">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+  <joint name="DRAWER4" type="prismatic">
+    <parent link="ROOT_link"/>
+    <child  link="SHELF-BODYSET2_link"/>
+    <origin xyz="0.0055 0 1.00375" rpy="0 -0 0 "/>
+    <axis   xyz="1 0 0"/>
+    <limit lower="0" upper="0.405" effort="100" velocity="0.01" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="DRAWER4_trans" >
+    <actuator name="DRAWER4_motor" />
+    <joint name="DRAWER4" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="DRAWER4">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+</robot>
