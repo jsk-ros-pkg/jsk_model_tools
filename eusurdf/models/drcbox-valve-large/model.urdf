@@ -40,13 +40,13 @@
   </gazebo>
   <link name="VALVE-HANDLE-LINK_link">
     <visual>
-      <origin xyz="-2.27374e-16 0 0.353" rpy="0 -0 0"/>
+      <origin xyz="0 0 0.353" rpy="0 -0 0"/>
       <geometry>
         <mesh filename="model://drcbox-valve-large/meshes/VALVE-HANDLE-LINK_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
-      <origin xyz="-2.27374e-16 0 0.353" rpy="0 -0 0"/>
+      <origin xyz="0 0 0.353" rpy="0 -0 0"/>
       <geometry>
         <mesh filename="model://drcbox-valve-large/meshes/VALVE-HANDLE-LINK_link_mesh.dae" scale="1 1 1" />
       </geometry>
@@ -64,7 +64,7 @@
   <joint name="CRANK-JOINT" type="revolute">
     <parent link="CRANK-ROOT-LINK_link"/>
     <child  link="VALVE-HANDLE-LINK_link"/>
-    <origin xyz="-2.27374e-16 0 0.353" rpy="0 -0 0 "/>
+    <origin xyz="0 0 0.353" rpy="0 -0 0 "/>
     <axis   xyz="0 0 1"/>
     <limit lower="-62.8319" upper="62.8319" effort="100" velocity="0.5" />
     <dynamics damping="0.2" friction="0" />
