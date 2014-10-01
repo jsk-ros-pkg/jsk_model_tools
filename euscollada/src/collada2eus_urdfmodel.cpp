@@ -445,9 +445,15 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
       fprintf(fp, "\n");
       fprintf(fp, "                   (list :normals #2f(");
       for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
-        aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
-        n.Normalize();
-        fprintf(fp, "(%f %f %f)", n.x, n.y, n.z);
+        if (isnan(input_mesh->mNormals[j].x) ||
+            isnan(input_mesh->mNormals[j].y) ||
+            isnan(input_mesh->mNormals[j].z)) {
+          fprintf(fp, "(0 0 0)"); // should be normalized vector #f(1 0 0) ???
+        } else {
+          aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
+          n.Normalize();
+          fprintf(fp, "(%f %f %f)", n.x, n.y, n.z);
+        }
       }
       fprintf(fp, "))");
     }
