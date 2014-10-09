@@ -687,19 +687,20 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
     //
     fprintf(fp, "         (send %s :weight %.3f)\n", thisNodeName.c_str(), link->inertial->mass * 1000);
     fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNodeName.c_str());
-    fprintf(fp, "               (matrix\n");
-    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
+    fprintf(fp, "               (m* (m* (send tmp-cds :worldrot) (matrix\n");
+    fprintf(fp, "                                                  (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
             link->inertial->ixx * 1000 * 1000 * 1000,
             link->inertial->ixy * 1000 * 1000 * 1000,
             link->inertial->ixz * 1000 * 1000 * 1000);
-    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
+    fprintf(fp, "                                                  (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
             link->inertial->ixy * 1000 * 1000 * 1000,
             link->inertial->iyy * 1000 * 1000 * 1000,
             link->inertial->iyz * 1000 * 1000 * 1000);
-    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")))\n",
+    fprintf(fp, "                                                  (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))\n",
             link->inertial->ixz * 1000 * 1000 * 1000,
             link->inertial->iyz * 1000 * 1000 * 1000,
             link->inertial->izz * 1000 * 1000 * 1000);
+    fprintf(fp, "                 ) (transpose (send tmp-cds :worldrot))))\n");
     fprintf(fp, "         (setq (%s . acentroid) (send tmp-cds :worldpos))\n", thisNodeName.c_str());
     fprintf(fp, "         )\n");
   } else {
@@ -1149,7 +1150,22 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
   string gname(name);
   if (g->type == Geometry::MESH) gname = ((Mesh *)(g.get()))->filename;
   fprintf(fp, "  (:_make_instance_%s ()\n", name.c_str());
-  fprintf(fp, "    (let (geom glvertices qhull)\n");
+  fprintf(fp, "    (let (geom glvertices qhull\n");
+  fprintf(fp, "          (local-cds (make-coords :pos ");
+  fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+              pose.position.x * 1000,
+              pose.position.y * 1000,
+              pose.position.z * 1000);
+  {
+    double qx, qy, qz, qw;
+    pose.rotation.getQuaternion(qx, qy, qz, qw);
+    if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
+      fprintf(fp, "\n                                    :rot (quaternion2matrix ");
+      fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
+              qw, qx, qy, qz);
+    }
+    fprintf(fp, ")))\n");
+  }
 
   if (g->type == Geometry::SPHERE) {
     // TODO: make eus geometry
@@ -1172,32 +1188,14 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
 
     vector<coordT> points;
     if (scene && scene->HasMeshes()) {
-      fprintf(fp, "      (setq\n");
-      fprintf(fp, "       glvertices\n");
+      fprintf(fp, "      (setq glvertices\n");
       fprintf(fp, "       (instance gl::glvertices :init\n");
       fprintf(fp, "                 (list ;; mesh list\n");
       // TODO: use g->scale
       printMesh(scene, scene->mRootNode, material_name, points);
       fprintf(fp, "                  )\n");
       fprintf(fp, "                 ))\n");
-      fprintf(fp, "      (let ((local-cds (make-coords :pos ");
-      fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
-              pose.position.x * 1000,
-              pose.position.y * 1000,
-              pose.position.z * 1000);
-      {
-        double qx, qy, qz, qw;
-        pose.rotation.getQuaternion(qx, qy, qz, qw);
-        if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
-          fprintf(fp, "\n                                    :rot (quaternion2matrix ");
-          fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
-                  qw, qx, qy, qz);
-        }
-        fprintf(fp, ")\n");
-        fprintf(fp, "                       ))\n");
-      }
-      fprintf(fp, "        (send glvertices :transform local-cds))\n");
-      //
+      fprintf(fp, "      (send glvertices :transform local-cds)\n");
       fprintf(fp, "      (send glvertices :calc-normals)\n");
     } else {
       // error
@@ -1211,7 +1209,9 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
         fprintf(fp, "            (instance faceset :init :faces (list\n");
         std::cerr << ";; points " << points.size() << std::endl; 
         for (unsigned int i = 0; i < points.size()/9; i++ ) {
-          fprintf(fp, "              (instance face :init :vertices (list (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")))\n",
+          fprintf(fp, "              (instance face :init :vertices\n");
+          fprintf(fp, "                (mapcar #'(lambda (v) (send local-cds :transform-vector v))\n");
+          fprintf(fp, "                  (list (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))))\n",
                   1000*points[i*9+0], 1000*points[i*9+1], 1000*points[i*9+2],
                   1000*points[i*9+3], 1000*points[i*9+4], 1000*points[i*9+5],
                   1000*points[i*9+6], 1000*points[i*9+7], 1000*points[i*9+8]);
@@ -1224,13 +1224,15 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
         facetT *facet;
         vertexT *vertex, **vertexp;
         FORALLfacets {
-          fprintf(fp, "              (instance face :init :vertices (list");
+          fprintf(fp, "              (instance face :init :vertices\n");
+          fprintf(fp, "                (mapcar #'(lambda (v) (send local-cds :transform-vector v))\n");
+          fprintf(fp, "                  (list ");
           setT *vertices = qh_facet3vertex(facet); // ccw?
           FOREACHvertex_(vertices) {
             fprintf(fp, " (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
                     1000*vertex->point[0], 1000*vertex->point[1], 1000*vertex->point[2]);
           }
-          fprintf(fp, "))\n");
+          fprintf(fp, ")))\n");
           qh_settempfree(&vertices);
         }
         fprintf(fp, "              ))\n");
