@@ -744,7 +744,11 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
   string thisJointName;
   if (add_joint_suffix) {
     thisJointName.assign(joint->name);
-    thisJointName += "_jt";
+    if (joint->type != Joint::FIXED) {
+      thisJointName += "_fixed_jt";
+    } else {
+      thisJointName += "_jt";
+    }
   } else {
     thisJointName.assign(joint->name);
   }
@@ -764,7 +768,7 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
             joint->axis.x, joint->axis.y, joint->axis.z);
   }
-  {
+  if (!!joint->limits) {
     float min = joint->limits->lower;
     float max = joint->limits->upper;
     fprintf(fp, "                     ");
@@ -777,6 +781,9 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     fprintf(fp, "\n");
     fprintf(fp, "                     :max-joint-velocity %f\n", joint->limits->velocity);
     fprintf(fp, "                     :max-joint-torque %f\n", joint->limits->effort);
+  } else {
+    // fixed joint
+    fprintf(fp, "                     :min 0.0 :max 0.0\n");
   }
   fprintf(fp, "                     ))\n");
 }
