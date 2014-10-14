@@ -28,7 +28,7 @@ before_install: # Use this to prepare the system to install prerequisites or dep
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
 install:
-  - sudo apt-get install -qq -y ros-$ROS_DISTRO-pr2-mechanism;
+  - if [ $ROS_DISTRO = groovy ]; then sudo apt-get install -qq -y ros-$ROS_DISTRO-pr2-mechanism; fi
 script: source .travis/travis.sh
 notifications:
   email:
