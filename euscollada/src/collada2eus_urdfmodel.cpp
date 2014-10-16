@@ -744,7 +744,7 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
   string thisJointName;
   if (add_joint_suffix) {
     thisJointName.assign(joint->name);
-    if (joint->type != Joint::FIXED) {
+    if (joint->type == Joint::FIXED) {
       thisJointName += "_fixed_jt";
     } else {
       thisJointName += "_jt";
