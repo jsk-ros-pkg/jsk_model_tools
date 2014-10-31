@@ -338,10 +338,9 @@
      (let ((matinfo (cadr (assoc :material minfo))))
        (let ((fname (cadr (assoc :filename matinfo)))
              (img   (cadr (assoc :teximage matinfo))))
-         ;;(pprint (list matinfo fname))
          (when (and fname (null img))
-           (when (substringp ".tif" fname)
-             (setq fname (format nil "~A.png" (subseq fname 0 (- (length fname) 4)))))
+           ;;(when (substringp ".tif" fname)
+           ;;  (setq fname (format nil "~A.png" (subseq fname 0 (- (length fname) 4)))))
            ;; relative path -> absolute path
            (let ((pf (pathname fname)))
              (unless (or (null dir) (eq (car (pathname-directory pf)) :root)) ;; absolute path
