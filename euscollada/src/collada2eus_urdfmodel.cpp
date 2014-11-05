@@ -200,14 +200,15 @@ public:
   void setRobotName (string &name) { arobot_name = name; };
   void setUseCollision(bool &b) { use_collision = b; };
   void setUseSimpleGeometry(bool &b) { use_simple_geometry = b; };
+  void setUseLoadbleMesh(bool &b) { use_loadable_mesh = b; };
   void setAddJointSuffix(bool &b) { add_joint_suffix = b; };
   void setAddLinkSuffix(bool &b) { add_link_suffix = b; };
   void setAddSensorSuffix(bool &b) { add_sensor_suffix = b; };
 
   // methods for parsing robot model for euslisp
   void addLinkCoords();
-  void printMesh(const aiScene* scene, const aiNode* node,
-                 const string &material_name, vector<coordT> &store_pt);
+  void printMesh(const aiScene* scene, const aiNode* node, const Vector3 &scale,
+                 const string &material_name, vector<coordT> &store_pt, bool printq);
   void readYaml(string &config_file);
 
   Pose getLinkPose(boost::shared_ptr<const Link> link) {
@@ -288,6 +289,7 @@ private:
   bool add_sensor_suffix;
   bool use_simple_geometry;
   bool use_collision;
+  bool use_loadable_mesh;
 
 };
 
@@ -298,6 +300,7 @@ ModelEuslisp::ModelEuslisp (boost::shared_ptr<ModelInterface> r) {
   add_sensor_suffix = false;
   use_simple_geometry = false;
   use_collision = false;
+  use_loadable_mesh = false;
 }
 
 ModelEuslisp::~ModelEuslisp () {
@@ -372,8 +375,8 @@ void ModelEuslisp::addLinkCoords() {
   }
 }
 
-void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
-                             const string &material_name, vector<coordT> &store_pt) {
+void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vector3 &scale,
+                             const string &material_name, vector<coordT> &store_pt, bool printq) {
   aiMatrix4x4 transform = node->mTransformation;
   aiNode *pnode = node->mParent;
   while (pnode)  {
@@ -389,12 +392,12 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
   inverse_transpose_rotation.Transpose();
   for (uint32_t i = 0; i < node->mNumMeshes; i++) {
     aiMesh* input_mesh = scene->mMeshes[node->mMeshes[i]];
-    fprintf(fp, "                  (list ;; mesh description\n");
-    fprintf(fp, "                   (list :type :triangles)\n");
-    fprintf(fp, "                   (list :material (list");
+    if (printq) fprintf(fp, "                  (list ;; mesh description\n");
+    if (printq) fprintf(fp, "                   (list :type :triangles)\n");
+    if (printq) fprintf(fp, "                   (list :material (list");
     if (material_name.size() > 0) {
       // TODO: using material_name on urdf
-      fprintf(fp, ";; material: %s not using\n", material_name.c_str());
+      if (printq) fprintf(fp, ";; material: %s not using\n", material_name.c_str());
     } else {
       if (!!scene->mMaterials) {
         aiMaterial *am = scene->mMaterials[input_mesh->mMaterialIndex];
@@ -402,12 +405,12 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
         aiColor4D clr4d( 0.0, 0.0, 0.0, 0.0);
         ar = am->Get (AI_MATKEY_COLOR_AMBIENT, clr4d);
         if (ar == aiReturn_SUCCESS) {
-          fprintf(fp, "\n                    (list :ambient (float-vector %f %f %f %f))",
+          if (printq) fprintf(fp, "\n                    (list :ambient (float-vector %f %f %f %f))",
                   clr4d[0], clr4d[1], clr4d[2], clr4d[3]);
         }
         ar = am->Get (AI_MATKEY_COLOR_DIFFUSE, clr4d);
         if (ar == aiReturn_SUCCESS) {
-          fprintf(fp, "\n                    (list :diffuse (float-vector %f %f %f %f))",
+          if (printq) fprintf(fp, "\n                    (list :diffuse (float-vector %f %f %f %f))",
                   clr4d[0], clr4d[1], clr4d[2], clr4d[3]);
         }
         // ar = am->Get (AI_MATKEY_COLOR_SPECULAR, clr4d);
@@ -416,46 +419,47 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
         // ar = am->Get (AI_MATKEY_SHININESS, val);
       }
     }
-    fprintf(fp, "))\n");
+    if (printq) fprintf(fp, "))\n");
 
-    fprintf(fp, "                   (list :indices #i(");
+    if (printq) fprintf(fp, "                   (list :indices #i(");
     for (uint32_t j = 0; j < input_mesh->mNumFaces; j++) {
       aiFace& face = input_mesh->mFaces[j];
       for (uint32_t k = 0; k < face.mNumIndices; ++k) {
-        fprintf(fp, " %d", face.mIndices[k]);
+        if (printq) fprintf(fp, " %d", face.mIndices[k]);
         aiVector3D p = input_mesh->mVertices[face.mIndices[k]];
-        store_pt.push_back(p.x);
-        store_pt.push_back(p.y);
-        store_pt.push_back(p.z);
+        p *= transform;
+        store_pt.push_back(p.x * scale.x);
+        store_pt.push_back(p.y * scale.y);
+        store_pt.push_back(p.z * scale.z);
       }
     }
-    fprintf(fp, "))\n");
+    if (printq) fprintf(fp, "))\n");
 
-    fprintf(fp, "                   (list :vertices #2f(");
+    if (printq) fprintf(fp, "                   (list :vertices #2f(");
     // Add the vertices
     for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
       aiVector3D p = input_mesh->mVertices[j];
       p *= transform;
       //p *= scale;
-      fprintf(fp, "(%f %f %f)", 1000 * p.x, 1000 * p.y, 1000 * p.z);
+      if (printq) fprintf(fp, "(%f %f %f)", 1000 * p.x * scale.x, 1000 * p.y * scale.y, 1000 * p.z * scale.z);
     }
-    fprintf(fp, "))");
+    if (printq) fprintf(fp, "))");
 
     if (input_mesh->HasNormals()) {
-      fprintf(fp, "\n");
-      fprintf(fp, "                   (list :normals #2f(");
+      if (printq) fprintf(fp, "\n");
+      if (printq) fprintf(fp, "                   (list :normals #2f(");
       for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
         if (isnan(input_mesh->mNormals[j].x) ||
             isnan(input_mesh->mNormals[j].y) ||
             isnan(input_mesh->mNormals[j].z)) {
-          fprintf(fp, "(0 0 0)"); // should be normalized vector #f(1 0 0) ???
+          if (printq) fprintf(fp, "(0 0 0)"); // should be normalized vector #f(1 0 0) ???
         } else {
           aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
           n.Normalize();
-          fprintf(fp, "(%f %f %f)", n.x, n.y, n.z);
+          if (printq) fprintf(fp, "(%f %f %f)", n.x, n.y, n.z);
         }
       }
-      fprintf(fp, "))");
+      if (printq) fprintf(fp, "))");
     }
 #if 0
     if (input_mesh->HasTextureCoords(0)) {
@@ -466,10 +470,10 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
       }
     }
 #endif
-    fprintf(fp, ")\n");
+    if (printq) fprintf(fp, ")\n");
   }
   for (uint32_t i = 0; i < node->mNumChildren; ++i) {
-    printMesh(scene, node->mChildren[i], material_name, store_pt);
+    printMesh(scene, node->mChildren[i], scale, material_name, store_pt, printq);
   }
 }
 
@@ -608,6 +612,9 @@ void ModelEuslisp::printRobotDefinition() {
 }
 
 void ModelEuslisp::printRobotMethods() {
+  if (use_loadable_mesh) {
+    fprintf(fp, ";;\n(load \"package://eus_assimp/euslisp/eus-assimp.l\") ;; for loadable mesh\n;;\n\n");
+  }
   fprintf(fp, "(defmethod %s-robot\n", arobot_name.c_str());
   fprintf(fp, "  (:init\n");
   fprintf(fp, "   (&rest args)\n");
@@ -1242,15 +1249,22 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
                                              (aiProcessPreset_TargetRealtime_MaxQuality & ~aiProcess_GenSmoothNormals)
                                              | aiProcess_GenNormals);
 
+    Vector3 scale = ((Mesh *)(g.get()))->scale;
     vector<coordT> points;
-    if (scene && scene->HasMeshes()) {
+    if (scene && scene->HasMeshes() && !use_loadable_mesh) {
       fprintf(fp, "      (setq glvertices\n");
       fprintf(fp, "       (instance gl::glvertices :init\n");
       fprintf(fp, "                 (list ;; mesh list\n");
       // TODO: use g->scale
-      printMesh(scene, scene->mRootNode, material_name, points);
+      printMesh(scene, scene->mRootNode, scale, material_name, points, true);
       fprintf(fp, "                  )\n");
       fprintf(fp, "                 ))\n");
+      fprintf(fp, "      (send glvertices :transform local-cds)\n");
+      fprintf(fp, "      (send glvertices :calc-normals)\n");
+    } else if (scene && scene->HasMeshes()) {
+      fprintf(fp, "      (setq glvertices (load-mesh-file (ros::resolve-ros-path \"%s\")\n", gname.c_str());
+      fprintf(fp, "                                       :scale %f :process-max-quality t))\n", scale.x*1000);
+      printMesh(scene, scene->mRootNode, scale, material_name, points, false);
       fprintf(fp, "      (send glvertices :transform local-cds)\n");
       fprintf(fp, "      (send glvertices :calc-normals)\n");
     } else {
@@ -1382,7 +1396,7 @@ int main(int argc, char** argv)
 {
   bool use_collision = false;
   bool use_simple_geometry = false;
-  bool use_loadable_mesh_file = false;
+  bool use_loadable_mesh = false;
 
   string arobot_name;
 
@@ -1394,6 +1408,7 @@ int main(int argc, char** argv)
   desc.add_options()
     ("help", "produce help message")
     ("simple_geometry,V", "use bounding box for geometry")
+    ("loadable_mesh,L", "loading mesh when creating robot model")
     ("use_collision,U", "use collision geometry (default collision is the same as visual)")
     ("robot_name,N", po::value< vector<string> >(), "output robot name")
     ("input_file,I", po::value< vector<string> >(), "input file")
@@ -1416,30 +1431,9 @@ int main(int argc, char** argv)
     cerr << ";; option parse error / " << e.what() << endl;
     return 1;
   }
-
   if (vm.count("help")) {
     cout << desc << "\n";
     return 1;
-  }
-  if (vm.count("simple_geometry")) {
-    use_simple_geometry = true;
-    cerr << ";; Using simple_geometry" << endl;
-  }
-  if (vm.count("use_collision")) {
-    use_collision = true;
-    cerr << ";; Using simple_geometry" << endl;
-  }
-  if (vm.count("output_file")) {
-    vector<string> aa = vm["output_file"].as< vector<string> >();
-    cerr << ";; output file is: "
-         <<  aa[0] << endl;
-    output_file = aa[0];
-  }
-  if (vm.count("robot_name")) {
-    vector<string> aa = vm["robot_name"].as< vector<string> >();
-    cerr << ";; robot_name is: "
-         <<  aa[0] << endl;
-    arobot_name = aa[0];
   }
   if (vm.count("input_file")) {
     vector<string> aa = vm["input_file"].as< vector<string> >();
@@ -1452,6 +1446,30 @@ int main(int argc, char** argv)
     cerr << ";; Config file is: "
          <<  aa[0] << endl;
     config_file = aa[0];
+  }
+  if (vm.count("output_file")) {
+    vector<string> aa = vm["output_file"].as< vector<string> >();
+    cerr << ";; Output file is: "
+         <<  aa[0] << endl;
+    output_file = aa[0];
+  }
+  if (vm.count("simple_geometry")) {
+    use_simple_geometry = true;
+    cerr << ";; Using simple_geometry" << endl;
+  }
+  if (vm.count("loadable_mesh")) {
+    use_loadable_mesh = true;
+    cerr << ";; Using loadable mesh" << endl;
+  }
+  if (vm.count("use_collision")) {
+    use_collision = true;
+    cerr << ";; Using simple_geometry" << endl;
+  }
+  if (vm.count("robot_name")) {
+    vector<string> aa = vm["robot_name"].as< vector<string> >();
+    cerr << ";; robot_name is: "
+         <<  aa[0] << endl;
+    arobot_name = aa[0];
   }
 
   string xml_string;
@@ -1492,6 +1510,7 @@ int main(int argc, char** argv)
   eusmodel.setRobotName(arobot_name);
   eusmodel.setUseCollision(use_collision);
   eusmodel.setUseSimpleGeometry(use_simple_geometry);
+  eusmodel.setUseLoadbleMesh(use_loadable_mesh);
   eusmodel.collada_file = input_file;
   //eusmodel.setAddJointSuffix();
   //eusmodel.setAddLinkSuffix();
