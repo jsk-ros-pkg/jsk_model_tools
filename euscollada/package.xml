@@ -25,6 +25,7 @@
   <build_depend>collada-dom</build_depend>
   <build_depend>collada_parser</build_depend>
   <build_depend>urdfdom</build_depend>
+  <build_depend>liburdfdom-dev</build_depend> <!-- for indigo -->
   <build_depend>libqhull</build_depend>
   <build_depend>cmake_modules</build_depend>
   <build_depend>rosbuild</build_depend>
@@ -38,6 +39,7 @@
   <run_depend>yaml-cpp</run_depend>
   <run_depend>assimp_devel</run_depend>
   <run_depend>urdf</run_depend>
+  <run_depend>liburdfdom-dev</run_depend> <!-- for indigo -->
   <run_depend>resource_retriever</run_depend>
   <run_depend>collada-dom</run_depend>
   <run_depend>collada_parser</run_depend>

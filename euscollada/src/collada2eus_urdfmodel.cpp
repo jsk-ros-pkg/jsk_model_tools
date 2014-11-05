@@ -483,6 +483,7 @@ void ModelEuslisp::readYaml (string &config_file) {
   string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head"}; // candidates of limb names
 
   vector<pair<string, size_t> > limb_order;
+#ifndef USE_CURRENT_YAML
   ifstream fin(config_file.c_str());
   if (fin.fail()) {
     fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, config_file.c_str(), 0x1b);
@@ -490,12 +491,24 @@ void ModelEuslisp::readYaml (string &config_file) {
     YAML::Parser parser(fin);
     parser.GetNextDocument(doc);
 
+#else
+  {
+    // yaml-cpp is greater than 0.5.0
+    doc = YAML::LoadFile(config_file.c_str());
+#endif
     /* re-order limb name by lines of yaml */
     BOOST_FOREACH(string& limb, limb_candidates) {
+#ifdef USE_CURRENT_YAML
+      if (doc[limb]) {
+        std::cerr << limb << "@" << doc[limb].size() << std::endl;
+        limb_order.push_back(pair<string, size_t>(limb, doc[limb].size()));
+      }
+#else
       if ( doc.FindValue(limb) ) {
         cerr << limb << "@" << doc[limb].GetMark().line << endl;
         limb_order.push_back(pair<string, size_t> (limb, doc[limb].GetMark().line));
       }
+#endif
     }
     sort(limb_order.begin(), limb_order.end(), limb_order_asc);
   }
@@ -508,8 +521,15 @@ void ModelEuslisp::readYaml (string &config_file) {
       const YAML::Node& limb_doc = doc[limb_name];
       for(unsigned int i = 0; i < limb_doc.size(); i++) {
         const YAML::Node& n = limb_doc[i];
+#ifdef USE_CURRENT_YAML
+        for(YAML::const_iterator it=n.begin();it!=n.end();it++) {
+          string key, value;
+          key = it->first.as<std::string>();
+          value = it->second.as<std::string>();
+#else
         for(YAML::Iterator it=n.begin();it!=n.end();it++) {
           string key, value; it.first() >> key; it.second() >> value;
+#endif
           tmp_joint_names.push_back(key);
           boost::shared_ptr<const Joint> jnt = robot->getJoint(key);
           if (!!jnt) {
@@ -806,7 +826,11 @@ void ModelEuslisp::printEndCoords () {
       string end_coords_parent_name(link_names.back());
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["parent"];
+#ifdef USE_CURRENT_YAML
+        end_coords_parent_name = n.as<std::string>();
+#else
         n >> end_coords_parent_name;
+#endif
       } catch(YAML::RepresentationException& e) {
       }
       if (add_link_suffix) {
@@ -820,7 +844,11 @@ void ModelEuslisp::printEndCoords () {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
         double value;
         fprintf(fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
+#ifdef USE_CURRENT_YAML
+        for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*n[i].as<double>());
+#else
         for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
+#endif
         fprintf(fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
@@ -828,9 +856,17 @@ void ModelEuslisp::printEndCoords () {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["rotate"];
         double value;
         fprintf(fp, "     (send %s-end-coords :rotate", limb_name.c_str());
+#if USE_CURRENT_YAML
+        for(unsigned int i = 3; i < 4; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*n[i].as<double>());
+#else
         for(unsigned int i = 3; i < 4; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
+#endif
         fprintf(fp, " (float-vector");
+#if USE_CURRENT_YAML
+        for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", n[i].as<double>());
+#else
         for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", value);}
+#endif
         fprintf(fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
@@ -979,13 +1015,26 @@ void ModelEuslisp::printEndCoords () {
   try {
     const YAML::Node& n = doc["angle-vector"];
     if ( n.size() > 0 ) fprintf(fp, "  ;; pre-defined pose methods\n");
+#ifdef USE_CURRENT_YAML
+    for(YAML::const_iterator it = n.begin(); it != n.end(); it++) {
+      string name = it->first.as<std::string>();
+#else
     for(YAML::Iterator it = n.begin(); it != n.end(); it++) {
       string name; it.first() >> name;
+#endif
       fprintf(fp, "  (:%s () (send self :angle-vector (float-vector", name.c_str());
+#ifdef USE_CURRENT_YAML
+      const YAML::Node& v = it->second;
+#else
       const YAML::Node& v = it.second();
+#endif
       for(unsigned int i = 0; i < v.size(); i++){
+#ifdef USE_CURRENT_YAML
+        fprintf(fp, " %f", v[i].as<double>());
+#else
         double d; v[i] >> d;
         fprintf(fp, " %f", d);
+#endif
       }
       fprintf(fp, ")))\n");
     }
