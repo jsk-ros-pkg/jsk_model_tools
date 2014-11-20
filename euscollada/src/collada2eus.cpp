@@ -248,12 +248,12 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
         facetT *facet;
         vertexT *vertex, **vertexp;
         FORALLfacets {
-          fprintf(fp, "    (instance face :init :vertices (list");
+          fprintf(fp, "    (instance face :init :vertices (nreverse (list");
           setT *vertices = qh_facet3vertex(facet); // ccw?
           FOREACHvertex_(vertices) {
             fprintf(fp, " (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")", g_scale*1000*vertex->point[0], g_scale*1000*vertex->point[1], g_scale*1000*vertex->point[2]);
           }
-          fprintf(fp, "))\n");
+          fprintf(fp, ")))\n");
           qh_settempfree(&vertices);
         }
         fprintf(fp, "    ))\n");
