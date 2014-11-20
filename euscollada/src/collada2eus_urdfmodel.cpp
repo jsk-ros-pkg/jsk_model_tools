@@ -324,29 +324,45 @@ void ModelEuslisp::addLinkCoords() {
     cerr << p.rotation.z << ")" << endl;
 #endif
     if (use_collision) {
-      if(!!link->second->collision) {
-        MapCollision mc;
-        string gname(link->second->name);
-        gname += "_geom0";
-        mc.insert(MapCollision::value_type (gname, link->second->collision));
-
-        m_link_collision.insert
-          (map <boost::shared_ptr<const Link>, MapCollision >::value_type
-           (link->second, mc));
-      } else {
-        int counter = 0;
+      int counter = 0;
+      if(link->second->collision_array.size() > 0) {
         MapCollision mc;
         for (vector<boost::shared_ptr <Collision> >::iterator it = link->second->collision_array.begin();
              it != link->second->collision_array.end(); it++) {
-          MapCollision mc;
           stringstream ss;
           ss << link->second->name << "_geom" << counter;
           mc.insert(MapCollision::value_type (ss.str(), (*it)));
           counter++;
         }
+        m_link_collision.insert
+          (map <boost::shared_ptr<const Link>, MapCollision >::value_type
+           (link->second, mc));
+      } else if(!!link->second->collision) {
+        MapCollision mc;
+        string gname(link->second->name);
+        gname += "_geom0";
+        mc.insert(MapCollision::value_type (gname, link->second->collision));
+        m_link_collision.insert
+          (map <boost::shared_ptr<const Link>, MapCollision >::value_type
+           (link->second, mc));
       }
     } else {
-      if(!!link->second->visual) {
+      int counter = 0;
+      if(link->second->visual_array.size() > 0) {
+        MapVisual mv;
+        for (vector<boost::shared_ptr <Visual> >::iterator it = link->second->visual_array.begin();
+             it != link->second->visual_array.end(); it++) {
+          m_materials.insert
+            (map <string, boost::shared_ptr<const Material> >::value_type ((*it)->material_name, (*it)->material));
+          stringstream ss;
+          ss << link->second->name << "_geom" << counter;
+          mv.insert(MapVisual::value_type (ss.str(), (*it)));
+          counter++;
+        }
+        m_link_visual.insert
+          (map <boost::shared_ptr<const Link>, MapVisual >::value_type
+           (link->second, mv));
+      } else if(!!link->second->visual) {
         m_materials.insert
           (map <string, boost::shared_ptr<const Material> >::value_type
            (link->second->visual->material_name, link->second->visual->material));
@@ -354,22 +370,9 @@ void ModelEuslisp::addLinkCoords() {
         string gname(link->second->name);
         gname += "_geom0";
         mv.insert(MapVisual::value_type (gname, link->second->visual));
-
         m_link_visual.insert
           (map <boost::shared_ptr<const Link>, MapVisual >::value_type
            (link->second, mv));
-      } else {
-        int counter = 0;
-        for (vector<boost::shared_ptr <Visual> >::iterator it = link->second->visual_array.begin();
-             it != link->second->visual_array.end(); it++) {
-          m_materials.insert
-            (map <string, boost::shared_ptr<const Material> >::value_type ((*it)->material_name, (*it)->material));
-          MapVisual mv;
-          stringstream ss;
-          ss << link->second->name << "_geom" << counter;
-          mv.insert(MapVisual::value_type (ss.str(), (*it)));
-          counter++;
-        }
       }
     }
   }
@@ -669,13 +672,14 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
     thisNodeName.assign(link->name);
   }
   fprintf(fp, "     ;; link: %s\n", thisNodeName.c_str());
-  fprintf(fp, "     (let ((geom-lst (list \n");
+  fprintf(fp, "     (let ((geom-lst (list\n");
   {
     int geom_counter = 0;
     map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.find (link);
     if (it != m_link_visual.end()) {
       for( MapVisual::iterator vmap = it->second.begin();
            vmap != it->second.end(); vmap++) {
+        if(geom_counter > 0) fprintf(fp, "\n");
         fprintf(fp, "                       (send self :_make_instance_%s)", vmap->first.c_str());
         geom_counter++;
       }
