@@ -137,7 +137,7 @@ class parseColladaSensor(parseColladaBase):
             sen = self.doc.createElement('sensor')
             sen.setAttribute('id', 'sensor%d' % (self.sensor_id - 1))
 
-            if sensor_type == 'force':
+            if sensor_type == 'force' or sensor_type == 'base_force6d':
                 sen.setAttribute('type', 'base_force6d')
                 sen.setAttribute('sid', '%d'%self.force_sensor_id)
                 self.force_sensor_id = self.force_sensor_id + 1
@@ -147,7 +147,7 @@ class parseColladaSensor(parseColladaBase):
                 lt.appendChild(self.doc.createTextNode('-1.0 -1.0 -1.0'))
                 sen.appendChild(lf)
                 sen.appendChild(lt)
-            elif sensor_type == 'acceleration':
+            elif sensor_type == 'acceleration' or sensor_type == 'base_imu':
                 sen.setAttribute('type', 'base_imu')
                 sen.setAttribute('sid', '%d'%self.acc_sensor_id)
                 self.acc_sensor_id = self.acc_sensor_id + 1

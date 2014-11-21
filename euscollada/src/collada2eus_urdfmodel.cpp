@@ -18,6 +18,7 @@
 #include <fstream>
 #include <algorithm>
 
+
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -1120,6 +1121,84 @@ void ModelEuslisp::parseSensors () {
 
   if ( iRet != DAE_OK ) {
     ROS_WARN("This file (%s) is not collada file.", collada_file.c_str());
+    // read yaml
+    // sensor_name: 'sname', sensor_type: 'type', parent_link: 'LINK', translate: '0 0 0',  rotate: '1 0 0 90'
+    // type -> base_force6d {force}, base_imu {gyro, acceleration}, base_pinhole_camera {camera}, they came from openrave collada
+    try {
+      const YAML::Node& sensor_doc = doc["sensors"];
+      for(unsigned int i = 0; i < sensor_doc.size(); i++) {
+        daeSensor s;
+        const YAML::Node& n = sensor_doc[i];
+#ifdef USE_CURRENT_YAML
+        if( n["sensor_name"] )
+          s.name = n["sensor_name"].as<std::string>();
+        if( n["sensor_type"] )
+          s.sensor_type = n["sensor_type"].as<std::string>();
+        if( n["parent_link"] )
+          s.parent_link = n["parent_link"].as<std::string>();
+#else
+        n["sensor_name"] >> s.name;
+        n["sensor_type"] >> s.sensor_type;
+        n["parent_link"] >> s.parent_link;
+#endif
+        {
+          stringstream str;
+          str << (i+1);
+          s.sensor_id = str.str();
+        }
+        std::cerr << ";; add sensor id: " << s.sensor_id;
+        std::cerr << ", name: " << s.name;
+        std::cerr << ", type: " << s.sensor_type;
+        std::cerr << ", parent_link: " << s.parent_link;
+        if (s.sensor_type == "gyro" || s.sensor_type == "acceleration") s.sensor_type = "base_imu";
+        if (s.sensor_type == "force") s.sensor_type = "base_force6d";
+
+#ifdef USE_CURRENT_YAML
+        if(n["translate"]) {
+          std::string translate = n["translate"].as<std::string>();
+#else
+        if(const YAML::Node *pn = n.FindValue("translate")) {
+          std::string translate;
+          *pn >> translate;
+#endif
+          std::istringstream strm(translate);
+          double x, y, z;
+          strm >> x; strm >> y; strm >> z;
+          daeElementRef ref = domTranslate::create (dae);
+          s.ptrans.push_back(ref);
+          domTranslateRef ptrans = daeSafeCast<domTranslate>(ref);
+          ptrans->getValue().set(0, x);
+          ptrans->getValue().set(1, y);
+          ptrans->getValue().set(2, z);
+          std::cerr << ", trans: " << x << " " << y << " " << z;
+        }
+#ifdef USE_CURRENT_YAML
+        if(n["rotate"]) {
+          std::string rotate = n["rotate"].as<std::string>();
+#else
+        if(const YAML::Node *pn = n.FindValue("rotate")) {
+          std::string rotate;
+          *pn >> rotate;
+#endif
+          std::istringstream strm(rotate);
+          double r, p, y, ang;
+          strm >> r; strm >> p; strm >> y; strm >> ang;
+          daeElementRef ref = domRotate::create (dae);
+          s.ptrans.push_back(ref);
+          domRotateRef prot = daeSafeCast<domRotate>(ref);
+          prot->getValue().set(0, r);
+          prot->getValue().set(1, p);
+          prot->getValue().set(2, y);
+          prot->getValue().set(3, ang);
+          std::cerr << ", rot: " << r << " " << p << " " << y << " " << ang;
+        }
+        std::cerr << std::endl;
+        m_sensors.push_back(s);
+      }
+    } catch(YAML::Exception& e) {
+      std::cerr << "[YAML error] : " << e.msg << std::endl;
+    }
+    stable_sort(m_sensors.begin(), m_sensors.end(), ModelEuslisp::daeSensor::compare);
     return;
   }
   if ( dae.getDatabase()->getDocumentCount() != 1 ) {
