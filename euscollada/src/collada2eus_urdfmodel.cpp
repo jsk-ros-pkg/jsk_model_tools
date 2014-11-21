@@ -1300,13 +1300,13 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
         FORALLfacets {
           fprintf(fp, "              (instance face :init :vertices\n");
           fprintf(fp, "                (mapcar #'(lambda (v) (send local-cds :transform-vector v))\n");
-          fprintf(fp, "                  (list ");
+          fprintf(fp, "                  (nreverse (list ");
           setT *vertices = qh_facet3vertex(facet); // ccw?
           FOREACHvertex_(vertices) {
             fprintf(fp, " (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
                     1000*vertex->point[0], 1000*vertex->point[1], 1000*vertex->point[2]);
           }
-          fprintf(fp, ")))\n");
+          fprintf(fp, "))))\n");
           qh_settempfree(&vertices);
         }
         fprintf(fp, "              ))\n");
