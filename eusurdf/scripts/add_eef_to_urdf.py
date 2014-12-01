@@ -17,7 +17,7 @@ def addEEF(xdoc, end_effector_info, limb_info, limb_name):
     if end_effector_info.has_key("parent"):
         parent = end_effector_info["parent"]
     else:
-        parent = limb_info[-1].keys()[0]
+        parent = limb_info[-1].keys()[0].replace("JOINT", "LINK") # not goood!
     if end_effector_info.has_key("translate"):
         pos = end_effector_info["translate"]
     else:
@@ -29,7 +29,6 @@ def addEEF(xdoc, end_effector_info, limb_info, limb_name):
     else:
         rpy = [0, 0, 0]
     add_sensor_to_urdf.addLink(xdoc, pos, rpy, parent, limb_name + "_end_coords")
-    
 def updateURDF(input_file, yaml_file, output_file):
     xdoc = minidom.parse(input_file)
     with open(yaml_file, "r") as yaml_f:
