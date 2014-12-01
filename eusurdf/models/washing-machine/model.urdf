@@ -1,0 +1,197 @@
+<?xml version="1.0"?>
+<robot name="washing-machine"
+       xmlns:xi="http://www.w3.org/2001/XInclude"
+       xmlns:gazebo="http://playerstage.sourceforge.net/gazebo/xmlschema/#gz"
+       xmlns:model="http://playerstage.sourceforge.net/gazebo/xmlschema/#model"
+       xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+       xmlns:body="http://playerstage.sourceforge.net/gazebo/xmlschema/#body"
+       xmlns:geom="http://playerstage.sourceforge.net/gazebo/xmlschema/#geom"
+       xmlns:joint="http://playerstage.sourceforge.net/gazebo/xmlschema/#joint"
+       xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+       xmlns:rendering="http://playerstage.sourceforge.net/gazebo/xmlschema/#rendering"
+       xmlns:renderable="http://playerstage.sourceforge.net/gazebo/xmlschema/#renderable"
+       xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+       xmlns:physics="http://playerstage.sourceforge.net/gazebo/xmlschema/#physics">
+  <gazebo>
+    <static>false</static>
+  </gazebo>
+  <link name="ROOT_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/ROOT_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/ROOT_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="ROOT_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="WASHING-MACHINE-BODYSET3_link">
+    <visual>
+      <origin xyz="0.15 -0.275 0.09" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/WASHING-MACHINE-BODYSET3_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.15 -0.275 0.09" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/WASHING-MACHINE-BODYSET3_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="WASHING-MACHINE-BODYSET3_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="WASHING-MACHINE-BODYSET2_link">
+    <visual>
+      <origin xyz="-0.08 0.005 0.115" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/WASHING-MACHINE-BODYSET2_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="-0.08 0.005 0.115" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/WASHING-MACHINE-BODYSET2_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="WASHING-MACHINE-BODYSET2_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="WASHING-MACHINE-BODYSET5_link">
+    <visual>
+      <origin xyz="-0.05 -0.275 0.415" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/WASHING-MACHINE-BODYSET5_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="-0.05 -0.275 0.415" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/WASHING-MACHINE-BODYSET5_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="WASHING-MACHINE-BODYSET5_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <link name="WASHING-MACHINE-BODYSET4_link">
+    <visual>
+      <origin xyz="-0.08 0.005 0.285" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/WASHING-MACHINE-BODYSET4_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="-0.08 0.005 0.285" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="model://washing-machine/meshes/WASHING-MACHINE-BODYSET4_link_mesh.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.001" />
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <gazebo reference="WASHING-MACHINE-BODYSET4_link">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+  </gazebo>
+  <joint name="LOWER-DOOR" type="revolute">
+    <parent link="ROOT_link"/>
+    <child  link="WASHING-MACHINE-BODYSET3_link"/>
+    <origin xyz="0.15 -0.275 0.09" rpy="0 -0 0 "/>
+    <axis   xyz="0 1 0"/>
+    <limit lower="0" upper="1.5708" effort="100" velocity="0.5" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="LOWER-DOOR_trans" >
+    <actuator name="LOWER-DOOR_motor" />
+    <joint name="LOWER-DOOR" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="LOWER-DOOR">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+  <joint name="LOWER-SHELF" type="prismatic">
+    <parent link="ROOT_link"/>
+    <child  link="WASHING-MACHINE-BODYSET2_link"/>
+    <origin xyz="-0.08 0.005 0.115" rpy="0 -0 0 "/>
+    <axis   xyz="1 0 0"/>
+    <limit lower="0" upper="0.19" effort="100" velocity="0.01" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="LOWER-SHELF_trans" >
+    <actuator name="LOWER-SHELF_motor" />
+    <joint name="LOWER-SHELF" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="LOWER-SHELF">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+  <joint name="UPPER-DOOR" type="revolute">
+    <parent link="ROOT_link"/>
+    <child  link="WASHING-MACHINE-BODYSET5_link"/>
+    <origin xyz="-0.05 -0.275 0.415" rpy="0 -0 0 "/>
+    <axis   xyz="0 1 0"/>
+    <limit lower="-1.39626" upper="0" effort="100" velocity="0.5" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="UPPER-DOOR_trans" >
+    <actuator name="UPPER-DOOR_motor" />
+    <joint name="UPPER-DOOR" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="UPPER-DOOR">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+  <joint name="UPPER-SHELF" type="prismatic">
+    <parent link="ROOT_link"/>
+    <child  link="WASHING-MACHINE-BODYSET4_link"/>
+    <origin xyz="-0.08 0.005 0.285" rpy="0 -0 0 "/>
+    <axis   xyz="1 0 0"/>
+    <limit lower="0" upper="0.17" effort="100" velocity="0.01" />
+    <dynamics damping="0.2" friction="0" />
+  </joint>
+  <transmission type="pr2_mechanism_model/SimpleTransmission" name="UPPER-SHELF_trans" >
+    <actuator name="UPPER-SHELF_motor" />
+    <joint name="UPPER-SHELF" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <gazebo reference="UPPER-SHELF">
+    <cfmDamping>0.4</cfmDamping>
+  </gazebo>
+</robot>

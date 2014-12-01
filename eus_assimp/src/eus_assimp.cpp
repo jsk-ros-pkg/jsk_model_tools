@@ -676,7 +676,9 @@ pointer GET_MESHES(register context *ctx,int n,pointer *argv)
     size_t outfi = SIZE_T_MAX;
     for(size_t i = 0, end = exporter.GetExportFormatCount(); i < end; ++i) {
       const aiExportFormatDesc* const e = exporter.GetExportFormatDescription(i);
-      if (outext == e->fileExtension) {
+      if (outext == e->id) {
+        outfi = i; break;
+      } else if (outext == e->fileExtension) {
         outfi = i; break;
       }
     }
@@ -972,7 +974,9 @@ pointer DUMP_GL_VERTICES(register context *ctx,int n,pointer *argv)
     size_t outfi = SIZE_T_MAX;
     for(size_t i = 0, end = exporter.GetExportFormatCount(); i < end; ++i) {
       const aiExportFormatDesc* const e = exporter.GetExportFormatDescription(i);
-      if (outext == e->fileExtension) {
+      if (outext == e->id) {
+        outfi = i; break;
+      } else if (outext == e->fileExtension) {
         outfi = i; break;
       }
     }

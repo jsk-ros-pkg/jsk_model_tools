@@ -248,12 +248,12 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
         facetT *facet;
         vertexT *vertex, **vertexp;
         FORALLfacets {
-          fprintf(fp, "    (instance face :init :vertices (list");
+          fprintf(fp, "    (instance face :init :vertices (nreverse (list");
           setT *vertices = qh_facet3vertex(facet); // ccw?
           FOREACHvertex_(vertices) {
             fprintf(fp, " (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")", g_scale*1000*vertex->point[0], g_scale*1000*vertex->point[1], g_scale*1000*vertex->point[2]);
           }
-          fprintf(fp, "))\n");
+          fprintf(fp, ")))\n");
           qh_settempfree(&vertices);
         }
         fprintf(fp, "    ))\n");
@@ -854,22 +854,24 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	    fprintf(fp, "       (setq %s-sensor-coords (make-cascoords :name \"%s\" :coords (send %s :copy-worldcoords)))\n", pextra->getName(), pextra->getName(), thisNodeName.c_str());
             fprintf(fp, "       (send %s-sensor-coords :put :sensor-type :%s)\n", pextra->getName(), sensor_type.c_str());
             fprintf(fp, "       (send %s-sensor-coords :put :sensor-id %s)\n", pextra->getName(), sensor_url.erase( sensor_url.find( "#sensor" ), 7 ).c_str());
-	    fprintf(fp, "       (send %s-sensor-coords :transform (make-coords ", pextra->getName());
-	    domTranslateRef ptrans = daeSafeCast<domTranslate>(frame_origin->getChild("translate"));
-	    domRotateRef prot = daeSafeCast<domRotate>(frame_origin->getChild("rotate"));
-	    if ( ptrans ) {
-	      fprintf(fp, ":pos #f(");
-	      for(unsigned int i=0;i<3;i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*ptrans->getValue()[i]);}
-	      fprintf(fp, ") ");
-	    }
-	    if ( prot ) {
-              fprintf(fp, ":axis ");
-              fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
-                      prot->getValue()[0], prot->getValue()[1], prot->getValue()[2]);
-              fprintf(fp, " :angle");
-	      fprintf(fp, " "FLOAT_PRECISION_FINE"", prot->getValue()[3]*(M_PI/180.0));
-	    }
-	    fprintf(fp, "))\n");
+            for (size_t i = 0; i < frame_origin->getChildren().getCount(); i++) {
+              if ( std::string(frame_origin->getChildren()[i]->getElementName()) == "translate" ) {
+                domTranslateRef ptrans = daeSafeCast<domTranslate>(frame_origin->getChildren()[i]);
+                fprintf(fp, "       (send %s-sensor-coords :transform (make-coords ", pextra->getName());
+                fprintf(fp, ":pos #f(");
+                for(unsigned int i=0;i<3;i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*ptrans->getValue()[i]);}
+                fprintf(fp, ")))\n");
+              } else if ( std::string(frame_origin->getChildren()[i]->getElementName()) == "rotate") {
+                domRotateRef prot = daeSafeCast<domRotate>(frame_origin->getChildren()[i]);
+                fprintf(fp, "       (send %s-sensor-coords :transform (make-coords ", pextra->getName());
+                fprintf(fp, ":axis ");
+                fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+                        prot->getValue()[0], prot->getValue()[1], prot->getValue()[2]);
+                fprintf(fp, " :angle");
+                fprintf(fp, " "FLOAT_PRECISION_FINE"", prot->getValue()[3]*(M_PI/180.0));
+                fprintf(fp, "))\n");
+              }
+            }
 	    fprintf(fp, "       (send %s :assoc %s-sensor-coords)\n", thisNodeName.c_str(), pextra->getName());
 	  }
 	}
@@ -969,19 +971,31 @@ int main(int argc, char* argv[]){
   vector<pair<string, size_t> > limb_order;
   YAML::Node doc;
   if (yaml_filename != NULL) {
+#ifndef USE_CURRENT_YAML
     ifstream fin(yaml_filename);
     if (fin.fail()) {
       fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, yaml_filename, 0x1b);
     }
     YAML::Parser parser(fin);
     parser.GetNextDocument(doc);
+#else
+    // yaml-cpp is greater than 0.5.0
+    doc = YAML::LoadFile(yaml_filename);
+#endif
 
     /* re-order limb name by lines of yaml */
     BOOST_FOREACH(string& limb, limb_candidates) {
+#ifdef USE_CURRENT_YAML
+    if (doc[limb]) {
+      std::cerr << limb << "@" << doc[limb].size() << std::endl;
+      limb_order.push_back(pair<string, size_t>(limb, doc[limb].size()));
+    }
+#else
     if ( doc.FindValue(limb) ) {
       std::cerr << limb << "@" << doc[limb].GetMark().line << std::endl;
       limb_order.push_back(pair<string, size_t>(limb, doc[limb].GetMark().line));
     }
+#endif
     }
     std::sort(limb_order.begin(), limb_order.end(), limb_order_asc);
   }
@@ -995,8 +1009,15 @@ int main(int argc, char* argv[]){
       const YAML::Node& limb_doc = doc[limb_name];
       for(unsigned int i = 0; i < limb_doc.size(); i++) {
 	const YAML::Node& n = limb_doc[i];
+#ifdef USE_CURRENT_YAML
+	for(YAML::const_iterator it=n.begin();it!=n.end();it++) {
+	  string key, value;
+	  key = it->first.as<std::string>();
+	  value = it->second.as<std::string>();
+#else
 	for(YAML::Iterator it=n.begin();it!=n.end();it++) {
 	  string key, value; it.first() >> key; it.second() >> value;
+#endif
 	  tmp_joint_names.push_back(key);
 	  tmp_link_names.push_back(findChildLinkFromJointName(key.c_str())->getName());
 	  g_all_link_names.push_back(pair<string, string>(key, value));
@@ -1242,7 +1263,11 @@ int main(int argc, char* argv[]){
       string end_coords_parent_name(link_names.back());
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["parent"];
+#ifdef USE_CURRENT_YAML
+	end_coords_parent_name = n.as<std::string>();
+#else
 	n >> end_coords_parent_name;
+#endif
       } catch(YAML::RepresentationException& e) {
       }
       if (add_link_suffix) {
@@ -1254,7 +1279,11 @@ int main(int argc, char* argv[]){
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
         double value;
         fprintf(output_fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
+#ifdef USE_CURRENT_YAML
+        for(unsigned int i=0;i<3;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*n[i].as<double>());
+#else
         for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
+#endif
         fprintf(output_fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
@@ -1262,9 +1291,17 @@ int main(int argc, char* argv[]){
         const YAML::Node& n = doc[limb_name+"-end-coords"]["rotate"];
         double value;
         fprintf(output_fp, "     (send %s-end-coords :rotate", limb_name.c_str());
+#if USE_CURRENT_YAML
+        for(unsigned int i=3;i<4;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", M_PI/180*n[i].as<double>());
+#else
         for(unsigned int i=3;i<4;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
+#endif
         fprintf(output_fp, " (float-vector");
+#if USE_CURRENT_YAML
+        for(unsigned int i=0;i<3;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", n[i].as<double>());
+#else
         for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", value);}
+#endif
         fprintf(output_fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
@@ -1327,6 +1364,44 @@ int main(int argc, char* argv[]){
   }
   fprintf(output_fp, "))\n");
   fprintf(output_fp, "\n");
+  // sensor
+  fprintf(output_fp, "    ;; attach_sensor\n");
+  if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
+    domArticulated_system *thisArticulated;
+    for ( size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL); ii++) {
+      g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
+      if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
+    }
+    std::vector<std::string> fsensor_list, imusensor_list, camera_list;
+    for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
+      domExtraRef pextra = thisArticulated->getExtra_array()[ie];
+      // find element which type is attach_sensor and is attached to thisNode
+      if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
+        if (getSensorType(pextra) == "base_force6d" ) {
+          fsensor_list.push_back(string(pextra->getName()));
+        } else if (getSensorType(pextra) == "base_imu" ) {
+	  imusensor_list.push_back(string(pextra->getName()));
+	} else if (getSensorType(pextra) == "base_pinhole_camera" ) {
+	  camera_list.push_back(string(pextra->getName()));
+	}
+      }
+    }
+    fprintf(output_fp, "    (setq force-sensors (list ");
+    for (size_t i = 0; i < fsensor_list.size(); i++) {
+      fprintf(output_fp, "%s-sensor-coords ", fsensor_list[i].c_str());
+    }
+    fprintf(output_fp, "))\n");
+    fprintf(output_fp, "    (setq imu-sensors (list ");
+    for (size_t i = 0; i < imusensor_list.size(); i++) {
+      fprintf(output_fp, "%s-sensor-coords ", imusensor_list[i].c_str());
+    }
+    fprintf(output_fp, "))\n");
+    fprintf(output_fp, "    (setq cameras (list ");
+    for (size_t i = 0; i < camera_list.size(); i++) {
+      fprintf(output_fp, "%s-sensor-coords ", camera_list[i].c_str());
+    }
+    fprintf(output_fp, "))\n");
+  }
 
   // init ending
   fprintf(output_fp, "     ;; init-ending\n");
@@ -1360,13 +1435,26 @@ int main(int argc, char* argv[]){
   try {
     const YAML::Node& n = doc["angle-vector"];
     if ( n.size() > 0 ) fprintf(output_fp, "    ;; pre-defined pose methods\n");
+#ifdef USE_CURRENT_YAML
+    for(YAML::const_iterator it=n.begin();it!=n.end();it++) {
+      string name = it->first.as<std::string>();
+#else
     for(YAML::Iterator it=n.begin();it!=n.end();it++) {
       string name; it.first() >> name;
+#endif
       fprintf(output_fp, "    (:%s () (send self :angle-vector (float-vector", name.c_str());
+#ifdef USE_CURRENT_YAML
+      const YAML::Node& v = it->second;
+#else
       const YAML::Node& v = it.second();
+#endif
       for(unsigned int i=0;i<v.size();i++){
+#ifdef USE_CURRENT_YAML
+        fprintf(output_fp, " %f", v[i].as<double>());
+#else
         double d; v[i] >> d;
         fprintf(output_fp, " %f", d);
+#endif
       }
       fprintf(output_fp, ")))\n");
     }
@@ -1439,30 +1527,13 @@ int main(int argc, char* argv[]){
       g_dae->getDatabase()->getElement((daeElement**)&thisArticulated, ii, NULL, "articulated_system");
       if ( thisArticulated->getExtra_array().getCount() > 0 ) break;
     }
-    std::vector<std::string> fsensor_list;
-    std::vector<std::string> imusensor_list;
     for(size_t ie = 0; ie < thisArticulated->getExtra_array().getCount(); ++ie) {
       domExtraRef pextra = thisArticulated->getExtra_array()[ie];
       // find element which type is attach_sensor and is attached to thisNode
       if ( strcmp(pextra->getType(), "attach_sensor") == 0 ) {
 	fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s-sensor-coords args))\n", pextra->getName(), pextra->getName());
-        if (getSensorType(pextra) == "base_force6d" ) {
-          fsensor_list.push_back(string(pextra->getName()));
-        } else if (getSensorType(pextra) == "base_imu" ) {
-	  imusensor_list.push_back(string(pextra->getName()));
-	}
       }
     }
-    fprintf(output_fp, "    (:force-sensors (&rest args) (forward-message-to-all (list ");
-    for (size_t i = 0; i < fsensor_list.size(); i++) {
-      fprintf(output_fp, "(send self :%s) ", fsensor_list[i].c_str());
-    }
-    fprintf(output_fp, ") args))\n");
-    fprintf(output_fp, "    (:imu-sensors (&rest args) (forward-message-to-all (list ");
-    for (size_t i = 0; i < imusensor_list.size(); i++) {
-      fprintf(output_fp, "(send self :%s) ", imusensor_list[i].c_str());
-    }
-    fprintf(output_fp, ") args))\n");
   }
   fprintf(output_fp, "  )\n\n");
 

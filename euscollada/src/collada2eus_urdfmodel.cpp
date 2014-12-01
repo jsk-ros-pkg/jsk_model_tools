@@ -18,6 +18,7 @@
 #include <fstream>
 #include <algorithm>
 
+
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -200,14 +201,15 @@ public:
   void setRobotName (string &name) { arobot_name = name; };
   void setUseCollision(bool &b) { use_collision = b; };
   void setUseSimpleGeometry(bool &b) { use_simple_geometry = b; };
+  void setUseLoadbleMesh(bool &b) { use_loadable_mesh = b; };
   void setAddJointSuffix(bool &b) { add_joint_suffix = b; };
   void setAddLinkSuffix(bool &b) { add_link_suffix = b; };
   void setAddSensorSuffix(bool &b) { add_sensor_suffix = b; };
 
   // methods for parsing robot model for euslisp
   void addLinkCoords();
-  void printMesh(const aiScene* scene, const aiNode* node,
-                 const string &material_name, vector<coordT> &store_pt);
+  void printMesh(const aiScene* scene, const aiNode* node, const Vector3 &scale,
+                 const string &material_name, vector<coordT> &store_pt, bool printq);
   void readYaml(string &config_file);
 
   Pose getLinkPose(boost::shared_ptr<const Link> link) {
@@ -232,6 +234,7 @@ public:
   void printJoints ();
   void printEndCoords();
   void printSensors();
+  void printSensorLists();
   void printGeometries();
 
   // print methods
@@ -255,8 +258,8 @@ public:
     string parent_link;
     string sensor_id;
     string name;
-    domTranslateRef ptrans;
-    domRotateRef prot;
+    vector<daeElementRef> ptrans;
+
     static bool compare(const daeSensor& a, const daeSensor& b) {
       return (a.sensor_id < b.sensor_id);
     }
@@ -287,6 +290,7 @@ private:
   bool add_sensor_suffix;
   bool use_simple_geometry;
   bool use_collision;
+  bool use_loadable_mesh;
 
 };
 
@@ -297,6 +301,7 @@ ModelEuslisp::ModelEuslisp (boost::shared_ptr<ModelInterface> r) {
   add_sensor_suffix = false;
   use_simple_geometry = false;
   use_collision = false;
+  use_loadable_mesh = false;
 }
 
 ModelEuslisp::~ModelEuslisp () {
@@ -320,29 +325,45 @@ void ModelEuslisp::addLinkCoords() {
     cerr << p.rotation.z << ")" << endl;
 #endif
     if (use_collision) {
-      if(!!link->second->collision) {
-        MapCollision mc;
-        string gname(link->second->name);
-        gname += "_geom0";
-        mc.insert(MapCollision::value_type (gname, link->second->collision));
-
-        m_link_collision.insert
-          (map <boost::shared_ptr<const Link>, MapCollision >::value_type
-           (link->second, mc));
-      } else {
-        int counter = 0;
+      int counter = 0;
+      if(link->second->collision_array.size() > 0) {
         MapCollision mc;
         for (vector<boost::shared_ptr <Collision> >::iterator it = link->second->collision_array.begin();
              it != link->second->collision_array.end(); it++) {
-          MapCollision mc;
           stringstream ss;
           ss << link->second->name << "_geom" << counter;
           mc.insert(MapCollision::value_type (ss.str(), (*it)));
           counter++;
         }
+        m_link_collision.insert
+          (map <boost::shared_ptr<const Link>, MapCollision >::value_type
+           (link->second, mc));
+      } else if(!!link->second->collision) {
+        MapCollision mc;
+        string gname(link->second->name);
+        gname += "_geom0";
+        mc.insert(MapCollision::value_type (gname, link->second->collision));
+        m_link_collision.insert
+          (map <boost::shared_ptr<const Link>, MapCollision >::value_type
+           (link->second, mc));
       }
     } else {
-      if(!!link->second->visual) {
+      int counter = 0;
+      if(link->second->visual_array.size() > 0) {
+        MapVisual mv;
+        for (vector<boost::shared_ptr <Visual> >::iterator it = link->second->visual_array.begin();
+             it != link->second->visual_array.end(); it++) {
+          m_materials.insert
+            (map <string, boost::shared_ptr<const Material> >::value_type ((*it)->material_name, (*it)->material));
+          stringstream ss;
+          ss << link->second->name << "_geom" << counter;
+          mv.insert(MapVisual::value_type (ss.str(), (*it)));
+          counter++;
+        }
+        m_link_visual.insert
+          (map <boost::shared_ptr<const Link>, MapVisual >::value_type
+           (link->second, mv));
+      } else if(!!link->second->visual) {
         m_materials.insert
           (map <string, boost::shared_ptr<const Material> >::value_type
            (link->second->visual->material_name, link->second->visual->material));
@@ -350,29 +371,16 @@ void ModelEuslisp::addLinkCoords() {
         string gname(link->second->name);
         gname += "_geom0";
         mv.insert(MapVisual::value_type (gname, link->second->visual));
-
         m_link_visual.insert
           (map <boost::shared_ptr<const Link>, MapVisual >::value_type
            (link->second, mv));
-      } else {
-        int counter = 0;
-        for (vector<boost::shared_ptr <Visual> >::iterator it = link->second->visual_array.begin();
-             it != link->second->visual_array.end(); it++) {
-          m_materials.insert
-            (map <string, boost::shared_ptr<const Material> >::value_type ((*it)->material_name, (*it)->material));
-          MapVisual mv;
-          stringstream ss;
-          ss << link->second->name << "_geom" << counter;
-          mv.insert(MapVisual::value_type (ss.str(), (*it)));
-          counter++;
-        }
       }
     }
   }
 }
 
-void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
-                             const string &material_name, vector<coordT> &store_pt) {
+void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vector3 &scale,
+                             const string &material_name, vector<coordT> &store_pt, bool printq) {
   aiMatrix4x4 transform = node->mTransformation;
   aiNode *pnode = node->mParent;
   while (pnode)  {
@@ -388,12 +396,12 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
   inverse_transpose_rotation.Transpose();
   for (uint32_t i = 0; i < node->mNumMeshes; i++) {
     aiMesh* input_mesh = scene->mMeshes[node->mMeshes[i]];
-    fprintf(fp, "                  (list ;; mesh description\n");
-    fprintf(fp, "                   (list :type :triangles)\n");
-    fprintf(fp, "                   (list :material (list");
+    if (printq) fprintf(fp, "                  (list ;; mesh description\n");
+    if (printq) fprintf(fp, "                   (list :type :triangles)\n");
+    if (printq) fprintf(fp, "                   (list :material (list");
     if (material_name.size() > 0) {
       // TODO: using material_name on urdf
-      fprintf(fp, ";; material: %s not using\n", material_name.c_str());
+      if (printq) fprintf(fp, ";; material: %s not using\n", material_name.c_str());
     } else {
       if (!!scene->mMaterials) {
         aiMaterial *am = scene->mMaterials[input_mesh->mMaterialIndex];
@@ -401,12 +409,12 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
         aiColor4D clr4d( 0.0, 0.0, 0.0, 0.0);
         ar = am->Get (AI_MATKEY_COLOR_AMBIENT, clr4d);
         if (ar == aiReturn_SUCCESS) {
-          fprintf(fp, "\n                    (list :ambient (float-vector %f %f %f %f))",
+          if (printq) fprintf(fp, "\n                    (list :ambient (float-vector %f %f %f %f))",
                   clr4d[0], clr4d[1], clr4d[2], clr4d[3]);
         }
         ar = am->Get (AI_MATKEY_COLOR_DIFFUSE, clr4d);
         if (ar == aiReturn_SUCCESS) {
-          fprintf(fp, "\n                    (list :diffuse (float-vector %f %f %f %f))",
+          if (printq) fprintf(fp, "\n                    (list :diffuse (float-vector %f %f %f %f))",
                   clr4d[0], clr4d[1], clr4d[2], clr4d[3]);
         }
         // ar = am->Get (AI_MATKEY_COLOR_SPECULAR, clr4d);
@@ -415,40 +423,47 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
         // ar = am->Get (AI_MATKEY_SHININESS, val);
       }
     }
-    fprintf(fp, "))\n");
+    if (printq) fprintf(fp, "))\n");
 
-    fprintf(fp, "                   (list :indices #i(");
+    if (printq) fprintf(fp, "                   (list :indices #i(");
     for (uint32_t j = 0; j < input_mesh->mNumFaces; j++) {
       aiFace& face = input_mesh->mFaces[j];
       for (uint32_t k = 0; k < face.mNumIndices; ++k) {
-        fprintf(fp, " %d", face.mIndices[k]);
+        if (printq) fprintf(fp, " %d", face.mIndices[k]);
         aiVector3D p = input_mesh->mVertices[face.mIndices[k]];
-        store_pt.push_back(p.x);
-        store_pt.push_back(p.y);
-        store_pt.push_back(p.z);
+        p *= transform;
+        store_pt.push_back(p.x * scale.x);
+        store_pt.push_back(p.y * scale.y);
+        store_pt.push_back(p.z * scale.z);
       }
     }
-    fprintf(fp, "))\n");
+    if (printq) fprintf(fp, "))\n");
 
-    fprintf(fp, "                   (list :vertices #2f(");
+    if (printq) fprintf(fp, "                   (list :vertices #2f(");
     // Add the vertices
     for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
       aiVector3D p = input_mesh->mVertices[j];
       p *= transform;
       //p *= scale;
-      fprintf(fp, "(%f %f %f)", 1000 * p.x, 1000 * p.y, 1000 * p.z);
+      if (printq) fprintf(fp, "(%f %f %f)", 1000 * p.x * scale.x, 1000 * p.y * scale.y, 1000 * p.z * scale.z);
     }
-    fprintf(fp, "))");
+    if (printq) fprintf(fp, "))");
 
     if (input_mesh->HasNormals()) {
-      fprintf(fp, "\n");
-      fprintf(fp, "                   (list :normals #2f(");
+      if (printq) fprintf(fp, "\n");
+      if (printq) fprintf(fp, "                   (list :normals #2f(");
       for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
-        aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
-        n.Normalize();
-        fprintf(fp, "(%f %f %f)", n.x, n.y, n.z);
+        if (isnan(input_mesh->mNormals[j].x) ||
+            isnan(input_mesh->mNormals[j].y) ||
+            isnan(input_mesh->mNormals[j].z)) {
+          if (printq) fprintf(fp, "(0 0 0)"); // should be normalized vector #f(1 0 0) ???
+        } else {
+          aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
+          n.Normalize();
+          if (printq) fprintf(fp, "(%f %f %f)", n.x, n.y, n.z);
+        }
       }
-      fprintf(fp, "))");
+      if (printq) fprintf(fp, "))");
     }
 #if 0
     if (input_mesh->HasTextureCoords(0)) {
@@ -459,10 +474,10 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node,
       }
     }
 #endif
-    fprintf(fp, ")\n");
+    if (printq) fprintf(fp, ")\n");
   }
   for (uint32_t i = 0; i < node->mNumChildren; ++i) {
-    printMesh(scene, node->mChildren[i], material_name, store_pt);
+    printMesh(scene, node->mChildren[i], scale, material_name, store_pt, printq);
   }
 }
 
@@ -472,6 +487,7 @@ void ModelEuslisp::readYaml (string &config_file) {
   string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head"}; // candidates of limb names
 
   vector<pair<string, size_t> > limb_order;
+#ifndef USE_CURRENT_YAML
   ifstream fin(config_file.c_str());
   if (fin.fail()) {
     fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, config_file.c_str(), 0x1b);
@@ -479,12 +495,24 @@ void ModelEuslisp::readYaml (string &config_file) {
     YAML::Parser parser(fin);
     parser.GetNextDocument(doc);
 
+#else
+  {
+    // yaml-cpp is greater than 0.5.0
+    doc = YAML::LoadFile(config_file.c_str());
+#endif
     /* re-order limb name by lines of yaml */
     BOOST_FOREACH(string& limb, limb_candidates) {
+#ifdef USE_CURRENT_YAML
+      if (doc[limb]) {
+        std::cerr << limb << "@" << doc[limb].size() << std::endl;
+        limb_order.push_back(pair<string, size_t>(limb, doc[limb].size()));
+      }
+#else
       if ( doc.FindValue(limb) ) {
         cerr << limb << "@" << doc[limb].GetMark().line << endl;
         limb_order.push_back(pair<string, size_t> (limb, doc[limb].GetMark().line));
       }
+#endif
     }
     sort(limb_order.begin(), limb_order.end(), limb_order_asc);
   }
@@ -497,8 +525,15 @@ void ModelEuslisp::readYaml (string &config_file) {
       const YAML::Node& limb_doc = doc[limb_name];
       for(unsigned int i = 0; i < limb_doc.size(); i++) {
         const YAML::Node& n = limb_doc[i];
+#ifdef USE_CURRENT_YAML
+        for(YAML::const_iterator it=n.begin();it!=n.end();it++) {
+          string key, value;
+          key = it->first.as<std::string>();
+          value = it->second.as<std::string>();
+#else
         for(YAML::Iterator it=n.begin();it!=n.end();it++) {
           string key, value; it.first() >> key; it.second() >> value;
+#endif
           tmp_joint_names.push_back(key);
           boost::shared_ptr<const Joint> jnt = robot->getJoint(key);
           if (!!jnt) {
@@ -581,6 +616,9 @@ void ModelEuslisp::printRobotDefinition() {
 }
 
 void ModelEuslisp::printRobotMethods() {
+  if (use_loadable_mesh) {
+    fprintf(fp, ";;\n(load \"package://eus_assimp/euslisp/eus-assimp.l\") ;; for loadable mesh\n;;\n\n");
+  }
   fprintf(fp, "(defmethod %s-robot\n", arobot_name.c_str());
   fprintf(fp, "  (:init\n");
   fprintf(fp, "   (&rest args)\n");
@@ -635,13 +673,14 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
     thisNodeName.assign(link->name);
   }
   fprintf(fp, "     ;; link: %s\n", thisNodeName.c_str());
-  fprintf(fp, "     (let ((geom-lst (list \n");
+  fprintf(fp, "     (let ((geom-lst (list\n");
   {
     int geom_counter = 0;
     map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.find (link);
     if (it != m_link_visual.end()) {
       for( MapVisual::iterator vmap = it->second.begin();
            vmap != it->second.end(); vmap++) {
+        if(geom_counter > 0) fprintf(fp, "\n");
         fprintf(fp, "                       (send self :_make_instance_%s)", vmap->first.c_str());
         geom_counter++;
       }
@@ -680,19 +719,20 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
     //
     fprintf(fp, "         (send %s :weight %.3f)\n", thisNodeName.c_str(), link->inertial->mass * 1000);
     fprintf(fp, "         (setq (%s . inertia-tensor)\n", thisNodeName.c_str());
-    fprintf(fp, "               (matrix\n");
-    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
+    fprintf(fp, "               (m* (m* (send tmp-cds :worldrot) (matrix\n");
+    fprintf(fp, "                                                  (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
             link->inertial->ixx * 1000 * 1000 * 1000,
             link->inertial->ixy * 1000 * 1000 * 1000,
             link->inertial->ixz * 1000 * 1000 * 1000);
-    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
+    fprintf(fp, "                                                  (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
             link->inertial->ixy * 1000 * 1000 * 1000,
             link->inertial->iyy * 1000 * 1000 * 1000,
             link->inertial->iyz * 1000 * 1000 * 1000);
-    fprintf(fp, "                 (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")))\n",
+    fprintf(fp, "                                                  (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))\n",
             link->inertial->ixz * 1000 * 1000 * 1000,
             link->inertial->iyz * 1000 * 1000 * 1000,
             link->inertial->izz * 1000 * 1000 * 1000);
+    fprintf(fp, "                 ) (transpose (send tmp-cds :worldrot))))\n");
     fprintf(fp, "         (setq (%s . acentroid) (send tmp-cds :worldpos))\n", thisNodeName.c_str());
     fprintf(fp, "         )\n");
   } else {
@@ -736,7 +776,11 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
   string thisJointName;
   if (add_joint_suffix) {
     thisJointName.assign(joint->name);
-    thisJointName += "_jt";
+    if (joint->type == Joint::FIXED) {
+      thisJointName += "_fixed_jt";
+    } else {
+      thisJointName += "_jt";
+    }
   } else {
     thisJointName.assign(joint->name);
   }
@@ -756,7 +800,7 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
             joint->axis.x, joint->axis.y, joint->axis.z);
   }
-  {
+  if (!!joint->limits) {
     float min = joint->limits->lower;
     float max = joint->limits->upper;
     fprintf(fp, "                     ");
@@ -769,6 +813,9 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     fprintf(fp, "\n");
     fprintf(fp, "                     :max-joint-velocity %f\n", joint->limits->velocity);
     fprintf(fp, "                     :max-joint-torque %f\n", joint->limits->effort);
+  } else {
+    // fixed joint
+    fprintf(fp, "                     :min 0.0 :max 0.0\n");
   }
   fprintf(fp, "                     ))\n");
 }
@@ -784,7 +831,11 @@ void ModelEuslisp::printEndCoords () {
       string end_coords_parent_name(link_names.back());
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["parent"];
+#ifdef USE_CURRENT_YAML
+        end_coords_parent_name = n.as<std::string>();
+#else
         n >> end_coords_parent_name;
+#endif
       } catch(YAML::RepresentationException& e) {
       }
       if (add_link_suffix) {
@@ -798,7 +849,11 @@ void ModelEuslisp::printEndCoords () {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
         double value;
         fprintf(fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
+#ifdef USE_CURRENT_YAML
+        for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*n[i].as<double>());
+#else
         for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
+#endif
         fprintf(fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
@@ -806,9 +861,17 @@ void ModelEuslisp::printEndCoords () {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["rotate"];
         double value;
         fprintf(fp, "     (send %s-end-coords :rotate", limb_name.c_str());
+#if USE_CURRENT_YAML
+        for(unsigned int i = 3; i < 4; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*n[i].as<double>());
+#else
         for(unsigned int i = 3; i < 4; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
+#endif
         fprintf(fp, " (float-vector");
+#if USE_CURRENT_YAML
+        for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", n[i].as<double>());
+#else
         for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", value);}
+#endif
         fprintf(fp, "))\n");
       } catch(YAML::RepresentationException& e) {
       }
@@ -901,25 +964,33 @@ void ModelEuslisp::printEndCoords () {
             name.c_str(), name.c_str(), plink.c_str());
     fprintf(fp, "     (send %s-sensor-coords :put :sensor-type :%s)\n", name.c_str(), it->sensor_type.c_str());
     fprintf(fp, "     (send %s-sensor-coords :put :sensor-id %s)\n", name.c_str(), it->sensor_id.c_str());
-    fprintf(fp, "     (send %s-sensor-coords :transform (make-coords ", name.c_str());
 
-    if ( !!(it->ptrans) ) {
-      fprintf(fp, ":pos (float-vector ");
-      for(size_t i = 0; i < 3; i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*(it->ptrans->getValue()[i])); }
-      fprintf(fp, ") ");
+    fprintf(fp, "     (send %s-sensor-coords :transform (let ((cds (make-coords)))\n", name.c_str());
+    for (size_t i = 0; i < it->ptrans.size(); i++) {
+      domRotateRef protate = daeSafeCast<domRotate>(it->ptrans[i]);
+      if( !!protate ) {
+        fprintf(fp, "                                               (send cds :transform (make-coords :axis ");
+        fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
+                protate->getValue()[0], protate->getValue()[1], protate->getValue()[2]);
+        fprintf(fp, " :angle");
+        fprintf(fp, " "FLOAT_PRECISION_FINE"))\n", protate->getValue()[3]*(M_PI/180.0));
+        continue;
+      }
+      domTranslateRef ptrans = daeSafeCast<domTranslate>(it->ptrans[i]);
+      if( !!ptrans ) {
+        fprintf(fp, "                                               (send cds :transform (make-coords :pos (float-vector ");
+        for(size_t i = 0; i < 3; i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*(ptrans->getValue()[i])); }
+        fprintf(fp, ")))\n");
+        continue;
+      }
     }
-    if ( !!(it->prot) ) {
-      fprintf(fp, ":axis ");
-      fprintf(fp, "(let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))",
-              (it->prot)->getValue()[0], (it->prot)->getValue()[1], (it->prot)->getValue()[2]);
-      fprintf(fp, " :angle");
-      fprintf(fp, " "FLOAT_PRECISION_FINE"", (it->prot)->getValue()[3]*(M_PI/180.0));
-    }
-    fprintf(fp, "))\n");
+    fprintf(fp, "                                               ))\n");
+
     fprintf(fp, "     (send %s :assoc %s-sensor-coords)\n", plink.c_str(), name.c_str());
   }
+  // sensors
+  printSensorLists();
   fprintf(fp, "\n");
-
   // init ending
   fprintf(fp, "     ;; init-ending\n");
   fprintf(fp, "     (send self :init-ending)\n\n");
@@ -949,13 +1020,26 @@ void ModelEuslisp::printEndCoords () {
   try {
     const YAML::Node& n = doc["angle-vector"];
     if ( n.size() > 0 ) fprintf(fp, "  ;; pre-defined pose methods\n");
+#ifdef USE_CURRENT_YAML
+    for(YAML::const_iterator it = n.begin(); it != n.end(); it++) {
+      string name = it->first.as<std::string>();
+#else
     for(YAML::Iterator it = n.begin(); it != n.end(); it++) {
       string name; it.first() >> name;
+#endif
       fprintf(fp, "  (:%s () (send self :angle-vector (float-vector", name.c_str());
+#ifdef USE_CURRENT_YAML
+      const YAML::Node& v = it->second;
+#else
       const YAML::Node& v = it.second();
+#endif
       for(unsigned int i = 0; i < v.size(); i++){
+#ifdef USE_CURRENT_YAML
+        fprintf(fp, " %f", v[i].as<double>());
+#else
         double d; v[i] >> d;
         fprintf(fp, " %f", d);
+#endif
       }
       fprintf(fp, ")))\n");
     }
@@ -1037,6 +1121,84 @@ void ModelEuslisp::parseSensors () {
 
   if ( iRet != DAE_OK ) {
     ROS_WARN("This file (%s) is not collada file.", collada_file.c_str());
+    // read yaml
+    // sensor_name: 'sname', sensor_type: 'type', parent_link: 'LINK', translate: '0 0 0',  rotate: '1 0 0 90'
+    // type -> base_force6d {force}, base_imu {gyro, acceleration}, base_pinhole_camera {camera}, they came from openrave collada
+    try {
+      const YAML::Node& sensor_doc = doc["sensors"];
+      for(unsigned int i = 0; i < sensor_doc.size(); i++) {
+        daeSensor s;
+        const YAML::Node& n = sensor_doc[i];
+#ifdef USE_CURRENT_YAML
+        if( n["sensor_name"] )
+          s.name = n["sensor_name"].as<std::string>();
+        if( n["sensor_type"] )
+          s.sensor_type = n["sensor_type"].as<std::string>();
+        if( n["parent_link"] )
+          s.parent_link = n["parent_link"].as<std::string>();
+#else
+        n["sensor_name"] >> s.name;
+        n["sensor_type"] >> s.sensor_type;
+        n["parent_link"] >> s.parent_link;
+#endif
+        {
+          stringstream str;
+          str << (i+1);
+          s.sensor_id = str.str();
+        }
+        std::cerr << ";; add sensor id: " << s.sensor_id;
+        std::cerr << ", name: " << s.name;
+        std::cerr << ", type: " << s.sensor_type;
+        std::cerr << ", parent_link: " << s.parent_link;
+        if (s.sensor_type == "gyro" || s.sensor_type == "acceleration") s.sensor_type = "base_imu";
+        if (s.sensor_type == "force") s.sensor_type = "base_force6d";
+
+#ifdef USE_CURRENT_YAML
+        if(n["translate"]) {
+          std::string translate = n["translate"].as<std::string>();
+#else
+        if(const YAML::Node *pn = n.FindValue("translate")) {
+          std::string translate;
+          *pn >> translate;
+#endif
+          std::istringstream strm(translate);
+          double x, y, z;
+          strm >> x; strm >> y; strm >> z;
+          daeElementRef ref = domTranslate::create (dae);
+          s.ptrans.push_back(ref);
+          domTranslateRef ptrans = daeSafeCast<domTranslate>(ref);
+          ptrans->getValue().set(0, x);
+          ptrans->getValue().set(1, y);
+          ptrans->getValue().set(2, z);
+          std::cerr << ", trans: " << x << " " << y << " " << z;
+        }
+#ifdef USE_CURRENT_YAML
+        if(n["rotate"]) {
+          std::string rotate = n["rotate"].as<std::string>();
+#else
+        if(const YAML::Node *pn = n.FindValue("rotate")) {
+          std::string rotate;
+          *pn >> rotate;
+#endif
+          std::istringstream strm(rotate);
+          double r, p, y, ang;
+          strm >> r; strm >> p; strm >> y; strm >> ang;
+          daeElementRef ref = domRotate::create (dae);
+          s.ptrans.push_back(ref);
+          domRotateRef prot = daeSafeCast<domRotate>(ref);
+          prot->getValue().set(0, r);
+          prot->getValue().set(1, p);
+          prot->getValue().set(2, y);
+          prot->getValue().set(3, ang);
+          std::cerr << ", rot: " << r << " " << p << " " << y << " " << ang;
+        }
+        std::cerr << std::endl;
+        m_sensors.push_back(s);
+      }
+    } catch(YAML::Exception& e) {
+      std::cerr << "[YAML error] : " << e.msg << std::endl;
+    }
+    stable_sort(m_sensors.begin(), m_sensors.end(), ModelEuslisp::daeSensor::compare);
     return;
   }
   if ( dae.getDatabase()->getDocumentCount() != 1 ) {
@@ -1074,8 +1236,11 @@ void ModelEuslisp::parseSensors () {
             dsensor.sensor_type = getSensorType(pextra);
             string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
             dsensor.sensor_id = sensor_url.erase(sensor_url.find( "#sensor" ), 7);
-            dsensor.ptrans = daeSafeCast<domTranslate>(frame_origin->getChild("translate"));
-            dsensor.prot = daeSafeCast<domRotate>(frame_origin->getChild("rotate"));
+            daeTArray<daeElementRef> children;
+            frame_origin->getChildren(children);
+            for(size_t i = 0; i < children.getCount(); ++i) {
+              dsensor.ptrans.push_back(children[i]);
+            }
             m_sensors.push_back(dsensor);
             ROS_WARN_STREAM("Sensor " << pextra->getName() << " is attached to " << link->second->name
                             << " " << dsensor.sensor_type << " " << sensor_url);
@@ -1089,7 +1254,7 @@ void ModelEuslisp::parseSensors () {
 }
 
 void ModelEuslisp::printSensors() {
-  fprintf(fp, "\n  ;; attach_sensor\n");
+  fprintf(fp, "\n  ;; attach_sensor methods\n");
   for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
     if(add_sensor_suffix) {
       fprintf(fp, "  (:%s_sn (&rest args) (forward-message-to %s-sensor-coords args))\n",
@@ -1099,28 +1264,31 @@ void ModelEuslisp::printSensors() {
               it->name.c_str(), it->name.c_str());
     }
   }
-  fprintf(fp, "  (:force-sensors (&rest args) (forward-message-to-all (list ");
+}
+
+void ModelEuslisp::printSensorLists() {
+  fprintf(fp, "\n     ;; attach_sensor lists\n");
+  fprintf(fp, "     (setq force-sensors (list ");
   for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
     if (it->sensor_type == "base_force6d") {
-      if(add_sensor_suffix) {
-        fprintf(fp, "(send self :%s_sn) ", it->name.c_str());
-      } else {
-        fprintf(fp, "(send self :%s) ", it->name.c_str());
-      }
+      fprintf(fp, "%s-sensor-coords ", it->name.c_str());
     }
   }
-  fprintf(fp, ") args))\n");
-  fprintf(fp, "  (:imu-sensors (&rest args) (forward-message-to-all (list ");
+  fprintf(fp, "))\n");
+  fprintf(fp, "     (setq imu-sensors (list ");
   for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
     if (it->sensor_type == "base_imu") {
-      if(add_sensor_suffix) {
-        fprintf(fp, "(send self :%s_sn) ", it->name.c_str());
-      } else {
-        fprintf(fp, "(send self :%s) ", it->name.c_str());
-      }
+      fprintf(fp, "%s-sensor-coords ", it->name.c_str());
     }
   }
-  fprintf(fp, ") args))\n");
+  fprintf(fp, "))\n");
+  fprintf(fp, "     (setq cameras (list ");
+  for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
+    if (it->sensor_type == "base_pinhole_camera") {
+      fprintf(fp, "%s-sensor-coords ", it->name.c_str());
+    }
+  }
+  fprintf(fp, "))\n");
 }
 
 void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pose,
@@ -1128,7 +1296,22 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
   string gname(name);
   if (g->type == Geometry::MESH) gname = ((Mesh *)(g.get()))->filename;
   fprintf(fp, "  (:_make_instance_%s ()\n", name.c_str());
-  fprintf(fp, "    (let (geom glvertices qhull)\n");
+  fprintf(fp, "    (let (geom glvertices qhull\n");
+  fprintf(fp, "          (local-cds (make-coords :pos ");
+  fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+              pose.position.x * 1000,
+              pose.position.y * 1000,
+              pose.position.z * 1000);
+  {
+    double qx, qy, qz, qw;
+    pose.rotation.getQuaternion(qx, qy, qz, qw);
+    if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
+      fprintf(fp, "\n                                    :rot (quaternion2matrix ");
+      fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
+              qw, qx, qy, qz);
+    }
+    fprintf(fp, ")))\n");
+  }
 
   if (g->type == Geometry::SPHERE) {
     // TODO: make eus geometry
@@ -1149,34 +1332,23 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
                                              (aiProcessPreset_TargetRealtime_MaxQuality & ~aiProcess_GenSmoothNormals)
                                              | aiProcess_GenNormals);
 
+    Vector3 scale = ((Mesh *)(g.get()))->scale;
     vector<coordT> points;
-    if (scene && scene->HasMeshes()) {
-      fprintf(fp, "      (setq\n");
-      fprintf(fp, "       glvertices\n");
+    if (scene && scene->HasMeshes() && !use_loadable_mesh) {
+      fprintf(fp, "      (setq glvertices\n");
       fprintf(fp, "       (instance gl::glvertices :init\n");
       fprintf(fp, "                 (list ;; mesh list\n");
       // TODO: use g->scale
-      printMesh(scene, scene->mRootNode, material_name, points);
+      printMesh(scene, scene->mRootNode, scale, material_name, points, true);
       fprintf(fp, "                  )\n");
       fprintf(fp, "                 ))\n");
-      fprintf(fp, "      (let ((local-cds (make-coords :pos ");
-      fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
-              pose.position.x * 1000,
-              pose.position.y * 1000,
-              pose.position.z * 1000);
-      {
-        double qx, qy, qz, qw;
-        pose.rotation.getQuaternion(qx, qy, qz, qw);
-        if (qx != 0.0 || qy != 0.0 || qz != 0.0 || qw != 1.0) {
-          fprintf(fp, "\n                                    :rot (quaternion2matrix ");
-          fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))",
-                  qw, qx, qy, qz);
-        }
-        fprintf(fp, ")\n");
-        fprintf(fp, "                       ))\n");
-      }
-      fprintf(fp, "        (send glvertices :transform local-cds))\n");
-      //
+      fprintf(fp, "      (send glvertices :transform local-cds)\n");
+      fprintf(fp, "      (send glvertices :calc-normals)\n");
+    } else if (scene && scene->HasMeshes()) {
+      fprintf(fp, "      (setq glvertices (load-mesh-file (ros::resolve-ros-path \"%s\")\n", gname.c_str());
+      fprintf(fp, "                                       :scale %f :process-max-quality t))\n", scale.x*1000);
+      printMesh(scene, scene->mRootNode, scale, material_name, points, false);
+      fprintf(fp, "      (send glvertices :transform local-cds)\n");
       fprintf(fp, "      (send glvertices :calc-normals)\n");
     } else {
       // error
@@ -1190,7 +1362,9 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
         fprintf(fp, "            (instance faceset :init :faces (list\n");
         std::cerr << ";; points " << points.size() << std::endl; 
         for (unsigned int i = 0; i < points.size()/9; i++ ) {
-          fprintf(fp, "              (instance face :init :vertices (list (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")))\n",
+          fprintf(fp, "              (instance face :init :vertices\n");
+          fprintf(fp, "                (mapcar #'(lambda (v) (send local-cds :transform-vector v))\n");
+          fprintf(fp, "                  (list (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE") (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))))\n",
                   1000*points[i*9+0], 1000*points[i*9+1], 1000*points[i*9+2],
                   1000*points[i*9+3], 1000*points[i*9+4], 1000*points[i*9+5],
                   1000*points[i*9+6], 1000*points[i*9+7], 1000*points[i*9+8]);
@@ -1203,13 +1377,15 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
         facetT *facet;
         vertexT *vertex, **vertexp;
         FORALLfacets {
-          fprintf(fp, "              (instance face :init :vertices (list");
+          fprintf(fp, "              (instance face :init :vertices\n");
+          fprintf(fp, "                (mapcar #'(lambda (v) (send local-cds :transform-vector v))\n");
+          fprintf(fp, "                  (nreverse (list ");
           setT *vertices = qh_facet3vertex(facet); // ccw?
           FOREACHvertex_(vertices) {
             fprintf(fp, " (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
                     1000*vertex->point[0], 1000*vertex->point[1], 1000*vertex->point[2]);
           }
-          fprintf(fp, "))\n");
+          fprintf(fp, "))))\n");
           qh_settempfree(&vertices);
         }
         fprintf(fp, "              ))\n");
@@ -1303,7 +1479,7 @@ int main(int argc, char** argv)
 {
   bool use_collision = false;
   bool use_simple_geometry = false;
-  bool use_loadable_mesh_file = false;
+  bool use_loadable_mesh = false;
 
   string arobot_name;
 
@@ -1315,6 +1491,7 @@ int main(int argc, char** argv)
   desc.add_options()
     ("help", "produce help message")
     ("simple_geometry,V", "use bounding box for geometry")
+    ("loadable_mesh,L", "loading mesh when creating robot model")
     ("use_collision,U", "use collision geometry (default collision is the same as visual)")
     ("robot_name,N", po::value< vector<string> >(), "output robot name")
     ("input_file,I", po::value< vector<string> >(), "input file")
@@ -1337,30 +1514,9 @@ int main(int argc, char** argv)
     cerr << ";; option parse error / " << e.what() << endl;
     return 1;
   }
-
   if (vm.count("help")) {
     cout << desc << "\n";
     return 1;
-  }
-  if (vm.count("simple_geometry")) {
-    use_simple_geometry = true;
-    cerr << ";; Using simple_geometry" << endl;
-  }
-  if (vm.count("use_collision")) {
-    use_collision = true;
-    cerr << ";; Using simple_geometry" << endl;
-  }
-  if (vm.count("output_file")) {
-    vector<string> aa = vm["output_file"].as< vector<string> >();
-    cerr << ";; output file is: "
-         <<  aa[0] << endl;
-    output_file = aa[0];
-  }
-  if (vm.count("robot_name")) {
-    vector<string> aa = vm["robot_name"].as< vector<string> >();
-    cerr << ";; robot_name is: "
-         <<  aa[0] << endl;
-    arobot_name = aa[0];
   }
   if (vm.count("input_file")) {
     vector<string> aa = vm["input_file"].as< vector<string> >();
@@ -1373,6 +1529,30 @@ int main(int argc, char** argv)
     cerr << ";; Config file is: "
          <<  aa[0] << endl;
     config_file = aa[0];
+  }
+  if (vm.count("output_file")) {
+    vector<string> aa = vm["output_file"].as< vector<string> >();
+    cerr << ";; Output file is: "
+         <<  aa[0] << endl;
+    output_file = aa[0];
+  }
+  if (vm.count("simple_geometry")) {
+    use_simple_geometry = true;
+    cerr << ";; Using simple_geometry" << endl;
+  }
+  if (vm.count("loadable_mesh")) {
+    use_loadable_mesh = true;
+    cerr << ";; Using loadable mesh" << endl;
+  }
+  if (vm.count("use_collision")) {
+    use_collision = true;
+    cerr << ";; Using simple_geometry" << endl;
+  }
+  if (vm.count("robot_name")) {
+    vector<string> aa = vm["robot_name"].as< vector<string> >();
+    cerr << ";; robot_name is: "
+         <<  aa[0] << endl;
+    arobot_name = aa[0];
   }
 
   string xml_string;
@@ -1413,6 +1593,7 @@ int main(int argc, char** argv)
   eusmodel.setRobotName(arobot_name);
   eusmodel.setUseCollision(use_collision);
   eusmodel.setUseSimpleGeometry(use_simple_geometry);
+  eusmodel.setUseLoadbleMesh(use_loadable_mesh);
   eusmodel.collada_file = input_file;
   //eusmodel.setAddJointSuffix();
   //eusmodel.setAddLinkSuffix();
