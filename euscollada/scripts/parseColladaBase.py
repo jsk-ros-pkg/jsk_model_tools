@@ -96,6 +96,7 @@ class parseColladaSensor(parseColladaBase):
     force_sensor_id = 0
     gyro_sensor_id = 0
     acc_sensor_id = 0
+    cam_sensor_id = 0
 
     def init (self, filename):
         self.readColladaFile(filename)
@@ -230,6 +231,18 @@ class parseColladaSensor(parseColladaBase):
                 max_ang = self.doc.createElement('max_angular_velocity')
                 max_ang.appendChild(self.doc.createTextNode('-1.0 -1.0 -1.0'))
                 sen.appendChild(max_ang)
+            elif sensor_type == 'camera' or sensor_type == 'base_pinhole_camera':
+                sen.setAttribute('type', 'base_pinhole_camera')
+                sen.setAttribute('sid', '%d'%self.cam_sensor_id)
+                self.cam_sensor_id = self.cam_sensor_id + 1
+                #img_dim = self.doc.createElement('image_dimensions')
+                #img_dim.appendChild()
+                #sen.appendChild(img_dim)
+                #child_elem = self.doc.createElement('format')
+                #child_elem = self.doc.createElement('measurement_time')
+                #child_elem = self.doc.createElement('intrinsic')
+                #child_elem = self.doc.createElement('focal_length')
+                #child_elem = self.doc.createElement('distortion_model')
 
             targetNode.appendChild(sen)
 

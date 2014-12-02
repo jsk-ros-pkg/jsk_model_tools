@@ -50,3 +50,4 @@ if __name__ == '__main__':
 #  - {sensor_name: 'lhsensor',  sensor_type: 'force', parent_link: 'LARM_LINK6', translate: '0 0 0', rotate: '1 0 0 0'}
 #  - {sensor_name: 'gsensor',   sensor_type: 'acceleration', parent_link: 'BODY'}
 #  - {sensor_name: 'gyrometer', sensor_type: 'gyro', parent_link: 'BODY'}
+#  - {sensor_name: 'camera', sensor_type: 'camera', parent_link: 'BODY'}
