@@ -17,18 +17,39 @@ if __name__ == '__main__':
     parser.add_argument('filename', nargs=1)
     parser.add_argument('-O', '--output', help='output filename')
     parser.add_argument('-C', '--config', help='config filename (yaml file)')
+    parser.add_argument('--without_sensor', default=False, action="store_true")
+    parser.add_argument('--without_manipulator', default=False, action="store_true")
+
     args = parser.parse_args()
 
+    print (args.without_sensor, args.without_manipulator)
     obj = parseColladaSensor()
     if obj.init(args.filename[0]):
         if args.config:
             data = yaml.load(open(args.config).read())
-            for sensor in data['sensors']:
-                obj.add_sensor(sensor['sensor_name'],
-                               sensor['parent_link'],
-                               sensor['sensor_type'],
-                               translate = sensor['translate'] if sensor.has_key('translate') else None,
-                               rotate = sensor['rotate'] if sensor.has_key('rotate') else None)
+            ## add sensor
+            if not args.without_sensor and 'sensors' in data:
+                for sensor in data['sensors']:
+                    obj.add_sensor(sensor['sensor_name'],
+                                   sensor['parent_link'],
+                                   sensor['sensor_type'],
+                                   translate = sensor['translate'] if sensor.has_key('translate') else None,
+                                   rotate = sensor['rotate'] if sensor.has_key('rotate') else None)
+            ## add manipulator
+            if not args.without_manipulator:
+                for limb in ['rleg', 'lleg', 'rarm', 'larm', 'head', 'torso']:
+                    eff_name = '%s-end-coords'%limb
+                    eff = data[eff_name] if eff_name in data else None
+                    if eff:
+                        trs = eff['translate'] if 'translate' in eff else None
+                        rot = eff['rotate'] if 'rotate' in eff else None
+                        pr  = eff['parent'] if 'parent' in eff else None
+                        rt  = eff['root'] if 'root' in eff else 'BODY'
+                        if pr:
+                            obj.add_manipulator('%s_end_coords'%limb, rt, pr,
+                                                translate = trs, rotate = rot)
+                        else:
+                            sys.stderr.write('parent key was not found for %s-end-coords!\n'%limb)
         else:
             ## sample
             obj.add_sensor('lhsensor', 'l_hand', 'force')

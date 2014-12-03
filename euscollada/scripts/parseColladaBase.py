@@ -70,12 +70,18 @@ class parseXmlBase:
             sys.stderr.write('no document to write!\n')
 
     def ListToString (self, lst):
-        return
-    def StringToList (self, lst):
-        return
+        ret = '%s'%lst.pop(0)
+        for l in lst:
+            ret = ret + ' %s'%l
+        return ret
 
-class parseURDFBase(parseXmlBase):
+    def StringToList (self, strin):
+        ret = []
+        for r in strin.split():
+            ret.append(float(r))
+        return ret
 
+#class parseURDFBase(parseXmlBase):
 
 class parseColladaBase(parseXmlBase):
     def searchLinkid (self, linkname):
@@ -87,6 +93,9 @@ class parseColladaBase(parseXmlBase):
         if tmp_link == '':
             sys.stderr.write('link name: %s was not found!\n'%linkname)
         return '%s/%s'%(kmodel_id,tmp_link)
+
+    def searchRootLink (self):
+        return
 
 class parseColladaSensor(parseColladaBase):
     library_sensors_node = None
@@ -116,6 +125,11 @@ class parseColladaSensor(parseColladaBase):
     def add_manipulator (self, name, origin, tip, translate = None, rotate = None):
         if self.target_articulated_system == None:
             return
+        if isinstance(translate, list):
+            translate = self.ListToString(translate)
+        if isinstance(rotate, list):
+            rotate = self.ListToString(rotate)
+
         ### add manipulator to articulated system
         ex = self.doc.createElement('extra')
         ex.setAttribute('name', name)
