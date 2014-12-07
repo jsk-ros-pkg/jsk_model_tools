@@ -43,17 +43,16 @@ def fixed_writexml(self, writer, indent="", addindent="", newl=""):
 xml.dom.minidom.Element.writexml = fixed_writexml
 #### <<< copied from xacro/src/xacro.py
 
-def search_tagname_id (el, tagname, idname):
+def search_tagname_id (el, tagname, idname, attr = 'id'):
     ret = None
     for ee in el.getElementsByTagName(tagname):
-        if ee.hasAttribute('id'):
-            if ee.getAttribute('id') == idname:
+        if ee.hasAttribute(attr):
+            if ee.getAttribute(attr) == idname:
                 ret = ee
                 break
     return ret
 
-class parseColladaBase:
-
+class parseXmlBase:
     doc = None
 
     def readColladaFile(self, filename):
@@ -70,6 +69,33 @@ class parseColladaBase:
         else:
             sys.stderr.write('no document to write!\n')
 
+    def ListToString (self, lst):
+        ret = '%s'%lst.pop(0)
+        for l in lst:
+            ret = ret + ' %s'%l
+        return ret
+
+    def StringToList (self, strin):
+        ret = []
+        for r in strin.split():
+            ret.append(float(r))
+        return ret
+
+#class parseURDFBase(parseXmlBase):
+
+class parseColladaBase(parseXmlBase):
+    def searchLinkid (self, linkname):
+        tmp_link = ''
+        for f in self.doc.getElementsByTagName('library_kinematics_models')[0].getElementsByTagName("technique_common")[0].getElementsByTagName("link"):
+            if f.getAttribute("name") == linkname:
+                tmp_link = f.getAttribute("sid")
+        kmodel_id = self.doc.getElementsByTagName('library_kinematics_models')[0].getElementsByTagName("kinematics_model")[0].getAttribute("id")
+        if tmp_link == '':
+            sys.stderr.write('link name: %s was not found!\n'%linkname)
+        return '%s/%s'%(kmodel_id,tmp_link)
+
+    def searchRootLink (self):
+        return
 
 class parseColladaSensor(parseColladaBase):
     library_sensors_node = None
@@ -79,6 +105,64 @@ class parseColladaSensor(parseColladaBase):
     force_sensor_id = 0
     gyro_sensor_id = 0
     acc_sensor_id = 0
+    cam_sensor_id = 0
+
+    def init (self, filename):
+        self.readColladaFile(filename)
+
+        plst = self.doc.getElementsByTagName('extra')
+        for p in plst:
+            if p.hasAttribute('id') and p.getAttribute('id') == 'sensors' and p.hasAttribute('type') and p.getAttribute('type') == 'library_sensors':
+                self.library_sensors_node = p
+
+        plst = self.doc.getElementsByTagName('articulated_system')
+        for p in plst:
+            if p.hasAttribute('id') and p.getAttribute('id').find('_motion') != -1:
+                self.target_articulated_system = p
+
+        return self.library_sensors_node != None and self.target_articulated_system != None
+
+    def add_manipulator (self, name, origin, tip, translate = None, rotate = None):
+        if self.target_articulated_system == None:
+            return
+        if isinstance(translate, list):
+            translate = self.ListToString(translate)
+        if isinstance(rotate, list):
+            rotate = self.ListToString(rotate)
+
+        ### add manipulator to articulated system
+        ex = self.doc.createElement('extra')
+        ex.setAttribute('name', name)
+        ex.setAttribute('type', 'manipulator')
+
+        tec = self.doc.createElement('technique')
+        tec.setAttribute('profile', 'OpenRAVE')
+
+        ##
+        tmp = self.doc.createElement('frame_origin')
+        tmp.setAttribute('link', self.searchLinkid(origin))
+        tec.appendChild(tmp)
+
+        tmp = self.doc.createElement('frame_tip')
+        tmp.setAttribute('link', self.searchLinkid(tip))
+        #
+        tl = self.doc.createElement('translate')
+        if translate == None:
+            tl.appendChild(self.doc.createTextNode('0 0 0'))
+        else:
+            tl.appendChild(self.doc.createTextNode(translate))
+
+        ro = self.doc.createElement('rotate')
+        if rotate == None:
+            ro.appendChild(self.doc.createTextNode('1 0 0 0'))
+        else:
+            ro.appendChild(self.doc.createTextNode(rotate))
+        tmp.appendChild(tl)
+        tmp.appendChild(ro)
+        #
+        tec.appendChild(tmp)
+        ex.appendChild(tec)
+        self.target_articulated_system.appendChild(ex)
 
     def add_sensor (self, name, parent_link, sensor_type, translate = None, rotate = None):
         if self.library_sensors_node == None or self.target_articulated_system == None:
@@ -161,23 +245,20 @@ class parseColladaSensor(parseColladaBase):
                 max_ang = self.doc.createElement('max_angular_velocity')
                 max_ang.appendChild(self.doc.createTextNode('-1.0 -1.0 -1.0'))
                 sen.appendChild(max_ang)
+            elif sensor_type == 'camera' or sensor_type == 'base_pinhole_camera':
+                sen.setAttribute('type', 'base_pinhole_camera')
+                sen.setAttribute('sid', '%d'%self.cam_sensor_id)
+                self.cam_sensor_id = self.cam_sensor_id + 1
+                #img_dim = self.doc.createElement('image_dimensions')
+                #img_dim.appendChild()
+                #sen.appendChild(img_dim)
+                #child_elem = self.doc.createElement('format')
+                #child_elem = self.doc.createElement('measurement_time')
+                #child_elem = self.doc.createElement('intrinsic')
+                #child_elem = self.doc.createElement('focal_length')
+                #child_elem = self.doc.createElement('distortion_model')
 
             targetNode.appendChild(sen)
-
-    def init (self, filename):
-        self.readColladaFile(filename)
-
-        plst = self.doc.getElementsByTagName('extra')
-        for p in plst:
-            if p.hasAttribute('id') and p.getAttribute('id') == 'sensors' and p.hasAttribute('type') and p.getAttribute('type') == 'library_sensors':
-                self.library_sensors_node = p
-
-        plst = self.doc.getElementsByTagName('articulated_system')
-        for p in plst:
-            if p.hasAttribute('id') and p.getAttribute('id').find('_motion') != -1:
-                self.target_articulated_system = p
-
-        return self.library_sensors_node != None and self.target_articulated_system != None
 
 class replaceLibraryNode(parseColladaBase):
 
