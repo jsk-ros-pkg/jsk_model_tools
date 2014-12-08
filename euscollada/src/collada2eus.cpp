@@ -622,9 +622,8 @@ domLink* findLinkfromKinematics (domLink* thisLink, const std::string& link_name
   return NULL;
 }
 
-std::string getSensorType (const domExtraRef pextra) {
-  // get sensor_type from extra tag
-  std::string sensor_type;
+std::string getSensorAttribute (const domExtraRef pextra, const std::string& attribute_name) {
+  std::string ret;
   for (size_t ii = 0; ii < g_dae->getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
     domExtra *tmpextra;
     g_dae->getDatabase()->getElement((daeElement**)&tmpextra, ii, NULL, "extra");
@@ -632,12 +631,22 @@ std::string getSensorType (const domExtraRef pextra) {
       for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
         if ((std::string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
             pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
-          sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
+          ret = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute(attribute_name.c_str());
         }
       }
     }
   }
-  return sensor_type;
+  return ret;
+}
+
+std::string getSensorType (const domExtraRef pextra) {
+  // get sensor_type from extra tag
+  return getSensorAttribute(pextra, "type");
+}
+
+std::string getSensorSid (const domExtraRef pextra) {
+  // get sensor_id from extra tag
+  return getSensorAttribute(pextra, "sid");
 }
 
 void writeNodeMassFrames (FILE *fp, domRigid_body* thisRigidbody, const string &thisNodeName) {
@@ -849,11 +858,12 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 	  daeElement* frame_origin = pextra->getTechnique_array()[0]->getChild("frame_origin");
 	  if ( std::string(thisKinematics->getId())+std::string("/")+std::string(thisLink->getSid()) == frame_origin->getAttribute("link")) {
             std::string sensor_type = getSensorType(pextra);
+            std::string sensor_sid = getSensorSid(pextra);
             std::string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
-	    std::cerr << "Sensor " << pextra->getName() << " is attached to " << thisNode->getName() << " " << sensor_type << " " << sensor_url << std::endl;
+	    std::cerr << "Sensor " << pextra->getName() << " is attached to " << thisNode->getName() << " " << sensor_type << " " << sensor_url << " " << sensor_sid << std::endl;
 	    fprintf(fp, "       (setq %s-sensor-coords (make-cascoords :name \"%s\" :coords (send %s :copy-worldcoords)))\n", pextra->getName(), pextra->getName(), thisNodeName.c_str());
             fprintf(fp, "       (send %s-sensor-coords :put :sensor-type :%s)\n", pextra->getName(), sensor_type.c_str());
-            fprintf(fp, "       (send %s-sensor-coords :put :sensor-id %s)\n", pextra->getName(), sensor_url.erase( sensor_url.find( "#sensor" ), 7 ).c_str());
+            fprintf(fp, "       (send %s-sensor-coords :put :sensor-id %s)\n", pextra->getName(), sensor_sid.c_str());
             for (size_t i = 0; i < frame_origin->getChildren().getCount(); i++) {
               if ( std::string(frame_origin->getChildren()[i]->getElementName()) == "translate" ) {
                 domTranslateRef ptrans = daeSafeCast<domTranslate>(frame_origin->getChildren()[i]);
@@ -1386,21 +1396,21 @@ int main(int argc, char* argv[]){
 	}
       }
     }
-    fprintf(output_fp, "    (setq force-sensors (list ");
+    fprintf(output_fp, "    (setq force-sensors (sort (list ");
     for (size_t i = 0; i < fsensor_list.size(); i++) {
       fprintf(output_fp, "%s-sensor-coords ", fsensor_list[i].c_str());
     }
-    fprintf(output_fp, "))\n");
-    fprintf(output_fp, "    (setq imu-sensors (list ");
+    fprintf(output_fp, ") #'< #'(lambda (x) (send x :get :sensor-id))))\n");
+    fprintf(output_fp, "    (setq imu-sensors (sort (list ");
     for (size_t i = 0; i < imusensor_list.size(); i++) {
       fprintf(output_fp, "%s-sensor-coords ", imusensor_list[i].c_str());
     }
-    fprintf(output_fp, "))\n");
-    fprintf(output_fp, "    (setq cameras (list ");
+    fprintf(output_fp, ") #'< #'(lambda (x) (send x :get :sensor-id))))\n");
+    fprintf(output_fp, "    (setq cameras (sort (list ");
     for (size_t i = 0; i < camera_list.size(); i++) {
       fprintf(output_fp, "%s-sensor-coords ", camera_list[i].c_str());
     }
-    fprintf(output_fp, "))\n");
+    fprintf(output_fp, ") #'< #'(lambda (x) (send x :get :sensor-id))))\n");
   }
 
   // init ending
