@@ -1136,12 +1136,17 @@ void ModelEuslisp::parseSensors () {
           s.sensor_type = n["sensor_type"].as<std::string>();
         if( n["parent_link"] )
           s.parent_link = n["parent_link"].as<std::string>();
+        if( n["sensor_id"] )
+          s.sensor_id = n["sensor_id"].as<std::string>();
 #else
         n["sensor_name"] >> s.name;
         n["sensor_type"] >> s.sensor_type;
         n["parent_link"] >> s.parent_link;
+        if(!!n.FindValue("sensor_id")) {
+          n["sensor_id"] >> s.sensor_id;
+        }
 #endif
-        {
+        if (s.sensor_id == "") {
           stringstream str;
           str << (i+1);
           s.sensor_id = str.str();
