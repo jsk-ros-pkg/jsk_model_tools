@@ -21,7 +21,6 @@ matrix:
     - env: ROS_DISTRO=groovy ROSWS=wstool BUILDER=catkin    USE_DEB=true
     - env: ROS_DISTRO=groovy ROSWS=wstool BUILDER=catkin    USE_DEB=false
     - env: ROS_DISTRO=hydro  ROSWS=wstool BUILDER=catkin    USE_DEB=false
-    - env: ROS_DISTRO=indigo  ROSWS=wstool BUILDER=catkin   USE_DEB=true
     - env: ROS_DISTRO=indigo  ROSWS=wstool BUILDER=catkin   USE_DEB=false
 before_install: # Use this to prepare the system to install prerequisites or dependencies
   - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
