@@ -2,6 +2,12 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix parsing file extention, in order to use .stlb extention for exporting mesh as STL Binary format
+* use tiff file for texture
+* Contributors: Yohei Kakiuchi
+
 0.1.6 (2014-06-30)
 ------------------
 

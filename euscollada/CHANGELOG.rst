@@ -2,6 +2,27 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix parsing sensors from yaml file, sensor_id should be optional
+* Get sensor id from sid of sensor tag and sort euslisp sensors by sensor's sid
+* Script to compute difference of two urdfs and dump it to yaml file, and apply the yaml file to urdf file as a patch
+* add camera model
+* Move scripts to euscollada to avoid catkinization of eusurdf
+* add sensor coordinates to eus model while converting from urdf model
+* add code for viewing convex bodies
+* fix order of qhull vertices
+* use multiple visual
+* update add_sensor_to_collada.py for adding sensor from yaml file
+* Merge remote-tracking branch 'origin/master' into use_loadable
+* update for compiling on indigo, use liburdfdom and can use yaml-cpp-0.5
+* add use_loadable
+* fix for using fixed_joint
+* fix inertia frame
+* remove nan in normal
+* (collada2eus.cpp) : Parse multiple translate and rotate tag for sensor definition
+* Contributors: Ryohei Ueda, Shunichi Nozawa, Yohei Kakiuchi
+
 0.1.6 (2014-06-30)
 ------------------
 * package.xml: add collada_urdf to run_depend and build_depend
