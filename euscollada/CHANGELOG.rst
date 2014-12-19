@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.7 (2014-12-19)
+------------------
 * fix parsing sensors from yaml file, sensor_id should be optional
 * Get sensor id from sid of sensor tag and sort euslisp sensors by sensor's sid
 * Script to compute difference of two urdfs and dump it to yaml file, and apply the yaml file to urdf file as a patch
