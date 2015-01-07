@@ -2,6 +2,12 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix for new euslisp layout
+* eus_assimp: build_depend on pkg-config
+* Contributors: Scott K Logan, Kei Okada
+
 0.1.7 (2014-12-19)
 ------------------
 * fix parsing file extention, in order to use .stlb extention for exporting mesh as STL Binary format
@@ -60,4 +66,4 @@ Changelog for package eus_assimp
 * update convex decomposition code for eus_assimp
 * temporary add CMakeLists.convexdecmop.txt
 * add eus_assimp for eusing assimp library on EusLisp
-* Contributors: YoheiKakiuchi
+* Contributors: Yohei Kakiuchi

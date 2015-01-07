@@ -2,6 +2,9 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.7 (2014-12-19)
 ------------------
 * fix parsing sensors from yaml file, sensor_id should be optional
@@ -21,7 +24,7 @@ Changelog for package euscollada
 * fix inertia frame
 * remove nan in normal
 * (collada2eus.cpp) : Parse multiple translate and rotate tag for sensor definition
-* Contributors: Ryohei Ueda, Shunichi Nozawa, Yohei Kakiuchi
+* Contributors: Ryohei Ueda, Yohei Kakiuchi, Shunichi Nozawa
 
 0.1.6 (2014-06-30)
 ------------------
@@ -176,4 +179,4 @@ Changelog for package euscollada
 * update index.rst,conf.py by Jenkins
 * add eus_assimp for eusing assimp library on EusLisp
 * move euscollada,collada_tools,assimp_devl to jsk_model_tools
-* Contributors: Kei Okada, Ryohei Ueda, YoheiKakiuchi, Masaki Murooka, Shunnichi Nozawa
+* Contributors: Ryohei Ueda, Yohei Kakiuchi, Kei Okada, Shunnichi Nozawa, Masaki Murooka
