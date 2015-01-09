@@ -9,7 +9,8 @@ import argparse
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-from parseColladaBase import parseColladaSensor
+from parseColladaBase import parseXmlBase
+from parseColladaBase import yamlParser
 
 if __name__ == '__main__':
 
@@ -19,45 +20,28 @@ if __name__ == '__main__':
     parser.add_argument('-C', '--config', help='config filename (yaml file)')
     parser.add_argument('--without_sensor', default=False, action="store_true")
     parser.add_argument('--without_manipulator', default=False, action="store_true")
+    parser.add_argument('--without_links', default=False, action="store_true")
 
     args = parser.parse_args()
 
-    print (args.without_sensor, args.without_manipulator)
-    obj = parseColladaSensor()
-    if obj.init(args.filename[0]):
+    obj = parseXmlBase().readXmlFile(args.filename[0])
+
+    if obj.init():
         if args.config:
-            data = yaml.load(open(args.config).read())
-            ## add sensor
-            if not args.without_sensor and 'sensors' in data:
-                for sensor in data['sensors']:
-                    obj.add_sensor(sensor['sensor_name'],
-                                   sensor['parent_link'],
-                                   sensor['sensor_type'],
-                                   translate = sensor['translate'] if sensor.has_key('translate') else None,
-                                   rotate = sensor['rotate'] if sensor.has_key('rotate') else None)
-            ## add manipulator
+            yaml_obj = yamlParser()
+            yaml_obj.load(args.config)
+
+            if not args.without_sensor:
+                yaml_obj.add_sensor(obj)
+
             if not args.without_manipulator:
-                for limb in ['rleg', 'lleg', 'rarm', 'larm', 'head', 'torso']:
-                    eff_name = '%s-end-coords'%limb
-                    eff = data[eff_name] if eff_name in data else None
-                    if eff:
-                        trs = eff['translate'] if 'translate' in eff else None
-                        rot = eff['rotate'] if 'rotate' in eff else None
-                        pr  = eff['parent'] if 'parent' in eff else None
-                        rt  = eff['root'] if 'root' in eff else 'BODY'
-                        if pr:
-                            obj.add_manipulator('%s_end_coords'%limb, rt, pr,
-                                                translate = trs, rotate = rot)
-                        else:
-                            sys.stderr.write('parent key was not found for %s-end-coords!\n'%limb)
+                yaml_obj.add_eef(obj)
+
+            if not args.without_links:
+                yaml_obj.add_links(obj)
+
         else:
-            ## sample
-            obj.add_sensor('lhsensor', 'l_hand', 'force')
-            obj.add_sensor('rhsensor', 'r_hand', 'force')
-            obj.add_sensor('lfsensor', 'l_foot', 'force')
-            obj.add_sensor('rfsensor', 'r_foot', 'force')
-            obj.add_sensor('gsensor', 'imu_link', 'acceleration')
-            obj.add_sensor('gyrometer', 'imu_link', 'gyro')
+            sys.stderr.write('no configuration file !\n')
 
         if args.output:
             f = open(args.output, 'wb')

@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
-import sys, os
+import sys, os, math
 from xml.dom.minidom import parse, parseString
 import xml.dom
+import yaml
+
+import tf
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -55,8 +58,19 @@ def search_tagname_id (el, tagname, idname, attr = 'id'):
 class parseXmlBase:
     doc = None
 
-    def readColladaFile(self, filename):
+    def readXmlFile(self, filename):
         self.doc = xml.dom.minidom.parse(filename)
+        ret = self.doc.getElementsByTagName('COLLADA')
+        if ret:
+            ret = parseColladaSensor()
+            ret.doc = self.doc
+            return ret
+
+        ret = self.doc.getElementsByTagName('robot')
+        if ret:
+            ret = parseURDFSensor()
+            ret.doc = self.doc
+            return ret
 
     def getDocumentString(self, indent = '\t'):
         if self.doc:
@@ -81,9 +95,81 @@ class parseXmlBase:
             ret.append(float(r))
         return ret
 
-#class parseURDFBase(parseXmlBase):
+#
+# URDF
+#
+class parseURDFBase(parseXmlBase):
+    objtype = 'urdf'
 
+    def searchRootLink (self):
+        return
+
+    def parseTranslate (self, translate):
+        if not translate:
+            return '0 0 0'
+        if isinstance(translate, list):
+            translate = self.ListToString(translate)
+        return translate
+
+    def parseRotate (self, rotate):
+        if not rotate:
+            return '0 0 1 0'
+        if isinstance(rotate, basestring):
+            rotate = self.StringToList(rotate)
+        q = tf.transformations.quaternion_about_axis(math.radians(rotate[3]), rotate[:3])
+        rpy = tf.transformations.euler_from_quaternion(q)
+        return '%f %f %f' % (rpy[0], rpy[1], rpy[2])
+
+class parseURDFSensor(parseURDFBase):
+    def init(self):
+        return True
+
+    def addLink(self, pos, rpy, parent_link, link_name):
+        robot = self.doc.getElementsByTagName("robot")[0]
+
+        pos = self.parseTranslate(pos)
+        rpy = self.parseRotate(rpy)
+
+        # creating child joint
+        child_joint = self.doc.createElement("joint")
+        child_joint.setAttribute("name", link_name + "_joint")
+        child_joint.setAttribute("type", "fixed")
+        origin_element = self.doc.createElement("origin")
+        origin_element.setAttribute("xyz", pos)
+        origin_element.setAttribute("rpy", rpy)
+        child_joint.appendChild(origin_element)
+        parent_element = self.doc.createElement("parent")
+        parent_element.setAttribute("link", parent_link)
+        child_joint.appendChild(parent_element)
+        child_element = self.doc.createElement("child")
+        child_element.setAttribute("link", link_name)
+        child_joint.appendChild(child_element)
+
+        child_link = self.doc.createElement("link")
+        child_link.setAttribute("name", link_name)
+        robot.appendChild(child_joint)
+        robot.appendChild(child_link)
+
+    def add_sensor (self, name, parent_link, sensor_type, translate = None, rotate = None):
+        if not translate:
+            translate = '0 0 0'
+        if not rotate:
+            rotate = '0 0 1 0'
+        self.addLink(translate, rotate, parent_link, name)
+
+    def add_manipulator (self, name, origin, tip, translate = None, rotate = None):
+        if not translate:
+            translate = '0 0 0'
+        if not rotate:
+            rotate = '0 0 1 0'
+        self.addLink(translate, rotate, tip, name)
+
+#
+# Collada
+#
 class parseColladaBase(parseXmlBase):
+    objtype = 'collada'
+
     def searchLinkid (self, linkname):
         tmp_link = ''
         for f in self.doc.getElementsByTagName('library_kinematics_models')[0].getElementsByTagName("technique_common")[0].getElementsByTagName("link"):
@@ -93,6 +179,16 @@ class parseColladaBase(parseXmlBase):
         if tmp_link == '':
             sys.stderr.write('link name: %s was not found!\n'%linkname)
         return '%s/%s'%(kmodel_id,tmp_link)
+
+    def parseTranslate (self, translate):
+        if isinstance(translate, list):
+            translate = self.ListToString(translate)
+        return translate
+
+    def parseRotate (self, rotate):
+        if isinstance(rotate, list):
+            rotate = self.ListToString(rotate)
+        return rotate
 
     def searchRootLink (self):
         return
@@ -107,8 +203,8 @@ class parseColladaSensor(parseColladaBase):
     acc_sensor_id = 0
     cam_sensor_id = 0
 
-    def init (self, filename):
-        self.readColladaFile(filename)
+    def init (self):
+        ##self.readXmlFile(filename)
 
         plst = self.doc.getElementsByTagName('extra')
         for p in plst:
@@ -125,10 +221,9 @@ class parseColladaSensor(parseColladaBase):
     def add_manipulator (self, name, origin, tip, translate = None, rotate = None):
         if self.target_articulated_system == None:
             return
-        if isinstance(translate, list):
-            translate = self.ListToString(translate)
-        if isinstance(rotate, list):
-            rotate = self.ListToString(rotate)
+
+        translate = self.parseTranslate(translate)
+        rotate = self.parseRotate(rotate)
 
         ### add manipulator to articulated system
         ex = self.doc.createElement('extra')
@@ -154,7 +249,7 @@ class parseColladaSensor(parseColladaBase):
 
         ro = self.doc.createElement('rotate')
         if rotate == None:
-            ro.appendChild(self.doc.createTextNode('1 0 0 0'))
+            ro.appendChild(self.doc.createTextNode('0 0 1 0'))
         else:
             ro.appendChild(self.doc.createTextNode(rotate))
         tmp.appendChild(tl)
@@ -167,6 +262,10 @@ class parseColladaSensor(parseColladaBase):
     def add_sensor (self, name, parent_link, sensor_type, translate = None, rotate = None):
         if self.library_sensors_node == None or self.target_articulated_system == None:
             return
+
+        translate = self.parseTranslate(translate)
+        rotate = self.parseRotate(rotate)
+
         ### add sensor to articulated system
         ex = self.doc.createElement('extra')
         ex.setAttribute('name', name)
@@ -199,7 +298,7 @@ class parseColladaSensor(parseColladaBase):
 
         ro = self.doc.createElement('rotate')
         if rotate == None:
-            ro.appendChild(self.doc.createTextNode('1 0 0 0'))
+            ro.appendChild(self.doc.createTextNode('0 0 1 0'))
         else:
             ro.appendChild(self.doc.createTextNode(rotate))
 
@@ -263,7 +362,7 @@ class parseColladaSensor(parseColladaBase):
 class replaceLibraryNode(parseColladaBase):
 
     def init(self, filename):
-        self.readColladaFile(filename)
+        self.readXmlFile(filename)
 
         llst = self.doc.getElementsByTagName('library_nodes')
         if len(llst) == 0:
@@ -302,3 +401,44 @@ class replaceLibraryNode(parseColladaBase):
         #p_node.appendChild(nd.cloneNode(True))
 
         return True
+
+class yamlParser:
+    yaml_data = None
+
+    def load(self, fname):
+        self.yaml_data = yaml.load(open(fname).read())
+
+    def add_sensor(self, xml_obj):
+        if 'sensors' in self.yaml_data:
+            for sensor in self.yaml_data['sensors']:
+                translate = sensor['translate'] if sensor.has_key('translate') else None
+                rotate = sensor['rotate'] if sensor.has_key('rotate') else None
+                xml_obj.add_sensor(sensor['sensor_name'],
+                                   sensor['parent_link'],
+                                   sensor['sensor_type'],
+                                   translate = translate, rotate = rotate)
+
+    def add_eef(self, xml_obj):
+        for limb in ['rleg', 'lleg', 'rarm', 'larm', 'head', 'torso']:
+            eff_name = '%s-end-coords'%limb
+            eff = self.yaml_data[eff_name] if eff_name in self.yaml_data else None
+            if eff:
+                translate = eff['translate'] if 'translate' in eff else None
+                rotate = eff['rotate'] if 'rotate' in eff else None
+                parent  = eff['parent'] if 'parent' in eff else None
+                root  = eff['root'] if 'root' in eff else 'BODY'
+                if not parent:
+                    limb_lst = self.yaml_data[limb]
+                    parent = limb_lst[-1].keys()[0].replace("JOINT", "LINK") # not goood!
+                xml_obj.add_manipulator('%s_end_coords'%limb, root, parent,
+                                        translate = translate, rotate = rotate)
+
+    def add_links(self, xml_obj):
+        if xml_obj.objtype == 'urdf' and 'links' in self.yaml_data:
+            for link in self.yaml_data['links']:
+                translate = sensor['translate'] if sensor.has_key('translate') else None
+                rotate = sensor['rotate'] if sensor.has_key('rotate') else None
+                xml_obj.add_sensor(sensor['name'],
+                                   sensor['parent_link'],
+                                   None,
+                                   translate = translate, rotate = rotate)
