@@ -5,6 +5,8 @@
 import argparse
 from urdf_parser_py.urdf import URDF
 import yaml
+import sys
+
 def findJointByName(robot, name):
     for j in robot.joints:
         if j.name == name:
@@ -15,10 +17,16 @@ def jointDiff(original, new):
     """
     only take origin into account
     """
-    pos_original = original.origin.xyz
-    rpy_original = original.origin.rpy
-    pos_new = new.origin.xyz
-    rpy_new = new.origin.rpy
+    if hasattr(original, "origin") and hasattr(original.origin, "xyz"):
+        pos_original = original.origin.xyz or [0, 0, 0]
+    else:
+        pos_original = [0, 0, 0]
+    if hasattr(original, "origin") and hasattr(original.origin, "rpy"):
+        rpy_original = original.origin.rpy or [0, 0, 0]
+    else:
+        rpy_original = [0, 0, 0]
+    pos_new = new.origin.xyz or [0, 0, 0]
+    rpy_new = new.origin.rpy or [0, 0, 0]
     if (pos_original[0] == pos_new[0] and 
         pos_original[1] == pos_new[1] and 
         pos_original[2] == pos_new[2]):
@@ -72,8 +80,11 @@ def runPatch(input_file, patch_yaml, output_file):
         if diff.has_key("rpy"):
             j = input_robot.joint_map[joint_name]
             j.origin.rpy = diff["rpy"]
-    with open(output_file, "w") as f:
-        f.write(input_robot.to_xml_string())
+    if output_file:
+        with open(output_file, "w") as f:
+            f.write(input_robot.to_xml_string())
+    else:
+        print input_robot.to_xml_string()
         
 def parser():
     p = argparse.ArgumentParser(description="Get and apply urdf patch")
@@ -83,13 +94,16 @@ def parser():
     p.add_argument("arg1", help="""If mode is diff, specify new urdf.
     If mode is patch, specify patch yaml file.
     """)
-    p.add_argument("output", help="output file")
+    p.add_argument("output", help="output file. You can omit this argument in diff mode and in that case the new urdf is output in STDOUT.", nargs="?")
     return p
 
 if __name__ == "__main__":
     p = parser()
     args = p.parse_args()
     if args.mode == "diff":
+        if not args.output:
+            p.print_help()
+            sys.exit(1)
         runDiff(args.arg0, args.arg1, args.output)
     elif args.mode == "patch":
         runPatch(args.arg0, args.arg1, args.output)
