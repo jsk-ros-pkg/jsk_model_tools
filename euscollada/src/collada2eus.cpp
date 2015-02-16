@@ -1029,6 +1029,7 @@ int main(int argc, char* argv[]){
 	  string key, value; it.first() >> key; it.second() >> value;
 #endif
 	  tmp_joint_names.push_back(key);
+      fprintf(stderr, "joint: %s, link: %s\n", key.c_str(), findChildLinkFromJointName(key.c_str())->getName());
 	  tmp_link_names.push_back(findChildLinkFromJointName(key.c_str())->getName());
 	  g_all_link_names.push_back(pair<string, string>(key, value));
 	}
@@ -1287,32 +1288,36 @@ int main(int argc, char* argv[]){
       }
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
-        double value;
-        fprintf(output_fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
+        if ( n.size() > 0 ) {
+          double value;
+          fprintf(output_fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
 #ifdef USE_CURRENT_YAML
-        for(unsigned int i=0;i<3;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*n[i].as<double>());
+          for(unsigned int i=0;i<3;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*n[i].as<double>());
 #else
-        for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
+          for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
 #endif
-        fprintf(output_fp, "))\n");
+          fprintf(output_fp, "))\n");
+        }
       } catch(YAML::RepresentationException& e) {
       }
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["rotate"];
-        double value;
-        fprintf(output_fp, "     (send %s-end-coords :rotate", limb_name.c_str());
+        if ( n.size() > 0 ) {
+          double value;
+          fprintf(output_fp, "     (send %s-end-coords :rotate", limb_name.c_str());
 #if USE_CURRENT_YAML
-        for(unsigned int i=3;i<4;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", M_PI/180*n[i].as<double>());
+          for(unsigned int i=3;i<4;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", M_PI/180*n[i].as<double>());
 #else
-        for(unsigned int i=3;i<4;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
+          for(unsigned int i=3;i<4;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
 #endif
-        fprintf(output_fp, " (float-vector");
+          fprintf(output_fp, " (float-vector");
 #if USE_CURRENT_YAML
-        for(unsigned int i=0;i<3;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", n[i].as<double>());
+          for(unsigned int i=0;i<3;i++) fprintf(output_fp, " "FLOAT_PRECISION_FINE"", n[i].as<double>());
 #else
-        for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", value);}
+          for(unsigned int i=0;i<3;i++) { n[i]>>value; fprintf(output_fp, " "FLOAT_PRECISION_FINE"", value);}
 #endif
-        fprintf(output_fp, "))\n");
+          fprintf(output_fp, "))\n");
+        }
       } catch(YAML::RepresentationException& e) {
       }
       if(add_link_suffix) {
