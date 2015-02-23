@@ -1029,7 +1029,6 @@ int main(int argc, char* argv[]){
 	  string key, value; it.first() >> key; it.second() >> value;
 #endif
 	  tmp_joint_names.push_back(key);
-      fprintf(stderr, "joint: %s, link: %s\n", key.c_str(), findChildLinkFromJointName(key.c_str())->getName());
 	  tmp_link_names.push_back(findChildLinkFromJointName(key.c_str())->getName());
 	  g_all_link_names.push_back(pair<string, string>(key, value));
 	}
