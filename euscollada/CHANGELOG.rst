@@ -2,6 +2,15 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [euscollada] Update urdf_patch.py to handle joint without xyz and rpy tag and to output patched urdf to standard output
+* [euscollada] Support multiple links in remove_sensor_from_urdf.py
+* [euscollada] Remove pyc file added by mistake
+* [euscollada] (remove_sensor_from_urdf.py) Add script to remove link from urdf
+* [esucollada] update parseColladaBase.py and add_sensor_to_collada.py for handling urdf file
+* Contributors: Ryohei Ueda, Yohei Kakiuchi
+
 0.1.8 (2015-01-07)
 ------------------
 

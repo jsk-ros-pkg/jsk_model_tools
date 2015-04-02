@@ -2,6 +2,9 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.8 (2015-01-07)
 ------------------
 * fix for new euslisp layout
