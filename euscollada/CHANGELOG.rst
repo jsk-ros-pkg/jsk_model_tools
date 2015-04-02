@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.9 (2015-04-01)
+------------------
 * [euscollada] Update urdf_patch.py to handle joint without xyz and rpy tag and to output patched urdf to standard output
 * [euscollada] Support multiple links in remove_sensor_from_urdf.py
 * [euscollada] Remove pyc file added by mistake
