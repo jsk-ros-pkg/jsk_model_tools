@@ -2,6 +2,11 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [euscollada] install src/ scripts/
+* Contributors: Kei Okada
+
 0.1.9 (2015-04-01)
 ------------------
 * [euscollada] Update urdf_patch.py to handle joint without xyz and rpy tag and to output patched urdf to standard output
