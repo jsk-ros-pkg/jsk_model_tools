@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.10 (2015-04-02)
+-------------------
 * [euscollada] install src/ scripts/
 * Contributors: Kei Okada
 
