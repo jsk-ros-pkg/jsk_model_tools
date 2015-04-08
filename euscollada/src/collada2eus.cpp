@@ -30,6 +30,7 @@ vector<pair<string, string> > g_all_link_names;
 
 bool add_link_suffix = true;
 bool add_joint_suffix = true;
+bool verbose = false;
 
 #define FLOAT_PRECISION_FINE   "%.16e"
 #define FLOAT_PRECISION_COARSE "%.3f"
@@ -48,11 +49,15 @@ unsigned int getMaxOffset( domInput_local_offset_Array &input_array )
 
 void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) {
   std::vector<coordT> points;
-  fprintf(stderr, "wirteTriangle: %s\n", thisGeometry->getId());
+  if (verbose) {
+    fprintf(stderr, "wirteTriangle: %s\n", thisGeometry->getId());
+  }
   // get mesh
   domMesh *thisMesh = thisGeometry->getMesh();
   int triangleElementCount = thisMesh?(int)(thisMesh->getTriangles_array().getCount()):0;
-  fprintf(stderr, "triangleElementCount = %d\n", triangleElementCount);
+  if (verbose) {
+    fprintf(stderr, "triangleElementCount = %d\n", triangleElementCount);
+  }
 
   fprintf(fp, "(defclass %s_%s\n", robot_name, thisGeometry->getId());
   fprintf(fp, "  :super collada-body\n");
@@ -97,7 +102,9 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       thisMaterial = daeSafeCast<domMaterial>(g_dae->getDatabase()->idLookup(materialTarget, g_document));
     }
     if ( thisMaterial == NULL ) {
-      fprintf(stderr, "Could not find material %s, use 0.8 0.8 0.8\n", materialTarget.c_str());
+      if (verbose) {
+        fprintf(stderr, "Could not find material %s, use 0.8 0.8 0.8\n", materialTarget.c_str());
+      }
       fprintf(fp, "             (list :color (float-vector 0.1 0.1 0.1))\n");
       fprintf(fp, "             (list :ambient (float-vector 0.8 0.8 0.8 1.0))\n");
       fprintf(fp, "             (list :diffuse (float-vector 0.8 0.8 0.8 1.0))\n");
@@ -122,7 +129,9 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
 
     int numberOfInputs = (int)getMaxOffset(thisTriangles->getInput_array()) +1;// offset
     int numberOfTriangles = (int)(thisTriangles->getP()->getValue().getCount() / numberOfInputs); // elements
-    fprintf(stderr, "numberOfInputs = %d, numberOfTriangles = %d\n", numberOfInputs, numberOfTriangles);
+    if (verbose) {
+      fprintf(stderr, "numberOfInputs = %d, numberOfTriangles = %d\n", numberOfInputs, numberOfTriangles);
+    }
     // offset of index
     unsigned int offset = 0;
     int texoffset = -255, noroffset = -255;
@@ -134,7 +143,9 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       if(strcmp(thisTriangles->getInput_array()[i]->getSemantic(), "NORMAL") == 0)
         noroffset = thisTriangles->getInput_array()[i]->getOffset();
     }
-    fprintf(stderr, "offset = %d, noroffset = %d, texoffset = %d\n", offset, noroffset, texoffset);
+    if (verbose) {
+      fprintf(stderr, "offset = %d, noroffset = %d, texoffset = %d\n", offset, noroffset, texoffset);
+    }
     fprintf(fp, "           (list :indices #i(");
     for(int i = 0; i < numberOfTriangles; i++) {
       int index = thisTriangles->getP()->getValue().get(i * numberOfInputs + offset);
@@ -143,7 +154,10 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
     fprintf(fp, "))\n"); // /indices
 
     int numberOfVertices = thisMesh->getSource_array()[0]->getFloat_array()->getValue().getCount();
-    fprintf(stderr, "numberOfVertices = %d\n", numberOfVertices);
+    
+    if (verbose) {
+      fprintf(stderr, "numberOfVertices = %d\n", numberOfVertices);
+    }
     fprintf(fp, "           (list :vertices #2f(");
 
     for(int i = 0; i < numberOfVertices / 3; i++) {
@@ -162,7 +176,9 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
     fprintf(fp, "))\n"); // /vertices
 
     int sourceElements = thisMesh->getSource_array().getCount();
-    fprintf(stderr, "sourceElements = %d\n", sourceElements);
+    if (verbose) {
+      fprintf(stderr, "sourceElements = %d\n", sourceElements);
+    }
     // check for null <source /> tag
     for (int j = 0; j < thisMesh->getSource_array().getCount(); j++) {
       if ( thisMesh->getSource_array()[j]->getFloat_array() == NULL ) {
@@ -176,17 +192,23 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
         // normal vectur shares same index of vertices
         fprintf(fp, "         (list :normals #2f(");
         int numberOfNormals = thisMesh->getSource_array()[1]->getFloat_array()->getValue().getCount();
-        fprintf(stderr, "A:numberOfNormals = %d\n", numberOfNormals);
+        if (verbose) {
+          fprintf(stderr, "A:numberOfNormals = %d\n", numberOfNormals);
+        }
         for (int i = 0; i < numberOfNormals; i++) {
-          fprintf(stderr, "(%f %f %f)",
-                  thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3),
-                  thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3 + 1),
-                  thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3 + 2));
+          if (verbose) {
+            fprintf(stderr, "(%f %f %f)",
+                    thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3),
+                    thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3 + 1),
+                    thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3 + 2));
+          }
         }
         fprintf(fp, "))\n");  // /normals
       } else {
         int numberOfNormals = thisMesh->getSource_array()[1]->getFloat_array()->getValue().getCount();
-        fprintf(stderr, "B:numberOfNormals = %d\n", numberOfNormals);
+        if (verbose) {
+          fprintf(stderr, "B:numberOfNormals = %d\n", numberOfNormals);
+        }
         // index normal vector is indicated in <p></p>
 #if 0
         for(int i = 0; i < numberOfTriangles; i++) {
@@ -201,21 +223,29 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
 #endif
       }
     } else { // no normals
-      fprintf(stderr, "\n");
+      if (verbose) {
+        fprintf(stderr, "\n");
+      }
     }
     if ( sourceElements  > 2 ) {
       // texture coordinates
       if(texoffset != -255) {
         //int texindex = thisTriangles->getP()->getValue().get(i*numberOfInputs+texoffset);
         int numberOfTexcoords = thisMesh->getSource_array()[2]->getFloat_array()->getValue().getCount();
-        fprintf(stderr, "B:numberOfTexcoords = %d\n", numberOfTexcoords);
+        if (verbose) {
+          fprintf(stderr, "B:numberOfTexcoords = %d\n", numberOfTexcoords);
+        }
       } else { // ???
         int numberOfTexcoords = thisMesh->getSource_array()[2]->getFloat_array()->getValue().getCount();
-        fprintf(stderr, "A:numberOfTexcoords = %d\n", numberOfTexcoords);
-        fprintf(stderr, "\n");
+        if (verbose) {
+          fprintf(stderr, "A:numberOfTexcoords = %d\n", numberOfTexcoords);
+          fprintf(stderr, "\n");
+        }
       }
     } else {
-      fprintf(stderr, "\n");
+      if (verbose) {
+        fprintf(stderr, "\n");
+      }
     }
     fprintf(fp, "           )\n");
   }
@@ -230,7 +260,8 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
   // do qhull
   if ( points.size() > 0 ) {
       char qhull_attr[] = "qhull C-0.001";
-      int ret = qh_new_qhull (3, points.size()/3, &points[0], 0, qhull_attr, NULL, stderr);
+      FILE* dev_null = fopen("/dev/null", "w");
+      int ret = qh_new_qhull (3, points.size()/3, &points[0], 0, qhull_attr, NULL, verbose ? stderr: dev_null);
       fprintf(fp, "  (:qhull-faceset ()\n");
       if ( ret ) {
         fprintf(fp, "   (instance faceset :init :faces (list\n");
@@ -263,7 +294,9 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       int curlong, totlong;    // memory remaining after qh_memfreeshort
       qh_memfreeshort (&curlong, &totlong);    // free short memory and memory allocator
       if (curlong || totlong) {
-        fprintf (stderr, "qhull internal warning (user_eg, #1): did not free %d bytes of long memory (%d pieces)\n", totlong, curlong);
+        if (verbose) {
+          fprintf (stderr, "qhull internal warning (user_eg, #1): did not free %d bytes of long memory (%d pieces)\n", totlong, curlong);
+        }
       }
   } else {
     fprintf(fp, "  (:qhull-faceset () self)\n");
@@ -285,9 +318,10 @@ void writeGeometry(FILE *fp, daeDatabase *thisDatabase, const char* robot_name) 
     // get current geometry
     domGeometry *thisGeometry;
     thisDatabase->getElement((daeElement**)&thisGeometry, currentGeometry, NULL, "geometry");
-
-    fprintf(stderr, "geometry %d id:%s (%s)\n",
-            currentGeometry, thisGeometry->getId(), thisGeometry->getName());
+    if (verbose) {
+      fprintf(stderr, "geometry %d id:%s (%s)\n",
+              currentGeometry, thisGeometry->getId(), thisGeometry->getName());
+    }
 
     // write geometry information
     writeTriangle(fp, thisGeometry, robot_name);
@@ -316,16 +350,19 @@ domJoint *findJointFromName(const char *jointName) {
   }
   fprintf(stderr, "\n[ERROR] Counld not found joint [%s]\n", jointName);
   fprintf(stderr, "[ERROR] you have to set joint name from followings\n");
+  
   for(int currentJoint=0;currentJoint<jointElementCount;currentJoint++) {
     domJoint *thisJoint = NULL;
     g_dae->getDatabase()->getElement((daeElement**)&thisJoint, currentJoint, NULL, "joint");
-    fprintf(stderr, "%d : ", currentJoint);
-    if ( thisJoint != NULL ) fprintf(stderr, "%s ", thisJoint->getName());
-    if ( thisJoint->getSid() != NULL ) {
-      string jointSid_str = string(((domKinematics_model *)(thisJoint->getParentElement()->getParentElement()))->getId())+string("/")+string(thisJoint->getSid());
-      fprintf(stderr, "(%s)", jointSid_str.c_str());
+    if (verbose) {
+      fprintf(stderr, "%d : ", currentJoint);
+      if ( thisJoint != NULL ) fprintf(stderr, "%s ", thisJoint->getName());
+      if ( thisJoint->getSid() != NULL ) {
+        string jointSid_str = string(((domKinematics_model *)(thisJoint->getParentElement()->getParentElement()))->getId())+string("/")+string(thisJoint->getSid());
+        fprintf(stderr, "(%s)", jointSid_str.c_str());
+      }
+      fprintf(stderr, "\n");
     }
-    fprintf(stderr, "\n");
   }
   exit(1);
 }
@@ -366,7 +403,9 @@ domLink *findChildLinkFromJointName(const char *jointName) {
       }
     }
   }
-  fprintf(stderr, "Counld not found joint %s\n", jointName);
+  if (verbose) {
+    fprintf(stderr, "Counld not found joint %s\n", jointName);
+  }
   exit(1);
 }
 
@@ -431,8 +470,10 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
       max = jointAxis_array[0]->getLimits()->getMax()->getValue();
     }
   }
-  fprintf(stderr, "  writeJoint %s\n", thisJoint->getName());
-  fprintf(stderr, "    min = %f, max = %f\n", min, max);
+  if (verbose) {
+    fprintf(stderr, "  writeJoint %s\n", thisJoint->getName());
+    fprintf(stderr, "    min = %f, max = %f\n", min, max);
+  }
   // dump :max-joint-velocity of eus file from <speed> tag of collada file
   domMotion *thisMotion;
   g_dae->getDatabase()->getElement((daeElement**)&thisMotion, 0, NULL, "motion");
@@ -501,7 +542,9 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
           if (use_technique_limit) {
             min = scale*thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMin()->getFloat()->getValue();
             max = scale*thisKinematics->getTechnique_common()->getAxis_info_array()[i]->getLimits()->getMax()->getFloat()->getValue();
-            fprintf(stderr, "    min = %f, max = %f (safety)\n", min, max);
+            if (verbose) {
+              fprintf(stderr, "    min = %f, max = %f (safety)\n", min, max);
+            }
           }
         }
       }
@@ -511,7 +554,9 @@ void writeJoint(FILE *fp, const char *jointSid, domLink *parentLink, domLink *ch
   axis[0] = jointAxis_array[0]->getAxis()->getValue()[0];
   axis[1] = jointAxis_array[0]->getAxis()->getValue()[1];
   axis[2] = jointAxis_array[0]->getAxis()->getValue()[2];
-  cerr << "    writeJoint " << thisJoint->getName() << ", parent = " << parentLink->getName() << ", child = " << childLink->getName()  << ", limit = " << min << "/" << max << endl;
+  if (verbose) {
+    cerr << "    writeJoint " << thisJoint->getName() << ", parent = " << parentLink->getName() << ", child = " << childLink->getName()  << ", limit = " << min << "/" << max << endl;
+  }
   fprintf(fp, "                     :axis (let ((tmp-axis (float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE"))) (if (eps= (norm tmp-axis) 0.0) (float-vector 1 0 0) tmp-axis))\n", axis[0], axis[1], axis[2]);
   fprintf(fp, "                    ");
   fprintf(fp, " :min "); if (min == FLT_MAX) fprintf(fp, "*-inf*"); else fprintf(fp, "%f", min);
@@ -525,7 +570,9 @@ void writeKinematics(FILE *fp, domLink::domAttachment_full_Array thisAttachmentA
     domLinkRef thisLink = thisAttachmentArray[currentAttachment]->getLink();
     writeKinematics(fp, thisLink->getAttachment_full_array());
 
-    cerr << "writeKinematics " << thisLink->getName() << ", childlen = " << thisLink->getAttachment_full_array().getCount() << endl;
+    if (verbose) {
+      cerr << "writeKinematics " << thisLink->getName() << ", childlen = " << thisLink->getAttachment_full_array().getCount() << endl;
+    }
     for(unsigned int currentAttachment2=0;currentAttachment2 < (unsigned int)(thisLink->getAttachment_full_array().getCount());currentAttachment2++) {
       writeJoint(fp, thisLink->getAttachment_full_array()[currentAttachment2]->getJoint(),
                  thisLink,
@@ -549,7 +596,9 @@ void writeTransform(FILE *fp, const char *indent, const char *name, domNode *thi
 
   fprintf(fp, "\n");
   fprintf(fp, "%s;; writeTransform(name=%s,domNode=%s,targetCount=%d,parent=%s), translateCount=%d, rotateCount=%d, matrixCount=%d\n", indent, name, thisNode->getName(), targetCount, parentName, translateCount, rotateCount, matrixCount);
-  fprintf(stderr, "%s;; writeTransform(name=%s,domNode=%s,targetCount=%d,parent=%s), translateCount=%d, rotateCount=%d, matrixCount=%d\n", indent, name, thisNode->getName(), targetCount, parentName, translateCount, rotateCount, matrixCount);
+  if (verbose) {
+    fprintf(stderr, "%s;; writeTransform(name=%s,domNode=%s,targetCount=%d,parent=%s), translateCount=%d, rotateCount=%d, matrixCount=%d\n", indent, name, thisNode->getName(), targetCount, parentName, translateCount, rotateCount, matrixCount);
+  }
 
   // checking name
   std::string pName;
@@ -565,12 +614,16 @@ void writeTransform(FILE *fp, const char *indent, const char *name, domNode *thi
 
   for (int i=0, currentTranslate=0, currentRotate=0, skipTranslate=0, skipRotate=0; i < min(translateCount, rotateCount); i++, currentTranslate++, currentRotate++){
     if ( translateArray[currentTranslate]->getSid() ) {
-      fprintf(stderr, " skip translate %s : %s\n", name, translateArray[currentTranslate]->getSid());
+      if (verbose) {
+        fprintf(stderr, " skip translate %s : %s\n", name, translateArray[currentTranslate]->getSid());
+      }
       skipTranslate++;
       currentTranslate++;
     }
     if ( rotateArray[currentRotate]->getSid() ) {
-      fprintf(stderr, " skip rotate %s : %s\n", name, rotateArray[currentRotate]->getSid());
+      if (verbose) {
+        fprintf(stderr, " skip rotate %s : %s\n", name, rotateArray[currentRotate]->getSid());
+      }
       skipRotate++;
       currentRotate++;
     }
@@ -704,8 +757,10 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
 
     if ( strcmp(thisNode->getName(),"visual") == 0 ) continue; //@@@ OK??
     // link
-    fprintf(stderr, "writeNodes link sid:%s name:%s node_array:%zd\n",
-            thisNode->getSid(), thisNode->getName(),thisNode->getNode_array().getCount() );
+    if (verbose) {
+      fprintf(stderr, "writeNodes link sid:%s name:%s node_array:%zd\n",
+              thisNode->getSid(), thisNode->getName(),thisNode->getNode_array().getCount() );
+    }
 
     domNode *geomNode = NULL;
 
@@ -715,8 +770,10 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       }
     }
     if ( geomNode == NULL ) {
-      fprintf(stderr, "writeNodes no visual found for link sid:%s name:%s node_array:%zd\n",
-	      thisNode->getSid(), thisNode->getName(),thisNode->getNode_array().getCount() );
+      if (verbose) {
+        fprintf(stderr, "writeNodes no visual found for link sid:%s name:%s node_array:%zd\n",
+                thisNode->getSid(), thisNode->getName(),thisNode->getNode_array().getCount() );
+      }
       geomNode = thisNode;
     }
     fprintf(fp, "     ;; node id=%s, name=%s, sid=%s\n", thisNode->getId(), thisNode->getName(), thisNode->getSid());
@@ -736,7 +793,9 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       for(int currentGeometryCount=0;currentGeometryCount<geometryCount;currentGeometryCount++) {
 	domInstance_geometry *thisGeometry  = geomNode->getInstance_geometry_array()[currentGeometryCount];
 	const char * geometryName = (string("b_")+thisGeometry->getUrl().id()).c_str();
-	fprintf(stderr, " geometry:%d %s\n",currentGeometryCount, geometryName);
+        if (verbose) {
+          fprintf(stderr, " geometry:%d %s\n",currentGeometryCount, geometryName);
+        }
 	geometryNameArray.push_back(pair<domInstance_geometry*, string>(thisGeometry, geometryName));
       }
 
@@ -940,6 +999,9 @@ int main(int argc, char* argv[]){
     } else if (strcmp(argv[i], "--no-joint-suffix") == 0) {
       add_joint_suffix = false;
       nargc--;
+    } else if (strcmp(argv[i], "--verbose") == 0) {
+      verbose = false;
+      nargc--;
     }
   }
 
@@ -997,12 +1059,16 @@ int main(int argc, char* argv[]){
     BOOST_FOREACH(string& limb, limb_candidates) {
 #ifdef USE_CURRENT_YAML
     if (doc[limb]) {
-      std::cerr << limb << "@" << doc[limb].size() << std::endl;
+      if (verbose) {
+        std::cerr << limb << "@" << doc[limb].size() << std::endl;
+      }
       limb_order.push_back(pair<string, size_t>(limb, doc[limb].size()));
     }
 #else
     if ( doc.FindValue(limb) ) {
-      std::cerr << limb << "@" << doc[limb].GetMark().line << std::endl;
+      if (verbose) {
+        std::cerr << limb << "@" << doc[limb].GetMark().line << std::endl;
+      }
       limb_order.push_back(pair<string, size_t>(limb, doc[limb].GetMark().line));
     }
 #endif
@@ -1041,14 +1107,19 @@ int main(int argc, char* argv[]){
   // get number of kinmatics
   int visualSceneCount;
   visualSceneCount = g_dae->getDatabase()->getElementCount(NULL, "visual_scene", NULL);
-  fprintf(stderr, "Number of Visual Scene %d (= 1)\n", visualSceneCount); // this shoule be 1
+  if (verbose) {
+    fprintf(stderr, "Number of Visual Scene %d (= 1)\n", visualSceneCount); // this shoule be 1
+  }
   domVisual_scene *thisVisualscene;
   g_dae->getDatabase()->getElement((daeElement**)&thisVisualscene, 0, NULL, "visual_scene");
   int nodeCount = thisVisualscene->getNode_array().getCount();
-  fprintf(stderr, "Number of Nodes %d (= 1)\n", nodeCount); // this shoule be 1
+  if (verbose) {
+    fprintf(stderr, "Number of Nodes %d (= 1)\n", nodeCount); // this shoule be 1
+  }
   domNode* thisNode= thisVisualscene->getNode_array()[0];
-
-  fprintf(stderr, "Visual_scene %s\n", thisNode->getName());
+  if (verbose) {
+    fprintf(stderr, "Visual_scene %s\n", thisNode->getName());
+  }
   if( !!((domCOLLADA *)dae.getDom(input_filename))->getAsset()) {
       if( !!((domCOLLADA *)dae.getDom(input_filename))->getAsset()->getUnit() ) {
 	  g_scale = ((domCOLLADA *)dae.getDom(input_filename))->getAsset()->getUnit()->getMeter();
@@ -1066,7 +1137,9 @@ int main(int argc, char* argv[]){
     fprintf(stderr, "could not write to %s\n", output_filename);
     exit(-1);
   }
-  fprintf(stderr, "Convert %s to %s\n with %s", input_filename, output_filename, yaml_filename);
+  if (verbose) {
+    fprintf(stderr, "Convert %s to %s\n with %s", input_filename, output_filename, yaml_filename);
+  }
 
   fprintf(output_fp, ";;\n");
   fprintf(output_fp, ";; DO NOT EDIT THIS FILE\n");
@@ -1098,8 +1171,10 @@ int main(int argc, char* argv[]){
 	  thisDatabase->getElement((daeElement**)&thisGeometry, currentGeometry, NULL, "geometry");
 
 	  fprintf(output_fp, " (instance %s_%s :init)", robot_name.c_str(), thisGeometry->getId());
-	  fprintf(stderr, "geometry %d id:%s (%s)\n",
-		  currentGeometry, thisGeometry->getId(), thisGeometry->getName());
+          if (verbose) {
+            fprintf(stderr, "geometry %d id:%s (%s)\n",
+                    currentGeometry, thisGeometry->getId(), thisGeometry->getName());
+          }
 
 	  // write geometry information
       }
@@ -1114,7 +1189,9 @@ int main(int argc, char* argv[]){
       writeGeometry(output_fp, g_dae->getDatabase(), robot_name.c_str());
 
       fprintf(output_fp, "\n\n(provide :%s \"%s/%s\")\n\n", robot_name.c_str(), get_current_dir_name(), output_filename);
-      fprintf(stderr, ";; generate lisp code for body\n");
+      if (verbose) {
+        fprintf(stderr, ";; generate lisp code for body\n");
+      }
       exit(0);
   }
 
