@@ -2,6 +2,12 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [euscollada] Suppress output of debug information from collada2eus
+  and add --verbose option to print the debug information
+* Contributors: Ryohei Ueda
+
 0.1.10 (2015-04-02)
 -------------------
 * [euscollada] install src/ scripts/
