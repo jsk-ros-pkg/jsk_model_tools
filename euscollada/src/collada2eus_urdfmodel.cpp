@@ -504,8 +504,16 @@ void ModelEuslisp::readYaml (string &config_file) {
     BOOST_FOREACH(string& limb, limb_candidates) {
 #ifdef USE_CURRENT_YAML
       if (doc[limb]) {
-        std::cerr << limb << "@" << doc[limb].size() << std::endl;
-        limb_order.push_back(pair<string, size_t>(limb, doc[limb].size()));
+        int line=0;
+        ifstream fin2(config_file.c_str()); // super ugry hack until yaml-cpp 0.5.2
+        string buffer;
+        for (;fin2;) {
+          getline(fin2, buffer); line++;
+          if(buffer == limb+":") break;
+        }
+        fin2.close();
+        std::cerr << limb << "@" << line << std::endl;
+        limb_order.push_back(pair<string, size_t>(limb, line));
       }
 #else
       if ( doc.FindValue(limb) ) {
