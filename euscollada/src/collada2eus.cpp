@@ -1000,7 +1000,7 @@ int main(int argc, char* argv[]){
       add_joint_suffix = false;
       nargc--;
     } else if (strcmp(argv[i], "--verbose") == 0) {
-      verbose = false;
+      verbose = true;
       nargc--;
     }
   }
