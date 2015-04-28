@@ -1000,7 +1000,7 @@ int main(int argc, char* argv[]){
       add_joint_suffix = false;
       nargc--;
     } else if (strcmp(argv[i], "--verbose") == 0) {
-      verbose = false;
+      verbose = true;
       nargc--;
     }
   }
@@ -1059,10 +1059,21 @@ int main(int argc, char* argv[]){
     BOOST_FOREACH(string& limb, limb_candidates) {
 #ifdef USE_CURRENT_YAML
     if (doc[limb]) {
-      if (verbose) {
-        std::cerr << limb << "@" << doc[limb].size() << std::endl;
+      int line=-1;
+      ifstream fin2(yaml_filename); // super ugry hack until yaml-cpp 0.5.2
+      string buffer;
+      for (;fin2;) {
+        getline(fin2, buffer); line++;
+        if(buffer == limb+":") break;
       }
-      limb_order.push_back(pair<string, size_t>(limb, doc[limb].size()));
+      fin2.close();
+      if (verbose) {
+        std::cerr << limb << "@" << line  << std::endl;
+      }
+      if(line<0) {
+        std::cerr << limb << "@" << line << " someting is wrong..." << std::endl;
+      }
+      limb_order.push_back(pair<string, size_t>(limb, line));
     }
 #else
     if ( doc.FindValue(limb) ) {
