@@ -274,8 +274,8 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
   int polylistElementCount = (int)(thisMesh->getPolylist_array().getCount());
   //Polygons
   int polygonesElementCount = (int)(thisMesh->getPolygons_array().getCount());
-  assert(polylistElementCount==0);
-  assert(polygonesElementCount==0);
+  //assert(polylistElementCount==0);
+  //assert(polygonesElementCount==0);
 }
 
 void writeGeometry(FILE *fp, daeDatabase *thisDatabase, const char* robot_name) {
