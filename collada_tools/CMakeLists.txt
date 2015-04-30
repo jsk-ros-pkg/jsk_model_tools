@@ -1,56 +1,55 @@
-if(NOT USE_ROSBUILD)
-  include(catkin.cmake)
-  return()
+cmake_minimum_required(VERSION 2.8.3)
+project(collada_tools)
+
+if($ENV{ROS_DISTRO} STREQUAL "groovy")
+  find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser urdf collada_parser)
+else()
+  find_package(catkin REQUIRED COMPONENTS roscpp urdf_parser_plugin urdf collada_parser)
 endif()
+find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
-
-rosbuild_init()
-
-set(CMAKE_MODULE_PATH  ${PROJECT_SOURCE_DIR}/cmake-extensions/ )
+#set(CMAKE_MODULE_PATH  ${PROJECT_SOURCE_DIR}/cmake-extensions/ )
+set(ENV{PKG_CONFIG_PATH} ${CATKIN_DEVEL_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
 find_package(PkgConfig)
-pkg_check_modules(COLLADADOM collada15dom)
-include_directories(${COLLADADOM_INCLUDE_DIRS})
+pkg_check_modules(COLLADADOM collada-dom-150)
+include_directories(${COLLADADOM_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 link_directories(${COLLADADOM_LIBRARY_DIRS})
 
-rosbuild_find_ros_package(assimp_devel)
-set(ENV{PKG_CONFIG_PATH} ${assimp_devel_PACKAGE_PATH}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
-pkg_check_modules(assimp assimp_devel REQUIRED)
-include_directories(${assimp_INCLUDE_DIRS})
-link_directories(${assimp_LIBRARY_DIRS})
+pkg_check_modules(assimp_devel assimp_devel REQUIRED)
+include_directories(${assimp_devel_INCLUDE_DIRS})
+link_directories(${assimp_devel_LIBRARY_DIRS})
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-# necessary for collada reader to create the temporary dae files due to limitations in the URDF geometry
-check_function_exists(mkstemps HAVE_MKSTEMPS)
-if( HAVE_MKSTEMPS )
-  add_definitions("-DHAVE_MKSTEMPS")
-endif()
+# check_function_exists(mkstemps HAVE_MKSTEMPS)
+# if( HAVE_MKSTEMPS )
+#   add_definitions("-DHAVE_MKSTEMPS")
+# endif()
 
-rosbuild_add_boost_directories()
+catkin_package(
+  )
 
-rosbuild_add_executable(collada_gazebo_gen src/collada_gazebo_gen.cpp)
-rosbuild_link_boost(collada_gazebo_gen filesystem)
-rosbuild_add_link_flags(collada_gazebo_gen -Wl,--no-as-needed )
+set(SOURCE_FILES
+  src/collada_gazebo_gen.cpp
+  src/collada_to_graphviz.cpp
+  src/collada_to_urdf.cpp
+  )
 
-rosbuild_add_executable(collada_to_graphviz src/collada_to_graphviz.cpp)
-rosbuild_link_boost(collada_to_graphviz filesystem)
-rosbuild_add_link_flags(collada_to_graphviz -Wl,--no-as-needed )
+add_executable(collada_gazebo_gen src/collada_gazebo_gen.cpp)
+set_target_properties(collada_gazebo_gen PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+target_link_libraries(collada_gazebo_gen ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(collada_gazebo_gen libassimp)
 
-rosbuild_add_executable(collada_to_urdf src/collada_to_urdf.cpp)
-rosbuild_link_boost(collada_to_urdf filesystem program_options)
-rosbuild_add_link_flags(collada_to_urdf -Wl,--no-as-needed )
-target_link_libraries(collada_to_urdf ${assimp_LIBRARIES} ${COLLADADOM_LIBRARIES})
+add_executable(collada_to_graphviz src/collada_to_graphviz.cpp)
+set_target_properties(collada_to_graphviz PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+target_link_libraries(collada_to_graphviz ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(collada_to_graphviz libassimp)
 
+add_executable(collada_to_urdf src/collada_to_urdf.cpp)
+set_target_properties(collada_to_urdf PROPERTIES LINK_FLAGS "-Wl,--no-as-needed")
+target_link_libraries(collada_to_urdf ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${assimp_devel_LIBRARIES} ${COLLADADOM_LIBRARIES})
+add_dependencies(collada_to_urdf libassimp_devel)
+
+install(TARGETS collada_to_urdf collada_to_graphviz collada_gazebo_gen
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

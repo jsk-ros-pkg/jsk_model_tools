@@ -1527,7 +1527,8 @@ int main(int argc, char* argv[]){
 
   // when - angle-vector: reset-pose is defined in yaml file
   try {
-    doc["angle-vector"]["reset-pose"];
+    const YAML::Node& n = doc["angle-vector"]["reset-pose"];
+    if ( n.size() == 0 ) { fprintf(output_fp, "     ;; this robot does not have :reset-pose\n;;"); }
     fprintf(output_fp, "     (send self :reset-pose) ;; :set reset-pose\n\n");
   } catch(YAML::RepresentationException& e) {
   }
