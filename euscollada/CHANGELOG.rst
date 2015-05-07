@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.12 (2015-05-07)
+-------------------
 * [src/collada2eus.cpp] on newer yaml, doc["angle-vector"]["reset-pose"] did not raise error
 * [jsk_model_tools] remove old rosmake files
 * [collada2eus.cpp] do not exit when polylistElementCound or polygoneElementCount is 0
