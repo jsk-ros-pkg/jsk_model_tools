@@ -2,6 +2,17 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [src/collada2eus.cpp] on newer yaml, doc["angle-vector"]["reset-pose"] did not raise error
+* [jsk_model_tools] remove old rosmake files
+* [collada2eus.cpp] do not exit when polylistElementCound or polygoneElementCount is 0
+* [euscollada/src/collada2eus.cpp] super ugry hack untilyaml-cpp 0.5.2
+* [collada2eus] set verbose=true when --verbose
+* [euscollada] Removed unnecessary fprintf in collada2eus.cpp
+* [euscollada] Add size check to end-coords translation/rotation because undefiend limb end-coords transformation/rotation breaks matching of parentheses in yaml-cpp 0.5.
+* Contributors: Kei Okada, Iori Kumagai
+
 0.1.11 (2015-04-09)
 -------------------
 * [euscollada] Suppress output of debug information from collada2eus
