@@ -107,6 +107,9 @@
                                &key ((:scale scl) 1.0) (gen-normal) (smooth-normal)
                                (split-large-mesh) (optimize-mesh) (identical-vertices)
                                &allow-other-keys)
+  (when (substringp ".wrl" fname)
+    (dump-glvertices-to-wrl fname glvtcs :scale scl)
+    (return-from save-mesh-file))
   (let ((mlst (glvtcs . gl::mesh-list))
         name-lst type-lst
         material-lst
@@ -330,6 +333,84 @@
           (setq (bd . glvertices) glv))
         )))
   robot)
+
+(defun _dump-wrl-shape (strm mesh &key ((:scale scl) 1.0))
+  (let* ((tp   (cadr (assoc :type      mesh))) ;; type should be :triangle
+         (indx (cadr (assoc :indices   mesh))) ;; should have index
+         (vmat (cadr (assoc :vertices  mesh)))
+         (matl (cadr (assoc :material  mesh)))
+         ;;(tcds (cadr (assoc :texcoords mesh))) ;; not used ...
+         (len (/ (length (array-entity vmat)) 3)))
+    (format strm "    Shape {~%")
+    (let ((col   (cadr (assoc :color matl)))
+          (amb   (cadr (assoc :ambient matl)))
+          (diff  (cadr (assoc :diffuse matl)))
+          (spec  (cadr (assoc :specular matl)))
+          (emi   (cadr (assoc :emission matl)))
+          (shin  (cadr (assoc :shininess matl)))
+          (trans (cadr (assoc :transparency matl))))
+      (format strm "      appearance Appearance {
+        material Material {~%")
+      (if diff
+          (format strm "          diffuseColor     ~f ~f ~f~%" (elt diff 0) (elt diff 1) (elt diff 2)))
+      ;;(if amb ;; not use ambient
+      ;;(format strm "          diffuseColor     ~f ~f ~f~%" (elt amb 0) (elt amb 1) (elt amb 2)))
+      (if spec
+          (format strm "          specularColor    ~f ~f ~f~%" (elt spec 0) (elt spec 1) (elt spec 2)))
+      (if emi
+          (format strm "          emissiveColor    ~f ~f ~f~%" (elt emi 0) (elt emi 1) (elt emi 2)))
+      (if shin
+          (format strm "          shininess        ~f~%" shin))
+      (if trans
+          (format strm "          transparency     ~f~%" trans))
+      (format strm "          ambientIntensity 0~%") ;; ??
+      (format strm "        }~%")
+      (format strm "      }~%" )
+      )
+    (format strm "      geometry IndexedFaceSet {
+        ccw    TRUE
+        convex TRUE
+        solid  FALSE
+        creaseAngle 0
+        coord  Coordinate {
+          point [~%")
+    (let ((p (float-vector 0 0 0)))
+      (dotimes (i len)
+        (user::c-matrix-row vmat i p)
+        (format strm "~8,8f ~8,8f ~8,8f,~%" (* scl (elt p 0)) (* scl (elt p 1)) (* scl (elt p 2)))
+        ))
+    (format strm "                ]
+        }~%")
+    ;;;; normal
+    ;;(format strm "        normal Normal { vector [~%")
+    ;; nx ny nz,
+    ;;(format strm "        ] } #normal~%")
+    ;;;; texcoords
+    ;;(format strm "        texCoord TextureCoordinate { point [~%")
+    ;; t s,
+    ;;(format strm "        ] } #texCoord~%")
+    (format strm "        coordIndex [~%")
+    (dotimes (i (/ (length indx) 3))
+      (format strm "~D, ~D, ~D, -1,~%"
+              (elt indx    (* i 3))
+              (elt indx (+ (* i 3) 1))
+              (elt indx (+ (* i 3) 2))))
+    (format strm "        ]
+      } #IndexedFaceSet
+    } #Shape~%")
+    ))
+
+(defun dump-glvertices-to-wrl (fname glv &key ((:scale scl) 1.0))
+  (let ((mesh-list (glv . gl::mesh-list)))
+    (with-open-file
+     (strm fname :direction :output)
+     (format strm "Transform {~%")
+     (format strm "  children [~%")
+     (dolist (mesh mesh-list)
+       (_dump-wrl-shape strm mesh :scale scl))
+     (format strm "  ] #children~%")
+     (format strm "} #Transform~%")
+     )))
 
 (in-package "GL")
 (defmethod glvertices
