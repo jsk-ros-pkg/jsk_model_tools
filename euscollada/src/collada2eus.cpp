@@ -146,7 +146,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
     if (verbose) {
       fprintf(stderr, "offset = %d, noroffset = %d, texoffset = %d\n", offset, noroffset, texoffset);
     }
-    fprintf(fp, "           (list :indices #i(");
+    fprintf(fp, "           (list :indices (integer-vector ");
     for(int i = 0; i < numberOfTriangles; i++) {
       int index = thisTriangles->getP()->getValue().get(i * numberOfInputs + offset);
       fprintf(fp, " %d", index);
@@ -158,7 +158,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
     if (verbose) {
       fprintf(stderr, "numberOfVertices = %d\n", numberOfVertices);
     }
-    fprintf(fp, "           (list :vertices #2f(");
+    fprintf(fp, "           (list :vertices (make-matrix %d 3 (list ", numberOfVertices / 3);
 
     for(int i = 0; i < numberOfVertices / 3; i++) {
       // vertex vector
@@ -166,14 +166,14 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       a0 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3);
       a1 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3 + 1);
       a2 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3 + 2);
-      fprintf(fp, "("FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+      fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
               g_scale * 1000 * a0, g_scale * 1000 * a1, g_scale * 1000 * a2);
       // store vertex vector to qhull
       points.push_back(a0);
       points.push_back(a1);
       points.push_back(a2);
     }
-    fprintf(fp, "))\n"); // /vertices
+    fprintf(fp, ")))\n"); // /vertices
 
     int sourceElements = thisMesh->getSource_array().getCount();
     if (verbose) {
@@ -927,7 +927,7 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
               if ( std::string(frame_origin->getChildren()[i]->getElementName()) == "translate" ) {
                 domTranslateRef ptrans = daeSafeCast<domTranslate>(frame_origin->getChildren()[i]);
                 fprintf(fp, "       (send %s-sensor-coords :transform (make-coords ", pextra->getName());
-                fprintf(fp, ":pos #f(");
+                fprintf(fp, ":pos (float-vector ");
                 for(unsigned int i=0;i<3;i++) { fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*ptrans->getValue()[i]);}
                 fprintf(fp, ")))\n");
               } else if ( std::string(frame_origin->getChildren()[i]->getElementName()) == "rotate") {
@@ -1325,7 +1325,7 @@ int main(int argc, char* argv[]){
             }
 	    fprintf(output_fp, "     (send %s-frame-tip :transform (make-coords ", armname.c_str());
 	    if ( ptrans ) {
-	      fprintf(output_fp, ":pos #f(");
+	      fprintf(output_fp, ":pos (float-vector ");
 	      for(unsigned int i=0;i<3;i++) { fprintf(output_fp, " "FLOAT_PRECISION_FINE"", 1000*ptrans->getValue()[i]);}
 	      fprintf(output_fp, ") ");
 	    }
