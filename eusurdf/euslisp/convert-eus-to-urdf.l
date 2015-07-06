@@ -1,8 +1,11 @@
 (defun irteus2urdf-for-gazebo
   (model
-   &optional
+   &key
    name
-   (tmp-dir "/tmp"))
+   eusurdf-package-path
+   collada-to-urdf-exe-path
+   (tmp-dir "/tmp")
+   )
   (cond
    ((not (subclassp (class model) cascaded-link))
     (format t "invalid class, not childclass of cascaded-link~%")
@@ -22,8 +25,10 @@
     ;;(collada::eus2collada model tmp-dir) ;; I don't know why, but this line does not work correctly.
     (cond
      ((probe-file (format nil "~a/~a.dae" tmp-dir name))
-      (format t "generate ~A.dae~%convert to urdf~%" name)
-      (unix:system (format nil "rosrun eusurdf eus2urdf_for_gazebo.py ~a ~a/~a.dae" name tmp-dir name)))
+      (format t "[eus2urdf] generate ~A.dae~%" name)
+      (unix:system (format nil "~a/scripts/eus2urdf_for_gazebo.py ~a ~a/~a.dae ~a ~a"
+                           eusurdf-package-path name tmp-dir name eusurdf-package-path
+                           (cond (collada-to-urdf-exe-path collada-to-urdf-exe-path) (t "")))))
      (t
       (format nil "dae error~%")
       (return-from irteus2urdf-for-gazebo nil)))
@@ -31,8 +36,17 @@
   t)
 (warn "~%(irteus2urdf-for-gazebo (make-national-laundry-machine) \"laundry\")~%")
 
-(defun irteus2urdf-room-for-gazebo (room &key make-static make-fixed world-file-path)
-  (let* ((package-dir-path (string-downcase (read (piped-fork "rospack find eusurdf")))))
+(defun irteus2urdf-room-for-gazebo
+  (room
+   &key
+   make-static make-fixed
+   world-file-path
+   eusurdf-package-path
+   collada-to-urdf-exe-path
+   )
+  (let* ((package-dir-path
+          (cond (eusurdf-package-path eusurdf-package-path)
+                (t (ros::resolve-ros-path "package://eusurdf")))))
     (dolist (obj (send room :objects))
       (let* ((obj-name)
              (obj-cnt 0))
@@ -50,25 +64,30 @@
                (rpy (car (rpy-angle (send obj :worldrot))))
                (rpy-string (format nil "~a ~a ~a" (elt rpy 2) (elt rpy 1) (elt rpy 0))))
           ;; convert the model
-          (when (irteus2urdf-for-gazebo obj obj-name)
+          (when (irteus2urdf-for-gazebo obj :name obj-name :eusurdf-package-path package-dir-path :collada-to-urdf-exe-path collada-to-urdf-exe-path)
             ;; add the obects to the world file
             (unix:system (format nil "sed -i -e \"s@    <!-- Objects -->@    <!-- Objects -->\\n    <include>\\n      <uri>model://~a_static</uri>\\n      <pose>~a ~a</pose>\\n    </include>@g\" ~a" obj-name pos-string rpy-string world-file-path))
             ;; ;; make the static model
             (when make-static
-              (unix:system (format nil "rosrun eusurdf make_static_model.py ~a" obj-name)))
+              (unix:system (format nil "~a/scripts/make_static_model.py ~a ~a" package-dir-path obj-name package-dir-path)))
             ;; ;; make the fixed model
             (when make-fixed
-              (unix:system (format nil "rosrun eusurdf make_fixed_model.py ~a" obj-name)))
+              (unix:system (format nil "~a/scripts/make_fixed_model.py ~a ~a" package-dir-path obj-name package-dir-path)))
             )
           )
         ))
     ;; ;; generate the model database file
-    ;; (unix:system (format nil "rosrun eusurdf generate_model_database.py"))
+    ;; (unix:system (format nil "~a/scripts/generate_model_database.py" package-dir-path ))
     ))
 (warn "(irteus2urdf-room-for-gazebo (room73b2))~%")
 
 
-(defun generate-room-models (name)
+(defun generate-room-models
+  (name
+   &key
+   eusurdf-package-path
+   collada-to-urdf-exe-path
+   )
   ;; check the function making room exits.
   (load (format nil "models/~a-scene.l" name))
   (unless (functionp (read-from-string name))
@@ -80,13 +99,15 @@
       (warn "[ERROR] room (~a) is not the room model.~%" name)
       (return-from generate-room-models))
     ;; generate the world file
-    (let* ((package-dir-path (string-downcase (read (piped-fork "rospack find eusurdf"))))
+    (let* ((package-dir-path
+            (cond (eusurdf-package-path eusurdf-package-path)
+                  (t (ros::resolve-ros-path "package://eusurdf"))))
            (world-src-file-path (format nil "~a/worlds/world_source.world" package-dir-path))
            (world-new-file-path (format nil "~a/worlds/~a.world" package-dir-path name)))
       (unix:system (format nil "rm -rf ~a" world-new-file-path))
       (unix:system (format nil "cp ~a ~a" world-src-file-path world-new-file-path))
       ;; convert models
-      (irteus2urdf-room-for-gazebo room :make-static t :make-fixed t :world-file-path world-new-file-path)
+      (irteus2urdf-room-for-gazebo room :make-static t :make-fixed t :world-file-path world-new-file-path :eusurdf-package-path eusurdf-package-path :collada-to-urdf-exe-path collada-to-urdf-exe-path)
       )
     ))
 (warn "(generate-room-models \"room73b2\")~%")

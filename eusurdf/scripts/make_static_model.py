@@ -5,9 +5,8 @@ import os
 import commands
 
 
-def make_static_model (name, overwrite=True):
-
-    urdf_dir_path = commands.getoutput('rospack find eusurdf') + '/models/' + name
+def make_static_model (name, eusurdf_package_path=commands.getoutput('rospack find eusurdf'), overwrite=True):
+    urdf_dir_path = eusurdf_package_path + '/models/' + name
     static_urdf_dir_path = urdf_dir_path + '_static'
     urdf_path = urdf_dir_path + '/' + 'model.urdf'
     static_urdf_path = static_urdf_dir_path + '/' + 'model.urdf'
@@ -18,7 +17,7 @@ def make_static_model (name, overwrite=True):
         if os.path.exists(static_urdf_dir_path):
             print '[ERROR] the same name static model already exits'
             exit(1)
-    
+
     os.system("cp -r %s %s" % (urdf_dir_path, static_urdf_dir_path))
 
     if len(commands.getoutput("grep \"<static>false</static>\" %s" % static_urdf_path)) != 0:
@@ -31,5 +30,7 @@ def make_static_model (name, overwrite=True):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
+        make_static_model(sys.argv[1], eusurdf_package_path=sys.argv[2])
+    elif len(sys.argv) > 1:
         make_static_model(sys.argv[1])

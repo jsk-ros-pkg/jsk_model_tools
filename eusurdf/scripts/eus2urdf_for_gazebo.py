@@ -5,8 +5,8 @@ import os
 import commands
 
 
-def eus2urdf_for_gazebo_pyscript (name, collada_path, overwrite=True):
-    urdf_dir_path = commands.getoutput('rospack find eusurdf') + '/models/' + name
+def eus2urdf_for_gazebo_pyscript (name, collada_path, eusurdf_package_path=commands.getoutput('rospack find eusurdf'), collada_to_urdf_exe_path='rosrun collada_urdf_jsk_patch collada_to_urdf', overwrite=True):
+    urdf_dir_path = eusurdf_package_path + '/models/' + name
     if overwrite:
         os.system("rm -rf %s" % urdf_dir_path)
     else:
@@ -32,7 +32,7 @@ def eus2urdf_for_gazebo_pyscript (name, collada_path, overwrite=True):
     meshes_path = urdf_dir_path + '/meshes'
     urdf_path = urdf_dir_path + '/' + 'model.urdf'
     os.mkdir(meshes_path)
-    os.system('rosrun collada_urdf_jsk_patch collada_to_urdf %s -G -A --mesh_output_dir %s --mesh_prefix "model://%s/meshes" -O %s' % (collada_path, meshes_path, name, urdf_path))
+    os.system('%s %s -G -A --mesh_output_dir %s --mesh_prefix "model://%s/meshes" -O %s' % (collada_to_urdf_exe_path, collada_path, meshes_path, name, urdf_path))
     os.system('sed -i -e "s@continuous@revolute@g" %s' % urdf_path)
     os.system('sed -i -e \"s@<robot name=\\"inst_kinsystem\\"@<robot name=\\"%s\\"@g\" %s' % (name, urdf_path))
     os.system('sed -i -e \"1,/  <link /s/  <link /  <gazebo>\\n    <static>false<\/static>\\n  <\/gazebo>\\n  <link /\" %s' % urdf_path)
@@ -43,5 +43,9 @@ def eus2urdf_for_gazebo_pyscript (name, collada_path, overwrite=True):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 4:
+        eus2urdf_for_gazebo_pyscript(sys.argv[1], sys.argv[2], eusurdf_package_path=sys.argv[3], collada_to_urdf_exe_path=sys.argv[4])
+    elif len(sys.argv) > 3:
+        eus2urdf_for_gazebo_pyscript(sys.argv[1], sys.argv[2], eusurdf_package_path=sys.argv[3])
+    elif len(sys.argv) > 2:
         eus2urdf_for_gazebo_pyscript(sys.argv[1], sys.argv[2])

@@ -5,9 +5,8 @@ import os
 import commands
 
 
-def make_fixed_model (name, overwrite=True):
-
-    urdf_dir_path = commands.getoutput('rospack find eusurdf') + '/models/' + name
+def make_fixed_model (name, eusurdf_package_path=commands.getoutput('rospack find eusurdf'), overwrite=True):
+    urdf_dir_path = eusurdf_package_path + '/models/' + name
     fixed_urdf_dir_path = urdf_dir_path + '_fixed'
     urdf_path = urdf_dir_path + '/' + 'model.urdf'
     fixed_urdf_path = fixed_urdf_dir_path + '/' + 'model.urdf'
@@ -18,7 +17,7 @@ def make_fixed_model (name, overwrite=True):
         if os.path.exists(fixed_urdf_dir_path):
             print '[ERROR] the same name fixed model already exits'
             exit(1)
-    
+
     os.system("cp -r %s %s" % (urdf_dir_path, fixed_urdf_dir_path))
 
     root_link_name = commands.getoutput('grep "link name=".*">" %s  | head -n 1 | sed -e "s/  <link name=\\\"\(.*\)\\\">/\\1/"' % fixed_urdf_path)
@@ -28,5 +27,7 @@ def make_fixed_model (name, overwrite=True):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
+        make_fixed_model(sys.argv[1], eusurdf_package_path=sys.argv[2])
+    elif len(sys.argv) > 1:
         make_fixed_model(sys.argv[1])
