@@ -25,7 +25,7 @@
     ;;(collada::eus2collada model tmp-dir) ;; I don't know why, but this line does not work correctly.
     (cond
      ((probe-file (format nil "~a/~a.dae" tmp-dir name))
-      (format t "[eus2urdf] generate ~A.dae~%" name)
+      (format t "[eus2urdf] generate ~a/~a.dae~%" tmp-dir name)
       (unix:system (format nil "~a/scripts/eus2urdf_for_gazebo.py ~a ~a/~a.dae ~a ~a"
                            eusurdf-package-path name tmp-dir name eusurdf-package-path
                            (cond (collada-to-urdf-exe-path collada-to-urdf-exe-path) (t "")))))
@@ -43,10 +43,18 @@
    world-file-path
    eusurdf-package-path
    collada-to-urdf-exe-path
+   (tmp-dir "/tmp")
+   (tmp-dir-no-duplication t)
+   (random-seed (integer-vector (elt (unix:localtime) 0) (elt (unix:localtime) 1)))
    )
   (let* ((package-dir-path
           (cond (eusurdf-package-path eusurdf-package-path)
                 (t (ros::resolve-ros-path "package://eusurdf")))))
+    (when tmp-dir-no-duplication
+      (setq tmp-dir (format nil "~a/" tmp-dir))
+      (while (probe-file tmp-dir)
+	(setq tmp-dir (format nil "~a~a" tmp-dir (string (random 10 random-seed)))))
+      (unix:mkdir tmp-dir))
     (dolist (obj (send room :objects))
       (let* ((obj-name)
              (obj-cnt 0))
@@ -64,7 +72,7 @@
                (rpy (car (rpy-angle (send obj :worldrot))))
                (rpy-string (format nil "~a ~a ~a" (elt rpy 2) (elt rpy 1) (elt rpy 0))))
           ;; convert the model
-          (when (irteus2urdf-for-gazebo obj :name obj-name :eusurdf-package-path package-dir-path :collada-to-urdf-exe-path collada-to-urdf-exe-path)
+          (when (irteus2urdf-for-gazebo obj :name obj-name :eusurdf-package-path package-dir-path :collada-to-urdf-exe-path collada-to-urdf-exe-path :tmp-dir tmp-dir)
             ;; add the obects to the world file
             (unix:system (format nil "sed -i -e \"s@    <!-- Objects -->@    <!-- Objects -->\\n    <include>\\n      <uri>model://~a_static</uri>\\n      <pose>~a ~a</pose>\\n    </include>@g\" ~a" obj-name pos-string rpy-string world-file-path))
             ;; ;; make the static model
