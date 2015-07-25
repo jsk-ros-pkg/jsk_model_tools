@@ -265,6 +265,38 @@
     (send ret :translate-vertices (send cds :pos))
     ret))
 
+(defun sort-largest-meshes (glv-lst)
+  "sort meshes by their size of bounding box"
+  (when (derivedp glv-lst gl::glvertices)
+    (setq glv-lst (send glv-lst :glvertices)))
+  (sort glv-lst
+        #'(lambda (a b)
+            (>= (norm (send (send a :box) :diagonal))
+                (norm (send (send b :box) :diagonal)))))
+  glv-lst)
+
+(defun clustering-meshes-with-color (glv-lst &optional (diffuse :diffuse))
+  (when (derivedp glv-lst gl::glvertices)
+    (setq glv-lst (send glv-lst :glvertices)))
+  (let ((htbl (make-hash-table :test #'equal)))
+    (dolist (glv glv-lst)
+      (let* ((ambient
+              (cadr (assoc diffuse (cadr (assoc :material (car (glv . gl::mesh-list)))))))
+             (mlst (gethash ambient htbl)))
+        (cond
+         (mlst
+          (nconc mlst (list glv)))
+         (t
+          (setf (gethash ambient htbl) (list glv)))
+         )
+        ))
+    (let (ret)
+      (dolist (l (send htbl :list-values))
+        (if (cdr l)
+            (send (car l) :append-glvertices (cdr l)))
+        (push (car l) ret))
+      ret)))
+
 ;; urdf_to_collada -> collada2eus ..
 (defun update-to-original-meshfile (robot &key (scale 1000.0) (direction :z_up))
   (dolist (bd (send robot :bodies))
@@ -379,7 +411,6 @@
                ))
            (setq img (image::read-image-file fname))
            ;; TODO: check color-image24 and packed to RGB24bit
-           ;;(pprint (list fname img))
            (when img
              (nconc matinfo (list (list :teximage img))))
            ;;; load other method
