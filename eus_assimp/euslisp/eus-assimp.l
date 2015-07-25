@@ -190,7 +190,7 @@
               (if mat
                   (setf (cdr mat)
                         (list :material
-                              (list (llist :ambient (scale (* 0.8 (/ 1 255.0)) (coerce (his2rgb (* (/ (mod cntr color-num)
+                              (list (list :ambient (scale (* 0.8 (/ 1 255.0)) (coerce (his2rgb (* (/ (mod cntr color-num)
                                                                                               (float color-num)) 360) 1 1) float-vector)))
                                     (list :diffuse (scale (* 0.8 (/ 1 255.0)) (coerce (his2rgb (* (/ (mod cntr color-num)
                                                                                              (float color-num)) 360) 1 1) float-vector))))))
@@ -245,14 +245,14 @@
           (let (mat)
             (if material (setq mat material))
             ;; TODO: get color and set matterial
-            (push (funcall #'make-glvertices-from-faces faces :material mat) glv-lst)))
-        (apply #'store-glvertices fname (append-glvertices glv-lst) args)
+            (push (funcall #'gl::make-glvertices-from-faces faces :material mat) glv-lst)))
+        (apply #'save-mesh-file fname (append-glvertices glv-lst) args)
         ))
      ((find-method obj :faces)
       (setq faces (send obj :faces))
-      (apply #'store-glvertices
+      (apply #'save-mesh-file
              fname
-             (funcall #'make-glvertices-from-faces faces :material material) args))
+             (funcall #'gl::make-glvertices-from-faces faces :material material) args))
      (t
       (warn ";; face not found~%")
       ))
