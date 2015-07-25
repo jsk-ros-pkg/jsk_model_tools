@@ -82,7 +82,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
   fprintf(fp, "         self)\n");
 
   fprintf(fp, "  (:def-gl-vertices ()\n");
-  fprintf(fp, "    (setq glvertices\n");
+  fprintf(fp, "    (setq gl::aglvertices\n");
   fprintf(fp, "       (instance gl::glvertices :init\n");
   fprintf(fp, "          (list\n"); // mesh-list
   // Triangulation
@@ -302,11 +302,11 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
     fprintf(fp, "           )\n");
   }
   fprintf(fp, "           )))\n");
-  fprintf(fp, "    (send glvertices :calc-normals)\n");
+  fprintf(fp, "    (send gl::aglvertices :calc-normals)\n");
   if (points.size() > 0) {
-    fprintf(fp, "    (send self :assoc glvertices)\n    glvertices)\n");
+    fprintf(fp, "    (send self :assoc gl::aglvertices)\n    gl::aglvertices)\n");
   } else {
-    fprintf(fp, "    glvertices)\n");
+    fprintf(fp, "    gl::aglvertices)\n");
   }
 
   // do qhull

@@ -1415,7 +1415,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
   fprintf(fp, "      (setq geom (instance collada-body :init :replace-obj qhull :name \"%s\"))\n", gname.c_str());
   if (g->type == Geometry::MESH) {
     fprintf(fp, "      (send geom :assoc glvertices)\n");
-    fprintf(fp, "      (setq (geom . glvertices) glvertices)\n");
+    fprintf(fp, "      (setq (geom . gl::aglvertices) glvertices)\n");
   }
   fprintf(fp, "      geom))\n");
 }
