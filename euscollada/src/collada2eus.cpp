@@ -111,19 +111,51 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
     } else {
       domInstance_effect* thisInstanceEffect = thisMaterial->getInstance_effect();
       domEffect* thisEffect = daeSafeCast<domEffect>(g_dae->getDatabase()->idLookup(thisInstanceEffect->getUrl().id(),g_document));
+      if(!!(thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()) &&
+         !!(thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getTexture())) {
+        daeElementRefArray psamplers = daeSidRef(thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getTexture()->getTexture(), thisEffect).resolve().elt->getChildren();
+        daeElementRef psampler;
+        for (size_t i = 0; i < psamplers.getCount(); ++i ) {
+          if ( strcmp(psamplers[i]->getElementName(),"sampler2D") == 0 ) {
+            psampler = psamplers[i];
+          }
+        }
+        //
+        domInstance_imageRef pinstanceimage;
+        for (size_t i = 0; i < psampler->getChildren().getCount(); ++i ) {
+          if ( strcmp(psampler->getChildren()[i]->getElementName(), "instance_image") == 0 ) {
+            pinstanceimage = daeSafeCast<domInstance_image>(psampler->getChildren()[i]);
+          }
+        }
+        domImageRef image = daeSafeCast<domImage>(pinstanceimage->getUrl().getElement());
+        if ( image && image->getInit_from() && image->getInit_from()->getRef() ) {
+          //fprintf(stderr, "file: %s\n", string(image->getInit_from()->getRef()->getValue().path()).c_str());
+          fprintf(fp, "             (list :filename \"%s\")\n",
+                  string(image->getInit_from()->getRef()->getValue().path()).c_str());
+        }
+        if (!(thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor())) {
+          fprintf(fp, "             (list :diffuse (float-vector 1.0 1.0 1.0 0))\n");
+        }
+      }
 
       fprintf(fp, "             (list :color (float-vector 0.1 0.1 0.1))\n"); // ???
       // euslisp uses diffuse for ambient
-      fprintf(fp, "             (list :ambient (float-vector %f %f %f %f))\n",
-              thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor()->getValue()[0],
-              thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor()->getValue()[1],
-              thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor()->getValue()[2],
-              thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor()->getValue()[3]);
-      fprintf(fp, "             (list :diffuse (float-vector %f %f %f %f))\n",
-              thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor()->getValue()[0],
-              thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor()->getValue()[1],
-              thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor()->getValue()[2],
-              thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor()->getValue()[3]);
+      if (!!(thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()) &&
+          !!(thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor())) {
+        fprintf(fp, "             (list :ambient (float-vector %f %f %f %f))\n",
+                thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor()->getValue()[0],
+                thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor()->getValue()[1],
+                thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor()->getValue()[2],
+                thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getAmbient()->getColor()->getValue()[3]);
+      }
+      if (!!(thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()) &&
+          !!(thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor())) {
+        fprintf(fp, "             (list :diffuse (float-vector %f %f %f %f))\n",
+                thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor()->getValue()[0],
+                thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor()->getValue()[1],
+                thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor()->getValue()[2],
+                thisEffect->getFx_profile_array()[0]->getProfile_COMMON()->getTechnique()->getPhong()->getDiffuse()->getColor()->getValue()[3]);
+      }
     }
     fprintf(fp, "           ))\n"); // /material
 
@@ -153,29 +185,8 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
     }
     fprintf(fp, "))\n"); // /indices
 
-    int numberOfVertices = thisMesh->getSource_array()[0]->getFloat_array()->getValue().getCount();
-    
-    if (verbose) {
-      fprintf(stderr, "numberOfVertices = %d\n", numberOfVertices);
-    }
-    fprintf(fp, "           (list :vertices #2f(");
-
-    for(int i = 0; i < numberOfVertices / 3; i++) {
-      // vertex vector
-      float a0, a1, a2;
-      a0 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3);
-      a1 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3 + 1);
-      a2 = thisMesh->getSource_array()[0]->getFloat_array()->getValue().get(i * 3 + 2);
-      fprintf(fp, "("FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
-              g_scale * 1000 * a0, g_scale * 1000 * a1, g_scale * 1000 * a2);
-      // store vertex vector to qhull
-      points.push_back(a0);
-      points.push_back(a1);
-      points.push_back(a2);
-    }
-    fprintf(fp, "))\n"); // /vertices
-
     int sourceElements = thisMesh->getSource_array().getCount();
+    int currentSource = 0;
     if (verbose) {
       fprintf(stderr, "sourceElements = %d\n", sourceElements);
     }
@@ -185,66 +196,107 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
         sourceElements--;
       }
     }
+    if (sourceElements != 0) {
+      int numberOfVertices = thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().getCount();
+      if (verbose) {
+        fprintf(stderr, "numberOfVertices = %d\n", numberOfVertices);
+      }
+      fprintf(fp, "           (list :vertices #2f(");
+      for(int i = 0; i < numberOfVertices / 3; i++) {
+        // vertex vector
+        float a0, a1, a2;
+        a0 = thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(i * 3);
+        a1 = thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(i * 3 + 1);
+        a2 = thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(i * 3 + 2);
+        fprintf(fp, "("FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")",
+                g_scale * 1000 * a0, g_scale * 1000 * a1, g_scale * 1000 * a2);
+        // store vertex vector to qhull
+        points.push_back(a0);
+        points.push_back(a1);
+        points.push_back(a2);
+      }
+      fprintf(fp, "))\n"); // /vertices
+      currentSource++;
+      sourceElements--;
+    }
 
     // normal
-    if ( sourceElements  > 1 ) {
+    if (sourceElements != 0) {
       if(noroffset == -255) {
-        // normal vectur shares same index of vertices
-        fprintf(fp, "         (list :normals #2f(");
-        int numberOfNormals = thisMesh->getSource_array()[1]->getFloat_array()->getValue().getCount();
-        if (verbose) {
-          fprintf(stderr, "A:numberOfNormals = %d\n", numberOfNormals);
-        }
-        for (int i = 0; i < numberOfNormals; i++) {
+        if(!!(thisMesh->getSource_array()[currentSource]->getFloat_array())) {
+          // normal vector shares same index of vertices
+          fprintf(fp, "         (list :normals #2f(");
+          int numberOfNormals = thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().getCount();
           if (verbose) {
-            fprintf(stderr, "(%f %f %f)",
-                    thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3),
-                    thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3 + 1),
-                    thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(i * 3 + 2));
+            fprintf(stderr, "A:numberOfNormals = %d\n", numberOfNormals);
           }
+          for (int i = 0; i < numberOfNormals; i++) {
+            if (verbose) {
+              fprintf(stderr, "(%f %f %f)",
+                      thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(i * 3),
+                      thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(i * 3 + 1),
+                      thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(i * 3 + 2));
+            }
+          }
+          fprintf(fp, "))\n");  // /normals
+          currentSource++;
+          sourceElements--;
+        } else {
+          currentSource++;
         }
-        fprintf(fp, "))\n");  // /normals
       } else {
-        int numberOfNormals = thisMesh->getSource_array()[1]->getFloat_array()->getValue().getCount();
+        int numberOfNormals = thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().getCount();
         if (verbose) {
           fprintf(stderr, "B:numberOfNormals = %d\n", numberOfNormals);
         }
         // index normal vector is indicated in <p></p>
 #if 0
+        // reading normals form collada have not been not implemented yet
         for(int i = 0; i < numberOfTriangles; i++) {
           int norindex = thisTriangles->getP()->getValue().get(i * numberOfInputs + noroffset);
 
           fprintf(fp, "         (gl::glNormal3fv (float-vector %f %f %f))\n",
-                thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(norindex*3),
-                thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(norindex*3+1),
-                thisMesh->getSource_array()[1]->getFloat_array()->getValue().get(norindex*3+2)
+                thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(norindex*3),
+                thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(norindex*3+1),
+                thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(norindex*3+2)
                 );
         }
 #endif
+        currentSource++;
+        sourceElements--;
       }
     } else { // no normals
       if (verbose) {
-        fprintf(stderr, "\n");
+        fprintf(stderr, "no normals\n");
       }
     }
-    if ( sourceElements  > 2 ) {
+    if (sourceElements != 0) {
       // texture coordinates
-      if(texoffset != -255) {
-        //int texindex = thisTriangles->getP()->getValue().get(i*numberOfInputs+texoffset);
-        int numberOfTexcoords = thisMesh->getSource_array()[2]->getFloat_array()->getValue().getCount();
+      if(texoffset == -255) { // ???
+        int numberOfTexcoords = thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().getCount();
+        if (verbose) {
+          fprintf(stderr, "A:numberOfTexcoords = %d\n", numberOfTexcoords);
+        }
+      } else {
+        int numberOfTexcoords = thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().getCount();
         if (verbose) {
           fprintf(stderr, "B:numberOfTexcoords = %d\n", numberOfTexcoords);
         }
-      } else { // ???
-        int numberOfTexcoords = thisMesh->getSource_array()[2]->getFloat_array()->getValue().getCount();
-        if (verbose) {
-          fprintf(stderr, "A:numberOfTexcoords = %d\n", numberOfTexcoords);
-          fprintf(stderr, "\n");
+        fprintf(fp, "         (list :texcoords #f(");
+        numberOfTexcoords = numberOfTexcoords * 2 / 3; // this depends on the error on colladaWriter
+        for(int i = 0; i < numberOfTexcoords; i++) {
+          int texindex = thisTriangles->getP()->getValue().get(i * numberOfInputs + texoffset);
+          fprintf(fp, " "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" ",
+                  thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(texindex*2),
+                  thisMesh->getSource_array()[currentSource]->getFloat_array()->getValue().get(texindex*2+1));
         }
+        fprintf(fp, "))\n");
       }
+      currentSource++;
+      sourceElements--;
     } else {
       if (verbose) {
-        fprintf(stderr, "\n");
+        fprintf(stderr, "no texcoords\n");
       }
     }
     fprintf(fp, "           )\n");
