@@ -1,9 +1,0 @@
-<package>
-  <description brief="converter between euslisp and urdf" />
-  <author>Ryohei Ueda (ueda@jsk.t.u-tokyo.ac.jp)</author>
-  <license>Apache License 2.0</license>
-  <depend package="urdf" />
-  <depend package="euslisp" />
-
-  <rosdep name="gauche" />
-</package>
