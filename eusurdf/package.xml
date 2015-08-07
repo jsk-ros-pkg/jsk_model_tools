@@ -20,7 +20,9 @@
 
   <run_depend>roseus</run_depend>
   <run_depend>collada_urdf_jsk_patch</run_depend>
+  <run_depend>gazebo_ros</run_depend>
 
   <export>
+    <gazebo_ros gazebo_model_path="${prefix}/models" />
   </export>
 </package>
