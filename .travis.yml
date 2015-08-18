@@ -5,6 +5,11 @@ python:
   - "2.7"
 compiler:
   - gcc
+notifications:
+  email:
+    on_success: always
+    on_failure: always
+  slack: jsk-robotics:Av7tc8wj3IWkLYvlTzHE7x2g
 env:
   # - ROS_DISTRO=groovy ROSWS=rosws  BUILDER=rosbuild  USE_DEB=true
   # - ROS_DISTRO=groovy ROSWS=rosws  BUILDER=rosbuild  USE_DEB=false
@@ -29,7 +34,3 @@ before_install: # Use this to prepare the system to install prerequisites or dep
 install:
   - if [ $ROS_DISTRO = groovy ]; then sudo apt-get install -qq -y ros-$ROS_DISTRO-pr2-mechanism; fi
 script: source .travis/travis.sh
-notifications:
-  email:
-    on_success: always
-    on_failure: always
