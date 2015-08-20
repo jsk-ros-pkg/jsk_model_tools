@@ -442,3 +442,48 @@ class yamlParser:
                                    sensor['parent_link'],
                                    None,
                                    translate = translate, rotate = rotate)
+    def replace_xmls(self, xml_obj):
+        if xml_obj.objtype == 'urdf' and 'replace_xmls' in self.yaml_data:
+            for replace_xml in self.yaml_data['replace_xmls']:
+                match_rule = replace_xml['match_rule']
+                target_tags = []
+                if match_rule.has_key('tag'):
+                    tags = xml_obj.doc.getElementsByTagName(match_rule['tag'])
+                    if match_rule.has_key('attribute_name'):
+                        attribute_name = match_rule['attribute_name']
+                        attribute_value = match_rule['attribute_value']
+                        matched_tags = [tag for tag in tags if tag.getAttribute(attribute_name) == attribute_value]
+                        target_tags = target_tags + matched_tags
+                    elif match_rule.has_key('sub_attribute_name'):
+                        sub_attribute_name = match_rule['sub_attribute_name']
+                        sub_attribute_value = match_rule['sub_attribute_value']
+                        for tag in tags:
+                            for sub_tag in tag.getElementsByTagName(match_rule['sub_tag']):
+                                if sub_tag.getAttribute(sub_attribute_name) == sub_attribute_value:
+                                    target_tags.append(tag)
+                    elif match_rule.has_key('parent_attribute_name'):
+                        parent_attribute_name = match_rule['parent_attribute_name']
+                        parent_attribute_value = match_rule['parent_attribute_value']
+                        parent_depth = 1
+                        if match_rule.has_key("parent_depth"):
+                            parent_depth = match_rule["parent_depth"]
+                        
+                        target_tags.extend([tag for tag in tags
+                                            if getParentNode(tag, parent_depth).getAttribute(parent_attribute_name) == parent_attribute_value])
+                if len(target_tags) > 0:
+                    for tag in target_tags:
+                        parent = tag.parentNode
+                        # remove the tag
+                        parent.removeChild(tag)
+                        if replace_xml.has_key('replaced_xml'):
+                            parent.appendChild(parseString(replace_xml['replaced_xml']).documentElement)
+                        elif replace_xml.has_key('replaced_attribute_value'):
+                            parent.setAttribute(match_rule['attribute_name'],
+                                                replace_xml['replaced_attribute_value'])
+                                
+def getParentNode(node, depth):
+    if depth == 0:
+        return node
+    else:
+        return getParentNode(node.parentNode, depth - 1)
+            
