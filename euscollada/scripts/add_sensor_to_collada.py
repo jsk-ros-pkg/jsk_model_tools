@@ -21,6 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--without_sensor', default=False, action="store_true")
     parser.add_argument('--without_manipulator', default=False, action="store_true")
     parser.add_argument('--without_links', default=False, action="store_true")
+    parser.add_argument('--without_replace_xmls', default=False, action="store_true")
 
     args = parser.parse_args()
 
@@ -40,6 +41,8 @@ if __name__ == '__main__':
             if not args.without_links:
                 yaml_obj.add_links(obj)
 
+            if not args.without_replace_xmls:
+                yaml_obj.replace_xmls(obj)
         else:
             sys.stderr.write('no configuration file !\n')
 
