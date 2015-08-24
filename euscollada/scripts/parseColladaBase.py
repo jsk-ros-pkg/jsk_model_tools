@@ -409,7 +409,7 @@ class yamlParser:
         self.yaml_data = yaml.load(open(fname).read())
 
     def add_sensor(self, xml_obj):
-        if 'sensors' in self.yaml_data:
+        if 'sensors' in self.yaml_data and self.yaml_data['sensors']:
             for sensor in self.yaml_data['sensors']:
                 translate = sensor['translate'] if sensor.has_key('translate') else None
                 rotate = sensor['rotate'] if sensor.has_key('rotate') else None
