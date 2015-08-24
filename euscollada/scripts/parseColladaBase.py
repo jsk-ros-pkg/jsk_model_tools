@@ -450,37 +450,40 @@ class yamlParser:
                 if match_rule.has_key('tag'):
                     tags = xml_obj.doc.getElementsByTagName(match_rule['tag'])
                     if match_rule.has_key('attribute_name'):
-                        attribute_name = match_rule['attribute_name']
-                        attribute_value = match_rule['attribute_value']
+                        attribute_name = str(match_rule['attribute_name'])
+                        attribute_value = str(match_rule['attribute_value'])
                         matched_tags = [tag for tag in tags if tag.getAttribute(attribute_name) == attribute_value]
                         target_tags = target_tags + matched_tags
                     elif match_rule.has_key('sub_attribute_name'):
-                        sub_attribute_name = match_rule['sub_attribute_name']
-                        sub_attribute_value = match_rule['sub_attribute_value']
+                        sub_attribute_name = str(match_rule['sub_attribute_name'])
+                        sub_attribute_value = str(match_rule['sub_attribute_value'])
                         for tag in tags:
                             for sub_tag in tag.getElementsByTagName(match_rule['sub_tag']):
                                 if sub_tag.getAttribute(sub_attribute_name) == sub_attribute_value:
                                     target_tags.append(tag)
                     elif match_rule.has_key('parent_attribute_name'):
-                        parent_attribute_name = match_rule['parent_attribute_name']
-                        parent_attribute_value = match_rule['parent_attribute_value']
+                        parent_attribute_name = str(match_rule['parent_attribute_name'])
+                        parent_attribute_value = str(match_rule['parent_attribute_value'])
                         parent_depth = 1
                         if match_rule.has_key("parent_depth"):
                             parent_depth = match_rule["parent_depth"]
                         
                         target_tags.extend([tag for tag in tags
                                             if getParentNode(tag, parent_depth).getAttribute(parent_attribute_name) == parent_attribute_value])
+                else:
+                    raise Exception("yaml does not have tag section")
                 if len(target_tags) > 0:
                     for tag in target_tags:
                         parent = tag.parentNode
                         # remove the tag
-                        parent.removeChild(tag)
                         if replace_xml.has_key('replaced_xml'):
-                            parent.appendChild(parseString(replace_xml['replaced_xml']).documentElement)
+                            parent.removeChild(tag)
+                            parent.appendChild(parseString(str(replace_xml['replaced_xml'])).documentElement)
                         elif replace_xml.has_key('replaced_attribute_value'):
-                            parent.setAttribute(match_rule['attribute_name'],
-                                                replace_xml['replaced_attribute_value'])
-                                
+                            tag.setAttribute(str(match_rule['attribute_name']),
+                                             str(replace_xml['replaced_attribute_value']))
+                        else:
+                            raise Exception("No rule to replacement is specified")
 def getParentNode(node, depth):
     if depth == 0:
         return node
