@@ -428,6 +428,9 @@ class yamlParser:
                 parent  = eff['parent'] if 'parent' in eff else None
                 root  = eff['root'] if 'root' in eff else 'BODY'
                 if not parent:
+                    if not self.yaml_data.has_key(limb):
+                        print >>sys.stderr, "cannot find limb: %s" %(limb)
+                        return
                     limb_lst = self.yaml_data[limb]
                     parent = limb_lst[-1].keys()[0].replace("JOINT", "LINK") # not goood!
                 xml_obj.add_manipulator('%s_end_coords'%limb, root, parent,
