@@ -1,6 +1,6 @@
 <package>
   <name>eusurdf</name>
-  <version>0.1.12</version>
+  <version>0.1.13</version>
   <description>urdf models converted from euslisp</description>
 
   <maintainer email="k-okada@jsk.t.u-tokyo.ac.jp">Kei Okada</maintainer>

@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.13 (2015-09-01)
+-------------------
 * [eusurdf/package.xml] export gazebo_model_path for gazebo_ros
 * - [eusurdf] remove rosbuild related scripts
   revert travis

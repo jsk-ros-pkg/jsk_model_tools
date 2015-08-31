@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.13 (2015-09-01)
+-------------------
 * return if key not found
 * fix for yaml file without sensors
 * [euscollada] Fix replace_xmls syntax in add_sensor_to_collada.py

@@ -2,8 +2,8 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.13 (2015-09-01)
+-------------------
 * move functions to jskeus
 * add function for glvertices
 * fix minor bugs
