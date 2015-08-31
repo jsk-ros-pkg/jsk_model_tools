@@ -2,6 +2,18 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* move functions to jskeus
+* add function for glvertices
+* fix minor bugs
+* move functions to jskeus
+* add dump-glvertices-to-wrl for creating wrl mesh file from glvertices
+* 0.1.12
+* update CHANGELOG (For releasing 0.1.12 DRC Final version)
+* [jsk_model_tools] remove old rosmake files
+* Contributors: Kei Okada, Yohei Kakiuchi, Iori Yanokura
+
 0.1.12 (2015-05-07)
 -------------------
 * [jsk_model_tools] remove old rosmake files

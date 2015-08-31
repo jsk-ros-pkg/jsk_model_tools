@@ -2,6 +2,31 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* return if key not found
+* fix for yaml file without sensors
+* [euscollada] Fix replace_xmls syntax in add_sensor_to_collada.py
+  1. Force to use string. yaml parser automatically parse digit numbers as
+  integer or float. OTH, minidom parser always outputs everything in
+  string.
+  We force to convert yaml parser's output into string value.
+  2. Raise exception if there is no tag section.
+  3. Do not remove parent node if replaced_attribute_value syntax is used
+* [euscollada] Support xml force-replacing in add_sensor_to_collada.py
+* fix reading texture coords
+* [euscollada/src/euscollada-robot*.l] Always make pqpmodel for detailed shape according to https://github.com/euslisp/jskeus/pull/232
+* 0.1.12
+* update CHANGELOG (For releasing 0.1.12 DRC Final version)
+* [src/collada2eus.cpp] on newer yaml, doc["angle-vector"]["reset-pose"] did not raise error
+* [jsk_model_tools] remove old rosmake files
+* [collada2eus.cpp] do not exit when polylistElementCound or polygoneElementCount is 0
+* [euscollada/src/collada2eus.cpp] super ugry hack untilyaml-cpp 0.5.2
+* [collada2eus] set verbose=true when --verbose
+* [euscollada] Removed unnecessary fprintf in collada2eus.cpp
+* [euscollada] Add size check to end-coords translation/rotation because undefiend limb end-coords transformation/rotation breaks matching of parentheses in yaml-cpp 0.5.
+* Contributors: Kei Okada, MasakiMurooka, Ryohei Ueda, Shunichi Nozawa, Yohei Kakiuchi, Iori Kumagai, Iori Yanokura
+
 0.1.12 (2015-05-07)
 -------------------
 * [src/collada2eus.cpp] on newer yaml, doc["angle-vector"]["reset-pose"] did not raise error

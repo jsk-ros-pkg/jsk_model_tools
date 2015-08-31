@@ -2,6 +2,12 @@
 Changelog for package jsk_model_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* 0.1.12
+* update CHANGELOG (For releasing 0.1.12 DRC Final version)
+* Contributors: Iori Yanokura
+
 0.1.12 (2015-05-07)
 -------------------
 
