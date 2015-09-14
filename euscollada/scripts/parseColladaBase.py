@@ -438,7 +438,7 @@ class yamlParser:
 
     def add_links(self, xml_obj):
         if xml_obj.objtype == 'urdf' and 'links' in self.yaml_data:
-            for link in self.yaml_data['links']:
+            for sensor in self.yaml_data['links']:
                 translate = sensor['translate'] if sensor.has_key('translate') else None
                 rotate = sensor['rotate'] if sensor.has_key('rotate') else None
                 xml_obj.add_sensor(sensor['name'],
