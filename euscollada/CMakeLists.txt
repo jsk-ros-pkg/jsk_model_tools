@@ -2,7 +2,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(euscollada)
 
-IF($ENV{ROS_DISTRO} STREQUAL "indigo")
+# check rosversion if >=indigo
+execute_process(
+  COMMAND python -c "import sys; sys.exit(ord('$ENV{ROS_DISTRO}'[0]) >= ord('indigo'[0]))"
+  RESULT_VARIABLE rosversion_ge_indigo)
+
+IF(${rosversion_ge_indigo})
 find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser resource_retriever)
 ELSE()
 find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser urdfdom resource_retriever)
@@ -13,7 +18,7 @@ catkin_package()
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CATKIN_DEVEL_PREFIX}/lib/pkgconfig")
 
 find_package(PkgConfig)
-IF($ENV{ROS_DISTRO} STREQUAL "indigo")
+IF(${rosversion_ge_indigo})
 pkg_check_modules(urdf_dom urdfdom REQUIRED)
 ENDIF()
 pkg_check_modules(colladadom collada-dom-150 REQUIRED)
