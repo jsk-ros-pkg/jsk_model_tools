@@ -60,7 +60,7 @@
            :faces (flatten (mapcar #'(lambda (x)
                                        (cond
                                         ((find-method x :def-gl-vertices)
-                                         (send (x . glvertices) :convert-to-faces :wrt :world))
+                                         (send x :glvertices :convert-to-faces :wrt :world))
                                         (t
                                          (send x :faces))))
                                    (send ll :bodies)))))
@@ -71,8 +71,8 @@
 ;; This euscollada-body class is for bodies in robot model converted from collada files.
 ;; Class definition is in euscollada/src/euscollada-robot.l
 ;; This class provides :draw override for displaying glvertices.
-  :super body
-  :slots (glvertices)
+  :super gl::glbody
+  :slots ()
   )
 (defmethod collada-body
   (:init (&key (name) (replace-obj))
@@ -81,32 +81,26 @@
       (replace-object self (make-cube 10 10 10)))
     (if name (send self :name name))
     self)
-  (:draw (vwr)
-   (when glvertices
-     (send glvertices :draw vwr)))
-  (:set-color (&rest args)
-   (send-super* :set-color args)
-   (when glvertices (send* glvertices :set-color args)))
   (:change-visual
    (&optional (visual :convex))
    (case visual
      ((list :convex :hull :convex-hull)
       (unless (send self :get :original-mesh)
-        (send self :put :original-mesh glvertices)) ;; store original mesh
+        (send self :put :original-mesh gl::aglvertices)) ;; store original mesh
       (let* ((org-mesh (send self :get :original-mesh))
              (org-cds (send org-mesh :copy-worldcoords))
              (glv (gl::make-glvertices-from-faces (send self :faces))))
         (send glv :set-offset (send org-cds :inverse-transformation))
         (send glv :transform org-cds)
         (send org-mesh :assoc glv)
-        (setq glvertices glv)
+        (setq gl::aglvertices glv)
         glv))
      ((list :original :mesh :glvertices :original-mesh)
       (let ((org-mesh (send self :get :original-mesh)))
         (when org-mesh
           (dolist (d (send org-mesh :descendants)) ;; dissoc all discendants
             (send org-mesh :dissoc d))
-          (setq glvertices org-mesh)
+          (setq gl::aglvertices org-mesh)
           org-mesh)))
      ))
   )
