@@ -26,7 +26,7 @@
   ;;  reduce root-link's weight based on leg's joint limit
   ;;  increase stop and cog-gain
   (:fullbody-inverse-kinematics
-   (target-coords &rest args &key (stop 250) (cog-gain 2.0) (additional-weight-list) &allow-other-keys)
+   (target-coords &rest args &key (stop 250) (cog-gain 2.0) (additional-weight-list) (use-6dof-joint-leg-gain t) &allow-other-keys)
    (let* ((leg-ul (send self :calc-union-link-list (send self :legs :links))))
      (send self :reset-joint-angle-limit-weight-old leg-ul)
      (send-message* self robot-model :fullbody-inverse-kinematics
@@ -35,17 +35,18 @@
                     :additional-weight-list
                     (append
                      additional-weight-list
-                     (list
-                      (list (car (send self :links))
-                            #'(lambda ()
-                                ;; set root-link 6dof-joint's weight based on legs' joint limit
-                                (let* ((min-weight
-                                        (reduce #'(lambda (x y) (min x y))
-                                                (coerce (send self :calc-inverse-kinematics-weight-from-link-list
-                                                              leg-ul :union-link-list leg-ul) cons))))
-                                  (fill (instantiate float-vector 6) min-weight)))
-                            )
-                      ))
+                     (if use-6dof-joint-leg-gain
+                         (list
+                          (list (car (send self :links))
+                                #'(lambda ()
+                                    ;; set root-link 6dof-joint's weight based on legs' joint limit
+                                    (let* ((min-weight
+                                            (reduce #'(lambda (x y) (min x y))
+                                                    (coerce (send self :calc-inverse-kinematics-weight-from-link-list
+                                                                  leg-ul :union-link-list leg-ul) cons))))
+                                      (fill (instantiate float-vector 6) min-weight)))
+                                )
+                          )))
                     args)
      ))
   ;; make collision model from faces or gl-vertices
