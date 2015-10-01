@@ -573,7 +573,7 @@ void ModelEuslisp::copyRobotClassDefinition () {
     string path;
     rp.find("euscollada",euscollada_path);
 
-    euscollada_path += "/src/euscollada-robot_urdfmodel.l";
+    euscollada_path += "/src/euscollada-robot.l";
     ifstream fin(euscollada_path.c_str());
     string buf;
     while(fin && getline(fin, buf)) {
@@ -855,32 +855,36 @@ void ModelEuslisp::printEndCoords () {
       }
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
-        double value;
-        fprintf(fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
+        if ( n.size() > 0 ) {
+          double value;
+          fprintf(fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
 #ifdef USE_CURRENT_YAML
-        for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*n[i].as<double>());
+          for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*n[i].as<double>());
 #else
-        for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
+          for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*value);}
 #endif
-        fprintf(fp, "))\n");
+          fprintf(fp, "))\n");
+        }
       } catch(YAML::RepresentationException& e) {
       }
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["rotate"];
-        double value;
-        fprintf(fp, "     (send %s-end-coords :rotate", limb_name.c_str());
+        if ( n.size() > 0 ) {
+          double value;
+          fprintf(fp, "     (send %s-end-coords :rotate", limb_name.c_str());
 #if USE_CURRENT_YAML
-        for(unsigned int i = 3; i < 4; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*n[i].as<double>());
+          for(unsigned int i = 3; i < 4; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*n[i].as<double>());
 #else
-        for(unsigned int i = 3; i < 4; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
+          for(unsigned int i = 3; i < 4; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*value);}
 #endif
-        fprintf(fp, " (float-vector");
+          fprintf(fp, " (float-vector");
 #if USE_CURRENT_YAML
-        for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", n[i].as<double>());
+          for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", n[i].as<double>());
 #else
-        for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", value);}
+          for(unsigned int i = 0; i < 3; i++) { n[i]>>value; fprintf(fp, " "FLOAT_PRECISION_FINE"", value);}
 #endif
-        fprintf(fp, "))\n");
+          fprintf(fp, "))\n");
+        }
       } catch(YAML::RepresentationException& e) {
       }
       if(add_link_suffix) {
@@ -1001,7 +1005,7 @@ void ModelEuslisp::printEndCoords () {
   fprintf(fp, "\n");
   // init ending
   fprintf(fp, "     ;; init-ending\n");
-  fprintf(fp, "     (send self :init-ending)\n\n");
+  fprintf(fp, "     (send self :init-ending :urdf)\n\n");
 
   // bodies
   fprintf(fp, "     ;; overwrite bodies to return draw-things links not (send link :bodies)\n");
