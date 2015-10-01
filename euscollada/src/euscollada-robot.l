@@ -6,23 +6,23 @@
   )
 (defmethod euscollada-robot
   (:init-ending
-   ()
-   ;; fix all links' mass properties ;; root link relative (collada) -> link local (euslisp)
-   (dolist (l links)
-     (setq (l . acentroid) (send l :inverse-transform-vector
-                                 (send (send (car links) :worldcoords) :transform-vector
-                                       (l . acentroid))))
-     (setq (l . inertia-tensor) (m* (transpose (send l :worldrot))
-                                    (m* (send (car links) :worldrot)
-                                        (l . inertia-tensor))))
-     )
+   (&optional (type :collada))
+   (when (eq type :collada)
+     ;; fix all links' mass properties ;; root link relative (collada) -> link local (euslisp)
+     (dolist (l links)
+       (setq (l . acentroid) (send l :inverse-transform-vector
+                                   (send (send (car links) :worldcoords) :transform-vector
+                                         (l . acentroid))))
+       (setq (l . inertia-tensor) (m* (transpose (send l :worldrot))
+                                      (m* (send (car links) :worldrot)
+                                          (l . inertia-tensor))))
+       ))
    (send-super :init-ending)
    (send self :make-collision-model-for-links)
-
    ;;
    (dolist (j (mapcan #'(lambda (x) (if (and (derivedp (cdr x) joint)
-					     (not (memq (cdr x) (send self :joint-list))))
-					(list (cdr x)))) (send self :slots)))
+                                             (not (memq (cdr x) (send self :joint-list))))
+                                        (list (cdr x)))) (send self :slots)))
      (send (send j :child-link) :add-joint j)
      (send (send j :child-link) :add-parent-link (send j :parent-link))
      (send (send j :parent-link) :add-child-links (send j :child-link)))
@@ -80,11 +80,18 @@
   )
 
 ;; copy euscollada-body class definition from euscollada/src/euscollada-robot.l
+;; This euscollada-body class is for bodies in robot model converted from collada files.
 (defclass collada-body
   :super gl::glbody
   :slots ()
   )
 (defmethod collada-body
+  (:init (&key (name) (replace-obj))
+    (if replace-obj
+        (replace-object self replace-obj)
+      (replace-object self (make-cube 10 10 10)))
+    (if name (send self :name name))
+    self)
   (:change-visual
    (&optional (visual :convex))
    (case visual
