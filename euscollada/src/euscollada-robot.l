@@ -64,19 +64,35 @@
   (:make-collision-model-for-links
    (&key (fat 0) (collision-func 'pqp-collision-check) ((:links ls) (send self :links)))
    (dolist (ll ls)
-     (send ll
-           (read-from-string
-            (format nil ":make-~Amodel"
-                    (string-right-trim "-COLLISION-CHECK" (string collision-func))))
-           :fat fat
-           :faces (flatten (mapcar #'(lambda (x)
-                                       (cond
-                                        ((find-method x :def-gl-vertices)
-                                         (send x :glvertices :convert-to-faces :wrt :world))
-                                        (t
-                                         (send x :faces))))
-                                   (send ll :bodies)))))
-   )
+     (let (fs glv usefs)
+       (dolist (bd (send ll :bodies))
+         (if (find-method bd :def-gl-vertices)
+             (push (send bd :glvertices) glv)
+           (push (send bd :faces) fs)))
+       (setq fs (flatten fs))
+       (cond
+        ((and (not fs) glv) ;; if there is no faces, use glvertices for creating pqpmodel
+         (setq usefs (instance gl::glvertices :init nil))
+         (send usefs :transform (send (car glv) :worldcoords))
+         (send usefs :append-glvertices glv)
+         (let ((m (send usefs (read-from-string
+                               (format nil ":make-~Amodel"
+                                       (string-right-trim "-COLLISION-CHECK" (string collision-func))))
+                        :fat fat)))
+           (setf (get ll :pqpmodel) m)
+           ))
+        (fs
+         (setq usefs
+               (append fs
+                       (mapcar #'(lambda (gv) (send gv :convert-to-faces :wrt :world)) glv)))
+         (send ll
+               (read-from-string
+                (format nil ":make-~Amodel"
+                        (string-right-trim "-COLLISION-CHECK" (string collision-func))))
+               :fat fat
+               :faces usefs))
+        ))
+     ))
   )
 
 ;; copy euscollada-body class definition from euscollada/src/euscollada-robot.l
