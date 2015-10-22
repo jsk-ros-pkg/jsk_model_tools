@@ -15,6 +15,8 @@ def eus2urdf_for_gazebo_pyscript (name, collada_path, eusurdf_package_path=comma
             print '[ERROR eus2urdf] the same name model already exits'
             exit(1)
 
+    if not os.path.exists(eusurdf_package_path+'/models/'):
+        os.mkdir(eusurdf_package_path+'/models')
     print "[eus2urdf] make directory for urdf"
     os.mkdir(urdf_dir_path)
 
