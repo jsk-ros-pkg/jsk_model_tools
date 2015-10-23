@@ -15,14 +15,17 @@ def eus2urdf_for_gazebo_pyscript (name, collada_path, eusurdf_package_path=comma
             print '[ERROR eus2urdf] the same name model already exits'
             exit(1)
 
+    if not os.path.exists(eusurdf_package_path+'/models/'):
+        os.mkdir(eusurdf_package_path+'/models')
     print "[eus2urdf] make directory for urdf"
     os.mkdir(urdf_dir_path)
 
-    add_line_string = '\<uri\>file://%s\</uri\>' % name
-    manifest_path = '%s/../manifest.xml' % urdf_dir_path
-    if len(commands.getoutput("grep %s %s" % (add_line_string, manifest_path))) == 0:
-        print "[eus2urdf] add file path to manifest.xml"
-        os.system('sed -i -e \"s@  </models>@    %s\\n  </models>@g\" %s' % (add_line_string, manifest_path))
+    # manifest.xml for gazebo model is no longer necessary.
+    # add_line_string = '\<uri\>file://%s\</uri\>' % name
+    # manifest_path = '%s/../manifest.xml' % urdf_dir_path
+    # if len(commands.getoutput("grep %s %s" % (add_line_string, manifest_path))) == 0:
+    #     print "[eus2urdf] add file path to manifest.xml"
+    #     os.system('sed -i -e \"s@  </models>@    %s\\n  </models>@g\" %s' % (add_line_string, manifest_path))
 
     print "[eus2urdf] make model.config in urdf directory"
     config_path = '%s/model.config' % urdf_dir_path
