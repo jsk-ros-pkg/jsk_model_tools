@@ -23,15 +23,18 @@
       (send tmp-obj :name name)
       (collada::eus2collada tmp-obj tmp-dir))
     ;;(collada::eus2collada model tmp-dir) ;; I don't know why, but this line does not work correctly.
-    (cond
-     ((probe-file (format nil "~a/~a.dae" tmp-dir name))
-      (format t "[eus2urdf] generate ~a/~a.dae~%" tmp-dir name)
-      (unix:system (format nil "~a/scripts/eus2urdf_for_gazebo.py ~a ~a/~a.dae ~a ~a"
-                           eusurdf-package-path name tmp-dir name eusurdf-package-path
-                           (cond (collada-to-urdf-exe-path collada-to-urdf-exe-path) (t "")))))
-     (t
-      (format nil "dae error~%")
-      (return-from irteus2urdf-for-gazebo nil)))
+    (let* ((package-dir-path
+            (cond (eusurdf-package-path eusurdf-package-path)
+                  (t (ros::resolve-ros-path "package://eusurdf")))))
+      (cond
+       ((probe-file (format nil "~a/~a.dae" tmp-dir name))
+        (format t "[eus2urdf] generate ~a/~a.dae~%" tmp-dir name)
+        (unix:system (format nil "~a/scripts/eus2urdf_for_gazebo.py ~a ~a/~a.dae ~a ~a"
+                             package-dir-path name tmp-dir name package-dir-path
+                             (cond (collada-to-urdf-exe-path collada-to-urdf-exe-path) (t "")))))
+       (t
+        (format nil "dae error~%")
+        (return-from irteus2urdf-for-gazebo nil))))
     ))
   t)
 (warn "~%(irteus2urdf-for-gazebo (make-national-laundry-machine) \"laundry\")~%")
