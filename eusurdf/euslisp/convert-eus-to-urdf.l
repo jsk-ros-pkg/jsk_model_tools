@@ -37,7 +37,8 @@
         (return-from irteus2urdf-for-gazebo nil))))
     ))
   t)
-(warn "~%(irteus2urdf-for-gazebo (make-national-laundry-machine) \"laundry\")~%")
+(warn "(progn (load \"models/laundry-machine-object.l\") (irteus2urdf-for-gazebo (laundry-machine) :name \"laundry\"))~%")
+
 
 (defun irteus2urdf-room-for-gazebo
   (room
@@ -90,7 +91,7 @@
     ;; ;; generate the model database file
     ;; (unix:system (format nil "~a/scripts/generate_model_database.py" package-dir-path ))
     ))
-(warn "(irteus2urdf-room-for-gazebo (room73b2))~%")
+(warn "(progn (load \"models/room73b2-scene.l\") (irteus2urdf-room-for-gazebo (room73b2)))~%")
 
 
 (defun generate-room-models
