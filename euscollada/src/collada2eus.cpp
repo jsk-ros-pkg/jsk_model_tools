@@ -65,8 +65,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
   fprintf(fp, "(defmethod %s_%s\n", robot_name, thisGeometry->getId());
   if ( thisMesh == NULL || triangleElementCount == 0 )  {
     fprintf(fp, "  (:init (&key (name))\n");
-    fprintf(fp, "         (replace-object self (make-cube 10 10 10))\n");
-    fprintf(fp, "         (if name (send self :name name))\n");
+    fprintf(fp, "         (send-super :init :name name)");
     fprintf(fp, "         self)\n");
     fprintf(fp, "   )\n");
     return;
@@ -76,9 +75,9 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
   } else {
     fprintf(fp, "  (:init (&key (name))\n");
   }
-  fprintf(fp, "         (replace-object self (send self :qhull-faceset))\n");
-  fprintf(fp, "         (if name (send self :name name))\n");
   fprintf(fp, "         (send self :def-gl-vertices)\n");
+  fprintf(fp, "         (send-super :init :name name :replace-obj (send self :qhull-faceset))\n");
+  fprintf(fp, "         (send self :assoc gl::aglvertices)\n");
   fprintf(fp, "         self)\n");
 
   fprintf(fp, "  (:def-gl-vertices ()\n");
@@ -303,11 +302,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
   }
   fprintf(fp, "           )))\n");
   fprintf(fp, "    (send gl::aglvertices :calc-normals)\n");
-  if (points.size() > 0) {
-    fprintf(fp, "    (send self :assoc gl::aglvertices)\n    gl::aglvertices)\n");
-  } else {
-    fprintf(fp, "    gl::aglvertices)\n");
-  }
+  fprintf(fp, "    gl::aglvertices)\n");
 
   // do qhull
   if ( points.size() > 0 ) {
