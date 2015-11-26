@@ -99,7 +99,7 @@
 ;; This euscollada-body class is for bodies in robot model converted from collada files.
 (defclass collada-body
   :super gl::glbody
-  :slots ()
+  :slots (glvertices) ;; glvertices slot for backward compatibility
   )
 (defmethod collada-body
   (:init (&key (name) (replace-obj))
@@ -107,6 +107,7 @@
         (replace-object self replace-obj)
       (replace-object self (make-cube 10 10 10)))
     (if name (send self :name name))
+    (setq glvertices gl::aglvertices)
     self)
   (:change-visual
    (&optional (visual :convex))
