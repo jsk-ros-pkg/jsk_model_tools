@@ -2,6 +2,21 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* move to 0.2.0, which only available from indigo
+
+* keep backward compatibility, add glvertices slot to collada-body
+* [euscollada/src/euscollada-robot.l] use-6dof-joint-leg-gain nil by default
+* make qpqmodel with glvertices
+* merge euscollada-robot.l
+* fix large matrix
+* [euscollada/src/euscollada-robot_urdfmodel.l, euscollada-robot.l] Add arugment to use 6dof-joint leg weighing for evaluate the influence with it and without it.
+* [euscollada] Compare rosversion using the alphabetical order
+* fix typo
+* use changes for using glbody in irtgl.l
+* Contributors: Kentaro Wada, Shunichi Nozawa, Yohei Kakiuchi
+
 0.1.13 (2015-09-01)
 -------------------
 * return if key not found

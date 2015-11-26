@@ -2,18 +2,20 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* move to 0.2.0, which only available from indigo
+
+* add instruction of converting eus->urdf
+* modify sample usage comment of irteus2urdf-for-gazebo.
+* use the resolved path of ros package to find eusurdf directory when path is nil. You can pass eusurdf path as argument to run in catkin build.
+* add .gitignore to keep model directory
+* generate model directory if not found.
+* delete manifest.xml for gazebo model directory.
+* Contributors: Masaki Murooka
+
 0.1.13 (2015-09-01)
 -------------------
-* [eusurdf/package.xml] export gazebo_model_path for gazebo_ros
-* - [eusurdf] remove rosbuild related scripts
-  revert travis
-* generate random tmp directory to avoid overwrite
-* fix to use no rospack find nor rosrun for eusurdf
-* convert models when catkin build
-* add files to convert irtmodel to urdf
-* delete converted urdf models in models directory.
-* Contributors: Yuki Furuta, Masaki Murooka
-
 * [eusurdf/package.xml] export gazebo_model_path for gazebo_ros
 * - [eusurdf] remove rosbuild related scripts
   revert travis
