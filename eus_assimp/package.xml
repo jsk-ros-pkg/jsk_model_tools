@@ -1,6 +1,6 @@
 <package>
   <name>eus_assimp</name>
-  <version>0.1.13</version>
+  <version>0.1.14</version>
   <description>eus_assimp</description>
 
   <maintainer email="youhei@jsk.imi.i.u-tokyo.ac.jp">Yohei Kakiuchi</maintainer>

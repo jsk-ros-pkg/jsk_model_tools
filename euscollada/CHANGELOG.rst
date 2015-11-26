@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.14 (2015-11-26)
+-------------------
 * keep backward compatibility, add glvertices slot to collada-body
 * [euscollada/src/euscollada-robot.l] use-6dof-joint-leg-gain nil by default
 * make qpqmodel with glvertices

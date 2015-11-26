@@ -2,8 +2,8 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.14 (2015-11-26)
+-------------------
 * [eus_assimp] Add .gitignore
 * Contributors: Kentaro Wada
 
