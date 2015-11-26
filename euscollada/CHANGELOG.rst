@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2015-11-26)
+------------------
 * move to 0.2.0, which only available from indigo
 
 * keep backward compatibility, add glvertices slot to collada-body

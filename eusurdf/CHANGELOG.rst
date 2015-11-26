@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2015-11-26)
+------------------
 * move to 0.2.0, which only available from indigo
 
 * add instruction of converting eus->urdf

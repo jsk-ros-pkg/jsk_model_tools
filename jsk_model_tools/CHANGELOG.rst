@@ -2,8 +2,8 @@
 Changelog for package jsk_model_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2015-11-26)
+------------------
 * move to 0.2.0, which only available from indigo
 
 0.1.13 (2015-09-01)
