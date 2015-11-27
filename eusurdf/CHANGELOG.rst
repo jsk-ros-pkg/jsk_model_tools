@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2015-11-27)
+------------------
 * package.xml; we nee do rosrun to generate models
 * generate eus model and convert it to urdf from voxel grid
 * use the resolved path of ros package to find eusurdf directory when path is nil. You can pass eusurdf path as argument to run in catkin build.
