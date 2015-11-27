@@ -18,5 +18,5 @@ for eusmodel_file_path in eusmodel_file_path_list.split('\n'):
     if regexp_search_res:
         scene_name = regexp_search_res.group(1)
         print "[convert-scene-to-urdf] converting %s %s" % (eusmodel_file_name, scene_name)
-        os.system('rosrun roseus roseus "(progn (load \\"%s/euslisp/convert-eus-to-urdf.l\\") (generate-room-models \\"%s\\" :eusurdf-package-path \\"%s\\" :collada-to-urdf-exe-path \\"%s\\") (exit))"' % (eusurdf_package_path, scene_name, eusurdf_package_path, collada_to_urdf_exe_path))
+        os.system('roseus "(progn (load \\"%s/euslisp/convert-eus-to-urdf.l\\") (generate-room-models \\"%s\\" :eusurdf-package-path \\"%s\\" :collada-to-urdf-exe-path \\"%s\\") (exit))"' % (eusurdf_package_path, scene_name, eusurdf_package_path, collada_to_urdf_exe_path))
 os.system('touch %s/GENERATED' % urdfmodel_dir_path)
