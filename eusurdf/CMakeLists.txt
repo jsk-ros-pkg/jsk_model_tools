@@ -15,12 +15,21 @@ macro(get_collada_to_urdf _collada_to_urdf_exe)
   endif()
 endmacro(get_collada_to_urdf _collada_to_urdf_exe)
 
+macro(get_roseus _roseus_exe)
+  find_package(roseus REQUIRED)
+  set(${_roseus_exe} ${roseus_PREFIX}/bin/roseus)
+  if(NOT EXISTS ${${_roseus_exe}})
+    message(FATAL_ERROR "could not find ${${_roseus_exe}}")
+  endif()
+endmacro(get_roseus _roseus_exe)
+
 set(_generated_files ${PROJECT_SOURCE_DIR}/models/GENERATED)
 get_collada_to_urdf(_collada_to_urdf_exe)
+get_roseus(_roseus_exe)
 
 add_custom_command(
   OUTPUT ${_generated_files}
-  COMMAND "${PROJECT_SOURCE_DIR}/scripts/convert-scene-to-urdf.py" ARGS ${PROJECT_SOURCE_DIR} ${_collada_to_urdf_exe}
+  COMMAND "${PROJECT_SOURCE_DIR}/scripts/convert-scene-to-urdf.py" ARGS ${PROJECT_SOURCE_DIR} ${_collada_to_urdf_exe} ${_roseus_exe}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )
 
