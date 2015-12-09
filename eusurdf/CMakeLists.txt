@@ -26,6 +26,6 @@ add_custom_command(
 
 add_custom_target(eusurdf_install ALL DEPENDS ${_generated_files})
 
-install(DIRECTORY models
+install(DIRECTORY models worlds
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   USE_SOURCE_PERMISSIONS)
