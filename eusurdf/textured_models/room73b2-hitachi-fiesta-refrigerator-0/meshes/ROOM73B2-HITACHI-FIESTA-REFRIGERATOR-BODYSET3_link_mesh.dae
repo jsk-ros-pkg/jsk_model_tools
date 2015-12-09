@@ -19,10 +19,10 @@
               <color sid="emission">0   0   0   1</color>
             </emission>
             <ambient>
-              <color sid="ambient">0.498047   0.498047   0.46875   1</color>
+              <color sid="ambient">0.498047   0.498047   0.46875   0.5</color>
             </ambient>
             <diffuse>
-              <color sid="diffuse">0.996094   0.996094   0.9375   1</color>
+              <color sid="diffuse">0.996094   0.996094   0.9375   0.5</color>
             </diffuse>
             <specular>
               <color sid="specular">0   0   0   1</color>
@@ -34,7 +34,7 @@
               <color sid="reflective">0   0   0   0</color>
             </reflective>
             <transparent>
-              <color sid="transparent">0   0   0   1</color>
+              <color sid="transparent">0   0   0   0.5</color>
             </transparent>
             <transparency>
               <float sid="transparency">0</float>
