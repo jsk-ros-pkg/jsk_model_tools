@@ -22,6 +22,8 @@
   <run_depend>gazebo_ros</run_depend>
 
   <export>
+    <!-- if same models are defined on textured_models, gazebo loads textured at first -->
+    <gazebo_ros gazebo_model_path="${prefix}/textured_models" />
     <gazebo_ros gazebo_model_path="${prefix}/models" />
   </export>
 </package>
