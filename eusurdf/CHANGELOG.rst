@@ -2,6 +2,17 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [textured_models/room73b2-hitachi-fiesta-refrigerator-0] transparent inside board of fridge
+* [textured_models/room73b2-georgia-emerald-mountain-0] add texture of georgia can
+* [textured_models/room73b2-hitachi-fiesta-refrigerator-0/model.urdf] update to more realistic physics parameters
+* [textured_models] add georgia can
+* [CMakeLists.txt] install eusurdf/worlds directory
+* [CMakeLists.txt] add roseus to run_depend. use environment variable to get eusdir. call roseus without rosrun.
+* [eusurdf] add textured_models/
+* Contributors: Yuki Furuta, Masaki Murooka
+
 0.2.1 (2015-11-27)
 ------------------
 * package.xml; we nee do rosrun to generate models
