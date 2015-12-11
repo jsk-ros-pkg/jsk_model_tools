@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.2 (2015-12-11)
+------------------
 * [textured_models/room73b2-hitachi-fiesta-refrigerator-0] transparent inside board of fridge
 * [textured_models/room73b2-georgia-emerald-mountain-0] add texture of georgia can
 * [textured_models/room73b2-hitachi-fiesta-refrigerator-0/model.urdf] update to more realistic physics parameters
