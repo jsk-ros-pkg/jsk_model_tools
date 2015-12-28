@@ -108,7 +108,7 @@
                                (split-large-mesh) (optimize-mesh) (identical-vertices)
                                &allow-other-keys)
   (when (substringp ".wrl" fname)
-    (dump-glvertices-to-wrl fname glvtcs :scale scl)
+    (gl::write-wrl-from-glvertices fname glvtcs :scale scl)
     (return-from save-mesh-file))
   (let ((mlst (glvtcs . gl::mesh-list))
         name-lst type-lst
