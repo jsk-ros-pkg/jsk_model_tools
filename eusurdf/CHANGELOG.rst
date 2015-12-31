@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.3 (2015-12-31)
+------------------
 * [eusurdf/textured_models] add iemon/hamburger/wanda to texture_models
 * Contributors: Yuki Furuta
 
