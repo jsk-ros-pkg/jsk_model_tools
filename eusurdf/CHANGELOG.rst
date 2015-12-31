@@ -2,6 +2,11 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [eusurdf/textured_models] add iemon/hamburger/wanda to texture_models
+* Contributors: Yuki Furuta
+
 0.2.2 (2015-12-11)
 ------------------
 * [textured_models/room73b2-hitachi-fiesta-refrigerator-0] transparent inside board of fridge
