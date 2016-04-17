@@ -91,3 +91,9 @@ if (EXISTS ${pr2_xacro})
     message(WARNING "urdf_to_collada requries collada-dom >= 2.4.4, installed version is ${COLLADA_VERSION}")
   endif()
 endif()
+
+
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  add_rostest(test/euscollada-test.launch)
+endif()
