@@ -35,7 +35,7 @@ add_executable(collada2eus src/collada2eus.cpp)
 target_link_libraries(collada2eus ${catkin_LIBRARIES} qhull ${yaml_cpp_LIBRARIES} ${colladadom_LIBRARIES} ${recource_retriever_LIBRARIES})
 add_dependencies(collada2eus libassimp_devel)
 
-find_package(Boost REQUIRED system)
+find_package(Boost REQUIRED system filesystem)
 include_directories(${Boost_INCLUDE_DIR})
 add_executable(collada2eus_urdfmodel src/collada2eus_urdfmodel.cpp)
 target_link_libraries(collada2eus_urdfmodel ${catkin_LIBRARIES} qhull ${yaml_cpp_LIBRARIES} ${colladadom_LIBRARIES} ${collada_parser_LIBRARIES} ${recource_retriever_LIBRARIES} ${assimpdevel_LIBRARIES} ${Boost_LIBRARIES} ${urdf_dom_LIBRARIES})
