@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.4 (2016-04-30)
+------------------
 * Ignore world files
 * Contributors: Kentaro Wada
 

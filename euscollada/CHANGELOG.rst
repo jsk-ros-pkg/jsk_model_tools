@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.4 (2016-04-30)
+------------------
 * Support building on OS X
 * Support passing limbs to predefined pose method
   Modified:
