@@ -2,6 +2,15 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Support building on OS X
+* Support passing limbs to predefined pose method
+  Modified:
+  - euscollada/src/collada2eus.cpp
+* [euscollada/src/collada2eus_urdfmodel.cpp] Fix location of gl::vertices setting. Move after geom is set.
+* Contributors: Kentaro Wada, Shunichi Nozawa
+
 0.2.3 (2015-12-31)
 ------------------
 
@@ -49,7 +58,7 @@ Changelog for package euscollada
 * [collada2eus] set verbose=true when --verbose
 * [euscollada] Removed unnecessary fprintf in collada2eus.cpp
 * [euscollada] Add size check to end-coords translation/rotation because undefiend limb end-coords transformation/rotation breaks matching of parentheses in yaml-cpp 0.5.
-* Contributors: Kei Okada, MasakiMurooka, Ryohei Ueda, Shunichi Nozawa, Yohei Kakiuchi, Iori Kumagai, Iori Yanokura
+* Contributors: Kei Okada, Masaki Murooka, Ryohei Ueda, Shunichi Nozawa, Yohei Kakiuchi, Iori Kumagai, Iori Yanokura
 
 0.1.12 (2015-05-07)
 -------------------
