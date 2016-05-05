@@ -32,7 +32,11 @@
 #include "yaml-cpp/yaml.h"
 
 extern "C" {
+#ifdef __APPLE__
+#include <libqhull/qhull_a.h>
+#else
 #include <qhull/qhull_a.h>
+#endif
 }
 
 #include "rospack/rospack.h"
@@ -1416,11 +1420,9 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       }
     }
   }
-  if (g->type == Geometry::MESH) {
-    fprintf(fp, "      (setq (geom . gl::aglvertices) glv)\n");
-  }
   fprintf(fp, "      (setq geom (instance collada-body :init :replace-obj qhull :name \"%s\"))\n", gname.c_str());
   if (g->type == Geometry::MESH) {
+    fprintf(fp, "      (setq (geom . gl::aglvertices) glv)\n");
     fprintf(fp, "      (send geom :assoc glv)\n");
   }
   fprintf(fp, "      geom))\n");
@@ -1475,7 +1477,7 @@ void ModelEuslisp::writeToFile (string &filename) {
           filename.c_str(), uname_buf.sysname, uname_buf.nodename, uname_buf.release,
           uname_buf.machine, ctime(&tm));
   fprintf(fp, ";;\n");
-  fprintf(fp, ";; %s $ ", get_current_dir_name());
+  fprintf(fp, ";; %s $ ", boost::filesystem::current_path().c_str());
   //for (int i = 0; i < argc; i++) fprintf(fp, "%s ", argv[i]); fprintf(fp, "\n");
   fprintf(fp, ";;\n");
   fprintf(fp, "\n");

@@ -2,6 +2,11 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.4 (2016-04-30)
+------------------
+* Ignore world files
+* Contributors: Kentaro Wada
+
 0.2.3 (2015-12-31)
 ------------------
 * [eusurdf/textured_models] add iemon/hamburger/wanda to texture_models
