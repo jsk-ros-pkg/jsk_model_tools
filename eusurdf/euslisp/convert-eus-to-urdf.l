@@ -6,6 +6,14 @@
    collada-to-urdf-exe-path
    (tmp-dir "/tmp")
    )
+  "Convert irteus model to urdf model. At first, irteus model is converted to collada model, and then collada model is converted to urdf model.
+- model : irteus model instance
+- name : name of urdf model. nil for using the name of irteus model.
+- eusurdf-package-path : absolute path of eusurdf. nil for using rospack (this argument is necessary for using this function in catkin build.)
+- collada-to-urdf-exe-path : absolute path of collada_to_urdf execution file. nil for using rospack (this argument is necessary for using this function in catkin build.)
+- tmp-dir : temporal directory to put collada model.
+- Typical usage:
+    (progn (load \"models/laundry-machine-object.l\") (irteus2urdf-for-gazebo (laundry-machine) :name \"laundry\"))"
   (cond
    ((not (subclassp (class model) cascaded-link))
     (format t "invalid class, not childclass of cascaded-link~%")
@@ -51,6 +59,18 @@
    (tmp-dir-no-duplication t)
    (random-seed (integer-vector (elt (unix:localtime) 0) (elt (unix:localtime) 1)))
    )
+  "Convert each model in irteus scene to urdf model. Generate world file for gazebo.
+- room : irteus scene instance
+- make-static : whether to generate urdf model with static property. (this is useful for gazebo.)
+- make-fixed : whether to generate urdf model with fixed property. (this is useful for gazebo.)
+- world-file-path : path of generated world file.
+- eusurdf-package-path : absolute path of eusurdf. nil for using rospack (this argument is necessary for using this function in catkin build.)
+- collada-to-urdf-exe-path : absolute path of collada_to_urdf execution file. nil for using rospack (this argument is necessary for using this function in catkin build.)
+- tmp-dir : temporal directory to put collada model.
+- tmp-dir-no-duplication : whether to use tmporal directory with unique name or not.
+- random-seed : random seed used to get unique directory name when tmp-dir-no-duplication is t.
+- Typical usage:
+    (progn (load \"models/room73b2-scene.l\") (irteus2urdf-room-for-gazebo (room73b2)))"
   (let* ((package-dir-path
           (cond (eusurdf-package-path eusurdf-package-path)
                 (t (ros::resolve-ros-path "package://eusurdf")))))
@@ -100,6 +120,12 @@
    eusurdf-package-path
    collada-to-urdf-exe-path
    )
+  "Generate urdf model and world file from the name of irteus scene.
+- name : name of irteus scene (ex. room73b2)
+- eusurdf-package-path : absolute path of eusurdf. nil for using rospack (this argument is necessary for using this function in catkin build.)
+- collada-to-urdf-exe-path : absolute path of collada_to_urdf execution file. nil for using rospack (this argument is necessary for using this function in catkin build.)
+- Typical usage:
+    (generate-room-models \"room73b2\")"
   ;; check the function making room exits.
   (load (format nil "models/~a-scene.l" name))
   (unless (functionp (read-from-string name))
