@@ -4,8 +4,10 @@
   <description>urdf models converted from euslisp</description>
 
   <maintainer email="k-okada@jsk.t.u-tokyo.ac.jp">Kei Okada</maintainer>
+  <maintainer email="murooka@jsk.t.u-tokyo.ac.jp">Masaki Murooka</maintainer>
   <author email="k-okada@jsk.t.u-tokyo.ac.jp">Kei Okada</author>
   <author email="youhei@jsk.imi.i.u-tokyo.ac.jp">Youhei Kakiuchi</author>
+  <author email="murooka@jsk.imi.i.u-tokyo.ac.jp">Masaki Murooka</author>
 
   <license>BSD</license>
 
