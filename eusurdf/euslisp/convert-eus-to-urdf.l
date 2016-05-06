@@ -14,6 +14,7 @@
 - tmp-dir : temporal directory to put collada model.
 - Typical usage:
     (progn (load \"models/laundry-machine-object.l\") (irteus2urdf-for-gazebo (laundry-machine) :name \"laundry\"))"
+  (return-from irteus2urdf-for-gazebo nil)
   (cond
    ((not (subclassp (class model) cascaded-link))
     (format t "invalid class, not childclass of cascaded-link~%")
