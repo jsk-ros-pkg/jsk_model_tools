@@ -23,9 +23,11 @@
     (return-from irteus2urdf-for-gazebo nil))
    (t
     (unless name
-      (if (or (not (stringp (send model :name)))
-              (zerop (length (send model :name))))
-          (setq name (remove #\: (format nil "~A" (send model :name)))))
+      (cond ((or (not (stringp (send model :name)))
+                 (zerop (length (send model :name))))
+             (setq name (remove #\: (format nil "~A" (send model :name)))))
+            (t
+             (setq name (send model :name))))
       )
     (let* ((tmp-obj (instance (class model) :init)))
       (send tmp-obj :name name)
@@ -41,7 +43,7 @@
                              package-dir-path name tmp-dir name package-dir-path
                              (cond (collada-to-urdf-exe-path collada-to-urdf-exe-path) (t "")))))
        (t
-        (format nil "dae error~%")
+        (format t "collada model not found~%")
         (return-from irteus2urdf-for-gazebo nil))))
     ))
   t)
