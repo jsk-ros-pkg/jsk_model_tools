@@ -2,16 +2,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(euscollada)
 
-# check rosversion if >=indigo
-execute_process(
-  COMMAND python -c "import sys; sys.exit(ord('$ENV{ROS_DISTRO}'[0]) >= ord('indigo'[0]))"
-  RESULT_VARIABLE rosversion_ge_indigo)
-
-IF(${rosversion_ge_indigo})
-find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser resource_retriever pr2_description)
-ELSE()
-find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser urdfdom resource_retriever)
-ENDIF()
+if("$ENV{ROS_DISTRO}" STRGREATER "hydro")
+  find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser resource_retriever pr2_description)
+else()
+  find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser urdfdom resource_retriever pr2_description)
+endif()
 
 catkin_package()
 
@@ -57,43 +52,42 @@ install(FILES ${_install_files}
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 
-# --------------
-# Generate pr2.l
-# --------------
-if(EXISTS ${pr2_description_PREFIX}/share/pr2_description/robots/pr2.urdf.xacro)
-  set(pr2_xacro ${pr2_description_PREFIX}/share/pr2_description/robots/pr2.urdf.xacro)
-elseif(EXISTS ${pr2_mechanism_model_SOURCE_PREFIX}/robots/pr2.urdf)
-  set(pr2_xacro ${pr2_description_SOURCE_PREFIX}/robots/pr2.urdf.xacro)
-else()
-  message(WARNING "Could not found pr2.urdf.xacro in ${pr2_description_PREFIX}/share/pr2_description/robots/pr2.urdf.xacro and ${pr2_description_SOURCE_PREFIX}/robots/pr2.urdf.xacro")
-endif()
-if (EXISTS ${pr2_xacro})
-  message(STATUS "Found pr2.urdf.xacro at ${pr2_xacro}")
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/pr2.urdf
-    COMMAND rosrun xacro xacro ${pr2_xacro} > pr2.urdf
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    DEPENDS ${pr2_xacro})
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/pr2.dae
-    COMMAND rosrun collada_urdf urdf_to_collada pr2.urdf pr2.dae
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    DEPENDS pr2.urdf)
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/pr2.l
-    COMMAND rosrun euscollada collada2eus pr2.dae pr2.yaml pr2.l
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    DEPENDS pr2.dae pr2.yaml)
-  # get collada-dom version
-  find_package(PkgConfig)
-  pkg_check_modules(COLLADA collada-dom>=2.4.4 )
-  if ( ${COLLADA_FOUND} )
-    add_custom_target(generate_pr2_lisp ALL DEPENDS ${PROJECT_SOURCE_DIR}/pr2.l)
-  else()
-    pkg_check_modules(COLLADA collada-dom)
-    message(WARNING "urdf_to_collada requries collada-dom >= 2.4.4, installed version is ${COLLADA_VERSION}")
-  endif()
-endif()
-
-
 if(CATKIN_ENABLE_TESTING)
+  # --------------
+  # Generate pr2.l
+  # --------------
+  if(EXISTS ${pr2_description_PREFIX}/share/pr2_description/robots/pr2.urdf.xacro)
+    set(pr2_xacro ${pr2_description_PREFIX}/share/pr2_description/robots/pr2.urdf.xacro)
+  elseif(EXISTS ${pr2_mechanism_model_SOURCE_PREFIX}/robots/pr2.urdf)
+    set(pr2_xacro ${pr2_description_SOURCE_PREFIX}/robots/pr2.urdf.xacro)
+  else()
+    message(FATAL "Could not find pr2.urdf.xacro at either ${pr2_description_PREFIX}/share/pr2_description/robots/pr2.urdf.xacro or ${pr2_description_SOURCE_PREFIX}/robots/pr2.urdf.xacro.")
+  endif()
+  if (EXISTS ${pr2_xacro})
+    message(STATUS "Found pr2.urdf.xacro at ${pr2_xacro}")
+    add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/pr2.urdf
+      COMMAND rosrun xacro xacro ${pr2_xacro} > pr2.urdf
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      DEPENDS ${pr2_xacro})
+    add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/pr2.dae
+      COMMAND rosrun collada_urdf urdf_to_collada pr2.urdf pr2.dae
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      DEPENDS pr2.urdf)
+    add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/pr2.l
+      COMMAND rosrun euscollada collada2eus pr2.dae pr2.yaml pr2.l
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      DEPENDS pr2.dae pr2.yaml)
+    # get collada-dom version
+    find_package(PkgConfig)
+    pkg_check_modules(COLLADA collada-dom>=2.4.4 )
+    if (${COLLADA_FOUND})
+      add_custom_target(generate_pr2_eusmodel ALL DEPENDS ${PROJECT_SOURCE_DIR}/pr2.l)
+    else()
+      pkg_check_modules(COLLADA collada-dom)
+      message(WARNING "urdf_to_collada requries collada-dom >= 2.4.4, installed version is ${COLLADA_VERSION}")
+    endif()
+  endif()
+
   find_package(rostest REQUIRED)
-  add_rostest(test/euscollada-test.launch)
+  add_rostest(test/euscollada-test.launch DEPENDENCIES generate_pr2_eusmodel)
 endif()
