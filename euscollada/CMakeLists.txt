@@ -74,9 +74,9 @@ if(CATKIN_ENABLE_TESTING)
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       DEPENDS pr2.urdf)
     add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/pr2.l
-      COMMAND rosrun euscollada collada2eus pr2.dae pr2.yaml pr2.l
+      COMMAND ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION}/collada2eus pr2.dae pr2.yaml pr2.l
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-      DEPENDS pr2.dae pr2.yaml)
+      DEPENDS collada2eus pr2.dae pr2.yaml)
     # get collada-dom version
     find_package(PkgConfig)
     pkg_check_modules(COLLADA collada-dom>=2.4.4 )
