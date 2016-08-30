@@ -47,5 +47,12 @@
   (if (not (boundp '*pr2*)) (pr2))
   (eusmodel-validity-check-one *pr2*))
 
+(deftest pr2-predefined-pose-test
+  (if (not (boundp '*pr2*)) (pr2))
+  (send *pr2* :reset-pose)
+  (send *pr2* :reset-pose :larm)
+  (send *pr2* :reset-pose :rarm)
+  )
+
 (run-all-tests)
 (exit)
