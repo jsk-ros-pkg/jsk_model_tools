@@ -5,7 +5,7 @@ import os
 import commands
 
 
-def eus2urdf_for_gazebo_pyscript (name, collada_path, eusurdf_package_path=commands.getoutput('rospack find eusurdf'), collada_to_urdf_exe_path='rosrun collada_urdf_jsk_patch collada_to_urdf', overwrite=True):
+def eus2urdf_for_gazebo_pyscript (name, collada_path, eusurdf_package_path=commands.getoutput('rospack find eusurdf'), collada_to_urdf_exe_path='rosrun collada_urdf collada_to_urdf', overwrite=True):
     urdf_dir_path = eusurdf_package_path + '/models/' + name
     if overwrite:
         os.system("rm -rf %s" % urdf_dir_path)
