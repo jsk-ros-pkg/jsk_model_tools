@@ -2,6 +2,12 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [collada2eus] fix closing /dev/null (`#186  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/186>`_)
+* Add documentation for predefined poses (`#174  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/174>`_)
+* Contributors: Kentaro Wada, Yohei Kakiuchi
+
 0.2.4 (2016-04-30)
 ------------------
 * Support building on OS X

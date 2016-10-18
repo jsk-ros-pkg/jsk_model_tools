@@ -2,6 +2,18 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [eusurdf] add test of model conversion (`#181  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/181>`_)
+  * [eusurdf/CMakeLists.txt,package.xml] test model conversion in eusurdf package.
+  * [eusurdf/test] add test directory in eusurdf. add script and launch to test model conversion.
+  * [eusurdf/package.xml] add maintainer of eusurdf package.
+  * [eusurdf/euslisp/convert-eus-to-urdf.l] add documentation of euslisp function to convert irteus->urdf.
+
+* [eusurdf/euslisp/convert-eus-to-urdf.l] get name from converted eus model if the argument name is not passed. (`#169  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/169>`_)
+
+* Contributors: Masaki Murooka
+
 0.2.4 (2016-04-30)
 ------------------
 * Ignore world files
