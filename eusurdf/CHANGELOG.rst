@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.5 (2016-10-18)
+------------------
 * [eusurdf] add test of model conversion (`#181  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/181>`_)
   * [eusurdf/CMakeLists.txt,package.xml] test model conversion in eusurdf package.
   * [eusurdf/test] add test directory in eusurdf. add script and launch to test model conversion.
