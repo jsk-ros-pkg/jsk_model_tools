@@ -55,3 +55,21 @@ install(DIRECTORY src scripts
 file(GLOB _install_files RELATIVE ${PROJECT_SOURCE_DIR} *.yaml *.sh)
 install(FILES ${_install_files}
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+if(CATKIN_ENABLE_TESTING)
+  find_package(catkin REQUIRED COMPONENTS rostest)
+  add_custom_command(OUTPUT sample1.dae
+    COMMAND apt-get download ros-$ENV{ROS_DISTRO}-openhrp3
+    COMMAND cmake -E make_directory ./opt/ros/$ENV{ROS_DISTRO}/share/OpenHRP-3.1/sample/model/
+    COMMAND dpkg -x ros-$ENV{ROS_DISTRO}-openhrp3*.deb .
+    COMMAND cp ./opt/ros/$ENV{ROS_DISTRO}/share/OpenHRP-3.1/sample/model/sample1.dae sample1.dae
+    DEPENDS collada2eus)
+  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/test/sample1-noyaml.l
+    COMMAND rosrun euscollada collada2eus sample1.dae ${PROJECT_SOURCE_DIR}/test/sample1-noyaml.l
+    DEPENDS sample1.dae ${PROJECT_SOURCE_DIR}/test/sample1.yaml)
+  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/test/sample1-yaml.l
+    COMMAND rosrun euscollada collada2eus sample1.dae ${PROJECT_SOURCE_DIR}/test/sample1.yaml ${PROJECT_SOURCE_DIR}/test/sample1-yaml.l
+    DEPENDS sample1.dae ${PROJECT_SOURCE_DIR}/test/sample1.yaml)
+  add_custom_target(generate_test_files ALL DEPENDS ${PROJECT_SOURCE_DIR}/test/sample1-noyaml.l ${PROJECT_SOURCE_DIR}/test/sample1-yaml.l)
+  add_rostest(test/test-sample-robot.test)
+endif()

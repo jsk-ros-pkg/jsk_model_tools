@@ -48,6 +48,7 @@
   <run_depend>tf</run_depend>
   <run_depend>collada_urdf</run_depend>
 
+  <test_depend>openhrp3</test_depend>
   <!-- <test_depend>collada_urdf</test_depend> -->
   <!-- <test_depend>euslisp</test_depend> -->
   <!-- <test_depend>roseus</test_depend> -->

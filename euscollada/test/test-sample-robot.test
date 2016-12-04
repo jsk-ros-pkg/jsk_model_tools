@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="test_sample_robot" pkg="euscollada" type="test-sample-robot.l" />
+</launch>
