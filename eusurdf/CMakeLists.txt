@@ -11,6 +11,14 @@ convert_eusmodel_to_urdf()
 convert_eusscene_to_gazebo_world()
 convert_eusscene_to_urdf_xacro()
 
+find_package(knowrob_srdl)
+if(${knowrob_srdl_FOUND})
+  convert_eusscene_to_srdl()
+  install(DIRECTORY owl
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  USE_SOURCE_PERMISSIONS)
+endif()
+
 install(DIRECTORY models textured_models worlds launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   USE_SOURCE_PERMISSIONS)

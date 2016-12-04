@@ -54,6 +54,20 @@ macro(get_eusexe _eus_exe)
   message(STATUS "Found eus executable: ${${_eus_exe}}")
 endmacro(get_eusexe _eusexe)
 
+macro(get_urdf2srdl _urdf2srdl_exe)
+  find_package(knowrob_srdl REQUIRED)
+  if(EXISTS ${knowrob_srdl_SOURCE_DIR}/scripts/URDF2SRDL)
+    set(${_urdf2srdl_exe} ${knowrob_srdl_SOURCE_DIR}/scripts/URDF2SRDL)
+  elseif (EXISTS ${knowrob_srdl_SOURCE_PREFIX}/scripts/URDF2SRDL)
+    set(${_urdf2srdl_exe} ${knowrob_srdl_SOURCE_PREFIX}/scripts/URDF2SRDL)
+  elseif (EXISTS ${knowrob_srdl_PREFIX}/share/knowrob_srdl/scripts/URDF2SRDL)
+    set(${_urdf2srdl_exe} ${knowrob_srdl_PREFIX}/share/knowrob_srdl/scripts/URDF2SRDL)
+  else()
+    message(FATAL_ERROR "Could not find URDF2SRDL")
+  endif()
+  message(STATUS "Found URDF2SRDL: ${${_urdf2srdl_exe}}")
+endmacro(get_urdf2srdl _urdf2srdl_exe)
+
 function(convert_eusscene_to_gazebo_world)
   get_eusdir(EUSDIR)
   get_eusexe(EUS_EXE)
@@ -153,3 +167,22 @@ function(convert_eusmodel_to_urdf)
   endforeach(EUSMODEL_FILE)
   add_custom_target(eusurdf_models ALL DEPENDS ${URDF_FILES} ${XACRO_FILES})
 endfunction(convert_eusmodel_to_urdf)
+
+function(convert_eusscene_to_srdl)
+  get_eusdir(EUSDIR)
+  get_urdf2srdl(URDF2SRDL_EXE)
+  set(SRDL_FILES "")
+  file(GLOB EUS_SCENE_FILES "${EUSDIR}/models/*-scene.l")
+  foreach(EUS_SCENE_FILE ${EUS_SCENE_FILES})
+    string(REGEX REPLACE "^.*/(.*)-scene.l$" "\\1"
+      EUS_SCENE_NAME ${EUS_SCENE_FILE})
+    set(SRDL_PATH ${PROJECT_SOURCE_DIR}/owl/${EUS_SCENE_NAME}.owl)
+    add_custom_command(
+      OUTPUT ${PROJECT_SOURCE_DIR}/owls/${EUS_SCENE_NAME}.owl
+      COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_srdl.py
+      ARGS ${PROJECT_SOURCE_DIR} ${EUS_SCENE_NAME} ${SRDL_PATH} ${URDF2SRDL_EXE}
+      MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro)
+    list(APPEND SRDL_FILES ${PROJECT_SOURCE_DIR}/owls/${EUS_SCENE_NAME}.owl)
+  endforeach(EUS_SCENE_FILE)
+  add_custom_target(eusurdf_srdls ALL DEPENDS ${SRDL_FILES})
+endfunction(convert_eusscene_to_srdl)
