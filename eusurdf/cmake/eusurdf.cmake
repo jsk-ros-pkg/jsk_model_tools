@@ -29,7 +29,7 @@ macro(get_eusexe _eus_exe)
     elseif(${GCC_MACHINE} MATCHES i686-linux-gnu)
       set(ARCHDIR Linux)
     elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES amd64* OR
-	${CMAKE_SYSTEM_PROCESSOR} MATCHES x86_64* )
+        ${CMAKE_SYSTEM_PROCESSOR} MATCHES x86_64* )
       set(ARCHDIR Linux64)
     else()
       set(ARCHDIR Linux)
