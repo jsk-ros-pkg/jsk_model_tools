@@ -27,9 +27,8 @@ def urdf2srdl(eusurdf_dir_path, model_name, srdl_path, urdf2srdl_bin):
 
     os.system("%s -u %s -s %s -i %s" % (urdf2srdl_bin, urdf_path, srdl_path, uri))
 
-    model_path = "model://%s/" % model_name
     # TODO: texture model
-    os.system("sed -i -e \"s@%s@package://eusurdf/models/%s/@g\" %s" % (model_path, model_name, srdl_path))
+    os.system("sed -i -e \"s@model://@package://eusurdf/models/@g\" %s" % (srdl_path))
 
 if __name__ == '__main__':
     try:
