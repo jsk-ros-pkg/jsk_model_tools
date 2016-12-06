@@ -1,4 +1,4 @@
-(load "unittest.l")
+(require :unittest "lib/llib/unittest.l")
 
 (init-unit-test)
 
@@ -53,12 +53,12 @@
   (assert (probe-file "/tmp/samplerobot.l") ";; faild to generate /tmp/samplerobot.l, file does not exist")
   (load "/tmp/samplerobot.l")
   (samplerobot)
-
+  (send *samplerobot* :init-pose)
   (eusmodel-validity-check-one *samplerobot*)
 
   (assert (eps= 1.308000e+05 (send *samplerobot* :weight))
           ";; sample robot has not valid weight ~A" (send *samplerobot* :weight))
-  (assert (eps-v= #f(12.913 -0.002859 802.324) (send *samplerobot* :centroid))
+  (assert (eps-v= #f(2.32416 0.0 791.942) (send *samplerobot* :centroid))
           ";; sample robot has not valid centroid ~A" (send *samplerobot* :centroid))
   )
 
@@ -72,10 +72,10 @@
   (samplerobot)
 
   (eusmodel-validity-check-one *samplerobot*)
-
+  (send *samplerobot* :init-pose)
   (assert (eps= 1.308000e+05 (send *samplerobot* :weight))
           ";; sample robot has not valid weight ~A" (send *samplerobot* :weight))
-  (assert (eps-v= #f(12.913 -0.002859 802.324) (send *samplerobot* :centroid))
+  (assert (eps-v= #f(2.32416 0.0 791.942) (send *samplerobot* :centroid))
           ";; sample robot has not valid centroid ~A" (send *samplerobot* :centroid))
   )
 
