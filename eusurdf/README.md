@@ -20,3 +20,18 @@ roseus convert-eus-to-urdf.l
 ;; util wrapper function to convert room model
 (generate-room-models "room73b2")
 ```
+
+## Spawn scene model to gazebo
+
+- Use world file
+
+``` bash
+roslaunch gazebo_ros empty_world.launch world_name:=`rospack find eusurdf`/worlds/room73b2.world
+```
+
+- Use urdf.xacro file
+
+``` bash
+roslaunch gazebo_ros empty_world.launch
+roslaunch eusurdf gazebo_spawn_room73b2.launch
+```
