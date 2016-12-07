@@ -8,9 +8,9 @@ execute_process(
   RESULT_VARIABLE rosversion_ge_indigo)
 
 IF(${rosversion_ge_indigo})
-find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser resource_retriever)
+find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser resource_retriever rostest)
 ELSE()
-find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser urdfdom resource_retriever)
+find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser urdfdom resource_retriever rostest)
 ENDIF()
 
 catkin_package()
@@ -55,3 +55,5 @@ install(DIRECTORY src scripts
 file(GLOB _install_files RELATIVE ${PROJECT_SOURCE_DIR} *.yaml *.sh)
 install(FILES ${_install_files}
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+add_rostest(test/euscollada-model-conversion.test)

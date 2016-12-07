@@ -9,7 +9,10 @@
    (&optional (type :collada))
    (when (eq type :collada)
      ;; fix all links' mass properties ;; root link relative (collada) -> link local (euslisp)
-     (dolist (l links)
+     (dolist (l (append links
+                        (mapcan #'(lambda (x) (if (and (derivedp (cdr x) bodyset-link)
+                                                       (not (memq (cdr x) links)))
+                                                  (list (cdr x)))) (send self :slots))))
        (setq (l . acentroid) (send l :inverse-transform-vector
                                    (send (send (car links) :worldcoords) :transform-vector
                                          (l . acentroid))))

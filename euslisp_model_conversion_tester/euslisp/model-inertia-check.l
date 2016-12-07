@@ -114,7 +114,9 @@
          (mapcar #'(lambda (lk)
                      (format t "~%;;; ~A ;;;~%" (send lk :name))
                      (confirm-link-parameters lk))
-                 (send robot :links))))
+                 (append (list (car (send robot :links)))
+                         (all-child-links (car (send robot :links))))
+                 )))
     (objects (append (list robot) bds))
     ))
 
