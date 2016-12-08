@@ -2,7 +2,8 @@
 ;; Author: Yuki Furuta <furushchev@jsk.imi.i.u-tokyo.ac.jp>
 
 ;; assumed executed at PROJECT_SOURCE_DIR
-(require :conversion-utils "euslisp/conversion-utils.l")
+(defvar *eusurdf-package-dir* (unix:getwd))
+(require :conversion-utils (format nil "~A/euslisp/conversion-utils.l" *eusurdf-package-dir*))
 
 (defun write-world-file-header (s)
   (format s "<?xml version=\"1.0\" ?>~%")
@@ -43,6 +44,20 @@
   (format s "  </world>~%")
   (format s "</sdf>~%"))
 
+(defun write-empty-world-file (world-file-path)
+  (with-open-file (f world-file-path :direction :output :if-exists :overwrite)
+    (write-world-file-header f)
+    (write-world-file-footer f)))
+
+(defun add-model-include (world-file-path model &key (name-suffix "") (uri-suffix "_static"))
+  (let ((pos-string (string-join " " (coerce (scale 0.001 (send model :worldpos)) cons)))
+        (rpy-string (string-join " " (reverse (coerce (car (rpy-angle (send model :worldrot))) cons)))))
+    (unix:system (format nil "sed -i -e \"s@    <!-- Objects -->@    <!-- Objects -->\\n    <include>\\n      <name>~A~A</name>\\n      <uri>model://~A~A</uri>\\n      <pose>~A ~A</pose>\\n    </include>@g\" ~a"
+                         (send model :name) name-suffix
+                         (send model :name) uri-suffix
+                         pos-string rpy-string
+                         world-file-path))))
+
 (defun write-model-include (s model &key model-name (suffix "_static") (indent 2))
   (let ((pos-string (string-join " " (coerce (scale 0.001 (send model :worldpos)) cons)))
         (rpy-string (string-join " " (reverse (coerce (car (rpy-angle (send model :worldrot))) cons))))
@@ -55,15 +70,18 @@
     (format s "~A  <pose>~A ~A</pose>~%" indent-string pos-string rpy-string)
     (format s "~A</include>~%" indent-string)))
 
-(defun eusscene2world (scene-file-name world-file-name)
+(defun eusscenefile2world (scene-file-name world-file-name)
   (unless (probe-file scene-file-name)
     (errorf "file ~A not exists" scene-file-name))
   (load scene-file-name)
   (let* ((scene-name (string-join "-"
                                   (butlast
                                    (string-split (send (pathname scene-file-name) :name) #\-))))
-         (scene (funcall (read-from-string scene-name)))
-         (model-count (make-hash-table)))
+         (scene (funcall (read-from-string scene-name))))
+    (eusscene2world scene world-file-name)))
+
+(defun eusscene2world (scene world-file-name)
+  (let ((model-count (make-hash-table)))
     (make-dirs (send (pathname world-file-name) :directory-string))
     (with-open-file (f world-file-name :direction :output :if-exists :overwrite)
       (write-world-file-header f)
@@ -92,8 +110,12 @@
             (t (write-model-include f model :model-name model-name :suffix nil)))))
       (write-world-file-footer f))))
 
-(setq scene-file-path (car (last (butlast lisp::*eustop-argument*))))
-(setq world-file-path (car (last lisp::*eustop-argument*)))
-(format t "converting eus scene ~A -> ~A~%" scene-file-path world-file-path)
-(eusscene2world scene-file-path world-file-path)
-(exit)
+(when (string= "eusscene_to_world"
+               (send (pathname (cadr lisp::*eustop-argument*)) :name))
+  ;; eval-when :execute
+  (setq scene-file-path (car (last (butlast lisp::*eustop-argument*))))
+  (setq world-file-path (car (last lisp::*eustop-argument*)))
+  (format t "converting eus scene ~A -> ~A~%" scene-file-path world-file-path)
+  (eusscenefile2world scene-file-path world-file-path)
+  (exit))
+(provide :eusscene_to_world)

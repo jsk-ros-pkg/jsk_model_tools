@@ -2,7 +2,8 @@
 ;; Author: Yuki Furuta <furushchev@jsk.imi.i.u-tokyo.ac.jp>
 
 ;; assumed executed at PROJECT_SOURCE_DIR
-(require :conversion-utils "euslisp/conversion-utils.l")
+(defvar *eusurdf-package-dir* (unix:getwd))
+(require :conversion-utils (format nil "~A/euslisp/conversion-utils.l" *eusurdf-package-dir*))
 
 (defun make-model-conf (name fpath &optional desc)
   (unless desc
@@ -18,32 +19,41 @@
     (format f "  </description>~%")
     (format f "</model>~%")))
 
-(defun eusmodel2urdf (fname outdir &key (tmpdir "/tmp/"))
+(defun eusmodelfile2urdf (fname outdir &key (tmpdir "/tmp/"))
   (unless (probe-file fname)
     (errorf "file ~A not exists" fname))
   (load fname)
-  (let* ((objname (string-join "-" (butlast (string-split (send (pathname fname) :name) #\-))))
-         (urdf-out-path (send (concatenate-pathnames outdir "model.urdf") :namestring))
-         (mesh-out-dir (send (concatenate-pathnames outdir "meshes/") :namestring))
-         (obj (funcall (read-from-string objname))))
-    (cond ((null (send obj :name)) (send obj :name objname))
-          ((symbolp (send obj :name)) (send obj :name (string-downcase (send obj :name)))))
+  (let* ((model-name (string-join "-" (butlast (string-split (send (pathname fname) :name) #\-))))
+         (model (funcall (read-from-string model-name))))
+    (eusmodel2urdf model model-name outdir :tmpdir tmpdir)))
 
-    (collada::eus2collada obj tmpdir)
+(defun eusmodel2urdf (model model-name outdir &key (tmpdir "/tmp/") collada-to-urdf-exe-path)
+  (let ((urdf-out-path (send (concatenate-pathnames outdir "model.urdf") :namestring))
+        (mesh-out-dir (send (concatenate-pathnames outdir "meshes/") :namestring)))
+    (cond ((null (send model :name)) (send model :name model-name))
+          ((symbolp (send model :name)) (send model :name (string-downcase (send model :name)))))
+    (collada::eus2collada model tmpdir)
     (make-dirs mesh-out-dir)
-    (unix:system (format nil "rosrun collada_urdf_jsk_patch collada_to_urdf ~A -G -A --mesh_output_dir ~A --mesh_prefix \"model://~A/meshes\" -O ~A"
-                         (send (concatenate-pathnames tmpdir objname ".dae") :namestring)
+    (unless collada-to-urdf-exe-path
+      (setq collada-to-urdf-exe-path "rosrun collada_urdf_jsk_patch collada_to_urdf"))
+    (unix:system (format nil "~A ~A -G -A --mesh_output_dir ~A --mesh_prefix \"model://~A/meshes\" -O ~A"
+                         collada-to-urdf-exe-path
+                         (send (concatenate-pathnames tmpdir model-name ".dae") :namestring)
                          mesh-out-dir
-                         objname
+                         model-name
                          urdf-out-path))
     (unix:system (format nil "sed -i -e \"s@continuous@revolute@g\" ~A" urdf-out-path))
-    (unix:system (format nil "sed -i -e \"s@<robot name=\\\"inst_kinsystem\\\"@<robot name=\\\"~A\\\"@g\" ~A" objname urdf-out-path))
+    (unix:system (format nil "sed -i -e \"s@<robot name=\\\"inst_kinsystem\\\"@<robot name=\\\"~A\\\"@g\" ~A" model-name urdf-out-path))
     (unix:system (format nil "sed -i -e \"1,/  <link /s/  <link /  <gazebo>\\\n    <static>false<\\/static>\\\n  <\\/gazebo>\\\n  <link /\" ~A" urdf-out-path))
     (unix:system (format nil "sed -i -e \"s@      <inertia ixx=\\\"1e-09\\\" ixy=\\\"0\\\" ixz=\\\"0\\\" iyy=\\\"1e-09\\\" iyz=\\\"0\\\" izz=\\\"1e-09\\\"/>@      <inertia ixx=\\\"1e-03\\\" ixy=\\\"0\\\" ixz=\\\"0\\\" iyy=\\\"1e-03\\\" iyz=\\\"0\\\" izz=\\\"1e-03\\\"/>@g\" ~A" urdf-out-path))
-    (make-model-conf objname (format nil "~A/model.config" outdir))))
+    (make-model-conf model-name (format nil "~A/model.config" outdir))))
 
-(setq model-file-path (car (last (butlast lisp::*eustop-argument*))))
-(setq output-directory (car (last lisp::*eustop-argument*)))
-(format t "converting eus object ~A -> ~A~%" model-file-path output-directory)
-(eusmodel2urdf model-file-path output-directory)
-(exit)
+(when (string= "eusmodel_to_urdf"
+               (send (pathname (cadr lisp::*eustop-argument*)) :name))
+  ;; eval-when :execute
+  (setq model-file-path (car (last (butlast lisp::*eustop-argument*))))
+  (setq output-directory (car (last lisp::*eustop-argument*)))
+  (format t "converting eus object ~A -> ~A~%" model-file-path output-directory)
+  (eusmodelfile2urdf model-file-path output-directory)
+  (exit))
+(provide :eusmodel_to_urdf)
