@@ -135,6 +135,8 @@
       (warn "[ERROR] room (~a) is not the room model.~%" name)
       (return-from generate-room-models))
     ;; generate the world file
+    (unless (probe-file (send (pathname world-file-path) :directory-string))
+      (make-dirs (send (pathname world-file-path) :directory-string)))
     (write-empty-world-file world-file-path)
     ;; convert models
     (irteus2urdf-room-for-gazebo room :make-static t :make-fixed t :world-file-path world-file-path :eusurdf-package-path eusurdf-package-path :collada-to-urdf-exe-path collada-to-urdf-exe-path)))
