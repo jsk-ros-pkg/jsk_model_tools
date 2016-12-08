@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="room73b2-iemon-0"
+<robot name="room73b2-georgia-emerald-mountain"
        xmlns:xi="http://www.w3.org/2001/XInclude"
        >
   <gazebo>
@@ -9,13 +9,13 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-iemon-0/meshes/nil_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-georgia-emerald-mountain/meshes/nil_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-iemon-0/meshes/nil_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-georgia-emerald-mountain/meshes/nil_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
