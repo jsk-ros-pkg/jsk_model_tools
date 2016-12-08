@@ -70,9 +70,13 @@
   (unless eusurdf-package-path
     (setq eusurdf-package-path (ros::resolve-ros-path "package://eusurdf")))
   (when tmp-dir-no-duplication
-    (setq tmp-dir (format nil "~A/~A/"
-                          tmp-dir (string (read (piped-fork "uuidgen -t")))))
-    (unix:mkdir tmp-dir))
+    (let (tmp-dir-candidate)
+      (while t
+       (setq tmp-dir-candidate (format nil "~A/~A/" tmp-dir (make-random-string 8)))
+       (unless (probe-file tmp-dir-candidate)
+         (make-dirs tmp-dir-candidate)
+         (setq tmp-dir tmp-dir-candidate)
+         (return)))))
   (dolist (obj (send room :objects))
     (let ((obj-cnt 0) obj-name-suffix)
 

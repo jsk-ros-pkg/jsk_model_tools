@@ -42,6 +42,8 @@
                          mesh-out-dir
                          model-name
                          urdf-out-path))
+    (unix:system (format nil "rm -f ~A"
+                         (send (concatenate-pathnames tmpdir model-name ".dae") :namestring)))
     (unix:system (format nil "sed -i -e \"s@continuous@revolute@g\" ~A" urdf-out-path))
     (unix:system (format nil "sed -i -e \"s@<robot name=\\\"inst_kinsystem\\\"@<robot name=\\\"~A\\\"@g\" ~A" model-name urdf-out-path))
     (unix:system (format nil "sed -i -e \"1,/  <link /s/  <link /  <gazebo>\\\n    <static>false<\\/static>\\\n  <\\/gazebo>\\\n  <link /\" ~A" urdf-out-path))

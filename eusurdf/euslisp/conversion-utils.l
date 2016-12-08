@@ -1,6 +1,19 @@
 ;; conversion-utils.l
 ;; Author: Yuki Furuta <furushchev@jsk.imi.i.u-tokyo.ac.jp>
 
+(defvar *eusurdf-package-dir* (unix:getwd))
+
+(defparameter *random-state* (make-random-state t))
+(defun make-random-string (len)
+  (let (strlst c)
+    (while (not (= (length strlst) len))
+      (setq c (+ #\0 (random (- 127 #\0))))
+      (cond
+        ((<= #\0 c #\9) (push c strlst))
+        ((<= #\A c #\Z) (push c strlst))
+        ((<= #\a c #\z) (push c strlst))))
+    (coerce strlst string)))
+
 (defun string-split (str &optional (delim #\Space))
   (let (ret sub c)
     (with-input-from-string (s str)
@@ -49,9 +62,9 @@
 (defparameter *textured-models* nil)
 (defun use-textured-model-p (model-name)
   (unless *textured-models*
-    (unless (probe-file "textured_models")
+    (unless (probe-file (format nil "~A/textured_models" *eusurdf-package-dir*))
       (return-from use-textured-model-p nil))
-    (setq *textured-models* (directory "textured_models")))
+    (setq *textured-models* (directory (format nil "~A/textured_models" *eusurdf-package-dir*))))
   (cond
     ((find (concatenate string model-name "_fixed") *textured-models* :test #'string=)
      :fixed)
