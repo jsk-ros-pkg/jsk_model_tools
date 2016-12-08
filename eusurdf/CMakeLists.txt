@@ -1,15 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(eusurdf)
 
-find_package(catkin REQUIRED)
-find_package(collada_urdf_jsk_patch)
+find_package(catkin REQUIRED COMPONENTS collada_urdf)
 
 catkin_package()
 
 # get path to collada_to_urdf
 macro(get_collada_to_urdf _collada_to_urdf_exe)
-  find_package(collada_urdf_jsk_patch REQUIRED)
-  set(${_collada_to_urdf_exe} ${collada_urdf_jsk_patch_PREFIX}/lib/collada_urdf_jsk_patch/collada_to_urdf)
+  set(${_collada_to_urdf_exe} ${collada_urdf_PREFIX}/lib/collada_urdf/collada_to_urdf)
   if(NOT EXISTS ${${_collada_to_urdf_exe}})
     message(FATAL_ERROR "could not find ${${_collada_to_urdf_exe}}")
   endif()
