@@ -139,5 +139,5 @@
       (make-dirs (send (pathname world-file-path) :directory-string)))
     (write-empty-world-file world-file-path)
     ;; convert models
-    (irteus2urdf-room-for-gazebo room :make-static t :make-fixed t :world-file-path world-file-path :eusurdf-package-path eusurdf-package-path :collada-to-urdf-exe-path collada-to-urdf-exe-path)))
+    (irteus2urdf-room-for-gazebo room world-file-path :make-static t :make-fixed t :eusurdf-package-path eusurdf-package-path :collada-to-urdf-exe-path collada-to-urdf-exe-path)))
 (warn "(generate-room-models \"room73b2\")~%")
