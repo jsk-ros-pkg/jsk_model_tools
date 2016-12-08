@@ -46,14 +46,13 @@
 
 (defun irteus2urdf-room-for-gazebo
   (room
+   world-file-path
    &key
    make-static make-fixed
-   world-file-path
    eusurdf-package-path
    collada-to-urdf-exe-path
    (tmp-dir "/tmp")
    (tmp-dir-no-duplication t)
-   (random-seed (integer-vector (elt (unix:localtime) 0) (elt (unix:localtime) 1)))
    )
   "Convert each model in irteus scene to urdf model. Generate world file for gazebo.
 - room : irteus scene instance
@@ -64,9 +63,10 @@
 - collada-to-urdf-exe-path : absolute path of collada_to_urdf execution file. nil for using rospack (this argument is necessary for using this function in catkin build.)
 - tmp-dir : temporal directory to put collada model.
 - tmp-dir-no-duplication : whether to use tmporal directory with unique name or not.
-- random-seed : random seed used to get unique directory name when tmp-dir-no-duplication is t.
 - Typical usage:
-    (progn (load \"models/room73b2-scene.l\") (irteus2urdf-room-for-gazebo (room73b2)))"
+    (progn (load \"models/room73b2-scene.l\") (irteus2urdf-room-for-gazebo (room73b2) \"worlds/room73b2.world\"))"
+  (unless world-file-path
+    (error "world-file-path must not be empty"))
   (unless eusurdf-package-path
     (setq eusurdf-package-path (ros::resolve-ros-path "package://eusurdf")))
   (when tmp-dir-no-duplication
@@ -106,7 +106,7 @@
         (when make-fixed
           (unix:system (format nil "~a/scripts/make_fixed_model.py ~a ~a"
                                eusurdf-package-path (send obj :name) eusurdf-package-path)))))))
-(warn "(progn (load \"models/room73b2-scene.l\") (irteus2urdf-room-for-gazebo (room73b2)))~%")
+(warn "(progn (load \"models/room73b2-scene.l\") (irteus2urdf-room-for-gazebo (room73b2) \"worlds/room73b2.world\"))~%")
 
 
 (defun generate-room-models
