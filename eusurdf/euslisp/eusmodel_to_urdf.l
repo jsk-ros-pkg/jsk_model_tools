@@ -19,13 +19,13 @@
     (format f "  </description>~%")
     (format f "</model>~%")))
 
-(defun eusmodelfile2urdf (fname outdir &key (tmpdir "/tmp/"))
+(defun eusmodelfile2urdf (fname outdir &key (tmpdir "/tmp/") collada-to-urdf-exe-path)
   (unless (probe-file fname)
     (errorf "file ~A not exists" fname))
   (load fname)
   (let* ((model-name (string-join "-" (butlast (string-split (send (pathname fname) :name) #\-))))
          (model (funcall (read-from-string model-name))))
-    (eusmodel2urdf model model-name outdir :tmpdir tmpdir)))
+    (eusmodel2urdf model model-name outdir :tmpdir tmpdir :collada-to-urdf-exe-path collada-to-urdf-exe-path)))
 
 (defun eusmodel2urdf (model model-name outdir &key (tmpdir "/tmp/") collada-to-urdf-exe-path)
   (let ((urdf-out-path (send (concatenate-pathnames outdir "model.urdf") :namestring))
@@ -53,9 +53,10 @@
 (when (string= "eusmodel_to_urdf"
                (send (pathname (cadr lisp::*eustop-argument*)) :name))
   ;; eval-when :execute
-  (setq model-file-path (car (last (butlast lisp::*eustop-argument*))))
-  (setq output-directory (car (last lisp::*eustop-argument*)))
+  (setq model-file-path (car (last (butlast (butlast lisp::*eustop-argument*)))))
+  (setq output-directory (car (last (butlast lisp::*eustop-argument*))))
+  (setq collada-to-urdf-exe-path (car (last lisp::*eustop-argument*)))
   (format t "converting eus object ~A -> ~A~%" model-file-path output-directory)
-  (eusmodelfile2urdf model-file-path output-directory)
+  (eusmodelfile2urdf model-file-path output-directory :collada-to-urdf-exe-path collada-to-urdf-exe-path)
   (exit))
 (provide :eusmodel_to_urdf)

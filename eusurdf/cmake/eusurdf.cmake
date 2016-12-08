@@ -78,6 +78,7 @@ endfunction(convert_eusscene_to_gazebo_world)
 function(convert_eusmodel_to_urdf)
   get_eusdir(EUSDIR)
   get_eusexe(EUS_EXE)
+  get_collada_to_urdf_exe(COLLADA_URDF_EXE)
   set(URDF_FILES "")
   file(GLOB EUSMODEL_FILES "${EUSDIR}/models/*-object.l")
   foreach(EUSMODEL_FILE ${EUSMODEL_FILES})
@@ -89,7 +90,7 @@ function(convert_eusmodel_to_urdf)
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}/model.urdf
       COMMAND ${EUS_EXE}
-      ARGS ${PROJECT_SOURCE_DIR}/euslisp/eusmodel_to_urdf.l ${EUSMODEL_FILE} ${MODEL_OUT_DIR}/
+      ARGS ${PROJECT_SOURCE_DIR}/euslisp/eusmodel_to_urdf.l ${EUSMODEL_FILE} ${MODEL_OUT_DIR}/ ${COLLADA_URDF_EXE}
       MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/euslisp/eusmodel_to_urdf.l
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     list(APPEND URDF_FILES "${MODEL_OUT_DIR}/model.urdf")
