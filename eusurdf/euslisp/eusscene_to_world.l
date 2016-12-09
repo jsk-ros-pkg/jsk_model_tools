@@ -89,7 +89,7 @@
                                         (and (subclassp (class x) cascaded-link)
                                              (not (null (send x :links)))))
                                     (send scene :objects)))
-        (cond ((null (send model :name)) (send model :name "no-name"))
+        (cond ((null (send model :name)) (errorf "model name must not be empty: ~A" model))
               ((symbolp (send model :name)) (send model :name (string-downcase (send model :name)))))
         (let ((model-name-key (read-from-string (send model :name)))
               model-name)
