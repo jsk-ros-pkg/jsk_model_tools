@@ -232,7 +232,7 @@ function(convert_eusscene_to_sem)
       COMMAND ${XACRO_EXE}
       ARGS ${XACRO_PATH} > ${URDF_PATH}
       COMMAND ${URDF2SEM_EXE}
-      ARGS -f ${URDF_PATH} ${SEM_PATH}
+      ARGS -s 1 -f ${URDF_PATH} ${SEM_PATH}
       MAIN_DEPENDENCY ${XACRO_PATH})
     list(APPEND SEM_FILES ${SEM_PATH})
   endforeach(EUS_SCENE_FILE)
