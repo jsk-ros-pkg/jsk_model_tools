@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
-<robot name="room73b2-hitachi-fiesta-refrigerator-0_static"
+<robot name="room73b2-hitachi-fiesta-refrigerator"
        xmlns:xi="http://www.w3.org/2001/XInclude"
        >
   <gazebo>
-    <static>true</static>
+    <static>false</static>
   </gazebo>
   <link name="ROOT_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOT_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOT_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOT_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOT_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.001" />
+      <mass value="50.0" />
       <origin xyz="0 0 0" rpy="0 -0 0"/>
-      <inertia ixx="1e-03" ixy="0" ixz="0" iyy="1e-03" iyz="0" izz="1e-03"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
   </link>
   <gazebo reference="ROOT_link">
@@ -32,19 +32,19 @@
     <visual>
       <origin xyz="0.3 0.245 0.85" rpy="-1.57 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="0.3 0.245 0.85" rpy="-1.57 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.001" />
+      <mass value="2.0" />
       <origin xyz="0 0 0" rpy="0 -0 0"/>
-      <inertia ixx="1e-03" ixy="0" ixz="0" iyy="1e-03" iyz="0" izz="1e-03"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
   </link>
   <gazebo reference="ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link">
@@ -55,19 +55,19 @@
     <visual>
       <origin xyz="0.05 0 0.66" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="0.05 0 0.66" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.001" />
+      <mass value="1.0" />
       <origin xyz="0 0 0" rpy="0 -0 0"/>
-      <inertia ixx="1e-03" ixy="0" ixz="0" iyy="1e-03" iyz="0" izz="1e-03"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
   </link>
   <gazebo reference="ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link">
@@ -78,19 +78,19 @@
     <visual>
       <origin xyz="0.06 0 0.24" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="0.06 0 0.24" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.001" />
+      <mass value="1.0" />
       <origin xyz="0 0 0" rpy="0 -0 0"/>
-      <inertia ixx="1e-03" ixy="0" ixz="0" iyy="1e-03" iyz="0" izz="1e-03"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
   </link>
   <gazebo reference="ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link">
@@ -101,19 +101,19 @@
     <visual>
       <origin xyz="-0.095 0 1.275" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="-0.095 0 1.275" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.001" />
+      <mass value="1.0" />
       <origin xyz="0 0 0" rpy="0 -0 0"/>
-      <inertia ixx="1e-03" ixy="0" ixz="0" iyy="1e-03" iyz="0" izz="1e-03"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
   </link>
   <gazebo reference="ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link">
@@ -124,19 +124,19 @@
     <visual>
       <origin xyz="-0.095 0 1.085" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="-0.095 0 1.085" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.001" />
+      <mass value="1.0" />
       <origin xyz="0 0 0" rpy="0 -0 0"/>
-      <inertia ixx="1e-03" ixy="0" ixz="0" iyy="1e-03" iyz="0" izz="1e-03"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
   </link>
   <gazebo reference="ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link">
@@ -147,19 +147,19 @@
     <visual>
       <origin xyz="-0.095 0 0.935" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="-0.095 0 0.935" rpy="0 -0 0"/>
       <geometry>
-        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator-0/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link_mesh.dae" scale="1 1 1" />
+        <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link_mesh.dae" scale="1 1 1" />
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.001" />
+      <mass value="1.0" />
       <origin xyz="0 0 0" rpy="0 -0 0"/>
-      <inertia ixx="1e-03" ixy="0" ixz="0" iyy="1e-03" iyz="0" izz="1e-03"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
   </link>
   <gazebo reference="ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link">
@@ -171,8 +171,8 @@
     <child  link="ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link"/>
     <origin xyz="0.3 0.245 0.85" rpy="0 -0 0 "/>
     <axis   xyz="0 0 1"/>
-    <limit lower="0" upper="1.5708" effort="100" velocity="0.5" />
-    <dynamics damping="0.2" friction="0" />
+    <limit lower="0" upper="2.0944" effort="100" velocity="0.5" />
+    <dynamics damping="1" friction="0.1" />
   </joint>
   <transmission type="pr2_mechanism_model/SimpleTransmission" name="DOOR1_trans" >
     <actuator name="DOOR1_motor" />
@@ -188,7 +188,7 @@
     <origin xyz="0.05 0 0.66" rpy="0 -0 0 "/>
     <axis   xyz="1 0 0"/>
     <limit lower="0" upper="0.55" effort="100" velocity="0.01" />
-    <dynamics damping="0.2" friction="0" />
+    <dynamics damping="1000" friction="10." />
   </joint>
   <transmission type="pr2_mechanism_model/SimpleTransmission" name="DRAWER1_trans" >
     <actuator name="DRAWER1_motor" />
@@ -204,7 +204,7 @@
     <origin xyz="0.06 0 0.24" rpy="0 -0 0 "/>
     <axis   xyz="1 0 0"/>
     <limit lower="0" upper="0.55" effort="100" velocity="0.01" />
-    <dynamics damping="0.2" friction="0" />
+    <dynamics damping="1000" friction="10." />
   </joint>
   <transmission type="pr2_mechanism_model/SimpleTransmission" name="DRAWER2_trans" >
     <actuator name="DRAWER2_motor" />
@@ -220,7 +220,7 @@
     <origin xyz="-0.095 0 1.275" rpy="0 -0 0 "/>
     <axis   xyz="1 0 0"/>
     <limit lower="0" upper="0.3" effort="100" velocity="0.01" />
-    <dynamics damping="0.2" friction="0" />
+    <dynamics damping="1000" friction="10." />
   </joint>
   <transmission type="pr2_mechanism_model/SimpleTransmission" name="SHELF1_trans" >
     <actuator name="SHELF1_motor" />
@@ -236,7 +236,7 @@
     <origin xyz="-0.095 0 1.085" rpy="0 -0 0 "/>
     <axis   xyz="1 0 0"/>
     <limit lower="0" upper="0.3" effort="100" velocity="0.01" />
-    <dynamics damping="0.2" friction="0" />
+    <dynamics damping="1000" friction="10." />
   </joint>
   <transmission type="pr2_mechanism_model/SimpleTransmission" name="SHELF2_trans" >
     <actuator name="SHELF2_motor" />
@@ -252,7 +252,7 @@
     <origin xyz="-0.095 0 0.935" rpy="0 -0 0 "/>
     <axis   xyz="1 0 0"/>
     <limit lower="0" upper="0.3" effort="100" velocity="0.01" />
-    <dynamics damping="0.2" friction="0" />
+    <dynamics damping="1000" friction="10." />
   </joint>
   <transmission type="pr2_mechanism_model/SimpleTransmission" name="SHELF3_trans" >
     <actuator name="SHELF3_motor" />
