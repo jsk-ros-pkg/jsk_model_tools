@@ -52,7 +52,6 @@
    eusurdf-package-path
    collada-to-urdf-exe-path
    (tmp-dir "/tmp")
-   (tmp-dir-no-duplication t)
    )
   "Convert each model in irteus scene to urdf model. Generate world file for gazebo.
 - room : irteus scene instance
@@ -62,21 +61,12 @@
 - eusurdf-package-path : absolute path of eusurdf. nil for using rospack (this argument is necessary for using this function in catkin build.)
 - collada-to-urdf-exe-path : absolute path of collada_to_urdf execution file. nil for using rospack (this argument is necessary for using this function in catkin build.)
 - tmp-dir : temporal directory to put collada model.
-- tmp-dir-no-duplication : whether to use tmporal directory with unique name or not.
 - Typical usage:
     (progn (load \"models/room73b2-scene.l\") (irteus2urdf-room-for-gazebo (room73b2) \"worlds/room73b2.world\"))"
   (unless world-file-path
     (error "world-file-path must not be empty"))
   (unless eusurdf-package-path
     (setq eusurdf-package-path (ros::resolve-ros-path "package://eusurdf")))
-  (when tmp-dir-no-duplication
-    (let (tmp-dir-candidate)
-      (while t
-       (setq tmp-dir-candidate (format nil "~A/~A/" tmp-dir (make-random-string 8)))
-       (unless (probe-file tmp-dir-candidate)
-         (make-dirs tmp-dir-candidate)
-         (setq tmp-dir tmp-dir-candidate)
-         (return)))))
   (dolist (obj (send room :objects))
     (let ((obj-cnt 0) obj-name-suffix)
 
