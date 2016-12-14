@@ -72,14 +72,35 @@ function(convert_eusscene_to_gazebo_world)
     list(APPEND WORLD_FILES "${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.world")
 
   endforeach(EUSSCENE_FILE)
-  add_custom_target(eusurdf_scenes ALL DEPENDS ${WORLD_FILES})
+  add_custom_target(eusurdf_scene_worlds ALL DEPENDS ${WORLD_FILES})
 endfunction(convert_eusscene_to_gazebo_world)
+
+function(convert_eusscene_to_urdf_xacro)
+  get_eusdir(EUSDIR)
+  get_eusexe(EUS_EXE)
+  set(XACRO_FILES "")
+  file(GLOB EUSSCENE_FILES "${EUSDIR}/models/*-scene.l")
+  foreach(EUSSCENE_FILE ${EUSSCENE_FILES})
+    string(REGEX REPLACE "^.*/(.*)-scene.l$" "\\1"
+      EUS_SCENE_NAME ${EUSSCENE_FILE})
+
+    add_custom_command(
+      OUTPUT ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro
+      COMMAND ${EUS_EXE}
+      ARGS ${PROJECT_SOURCE_DIR}/euslisp/eusscene_to_xacro.l ${EUSSCENE_FILE} ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro ${PROJECT_SOURCE_DIR}/launch/gazebo_spawn_${EUS_SCENE_NAME}.launch
+      MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/euslisp/eusscene_to_xacro.l
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+    list(APPEND XACRO_FILES "${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro")
+  endforeach(EUSSCENE_FILE)
+  add_custom_target(eusurdf_scene_xacros ALL DEPENDS ${XACRO_FILES})
+endfunction(convert_eusscene_to_urdf_xacro)
 
 function(convert_eusmodel_to_urdf)
   get_eusdir(EUSDIR)
   get_eusexe(EUS_EXE)
   get_collada_to_urdf_exe(COLLADA_URDF_EXE)
   set(URDF_FILES "")
+  set(XACRO_FILES "")
   file(GLOB EUSMODEL_FILES "${EUSDIR}/models/*-object.l")
   foreach(EUSMODEL_FILE ${EUSMODEL_FILES})
     string(REGEX REPLACE "^.*/(.*)-object.l$" "\\1"
@@ -111,6 +132,25 @@ function(convert_eusmodel_to_urdf)
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}/model.urdf)
     list(APPEND URDF_FILES "${MODEL_OUT_DIR}_fixed/model.urdf")
 
+    # generate xacro
+    add_custom_command(
+      OUTPUT ${MODEL_OUT_DIR}/model.urdf.xacro
+      COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
+      ARGS ${MODEL_OUT_DIR}/model.urdf ${MODEL_OUT_DIR}/model.urdf.xacro
+      MAIN_DEPENDENCY ${MODEL_OUT_DIR}/model.urdf)
+    list(APPEND XACRO_FILES "${MODEL_OUT_DIR}/model.urdf.xacro")
+    add_custom_command(
+      OUTPUT ${MODEL_OUT_DIR}_static/model.urdf.xacro
+      COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
+      ARGS ${MODEL_OUT_DIR}_static/model.urdf ${MODEL_OUT_DIR}_static/model.urdf.xacro
+      MAIN_DEPENDENCY ${MODEL_OUT_DIR}_static/model.urdf)
+    list(APPEND XACRO_FILES "${MODEL_OUT_DIR}_static/model.urdf.xacro")
+    add_custom_command(
+      OUTPUT ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
+      COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
+      ARGS ${MODEL_OUT_DIR}_fixed/model.urdf ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
+      MAIN_DEPENDENCY ${MODEL_OUT_DIR}_fixed/model.urdf)
+    list(APPEND XACRO_FILES "${MODEL_OUT_DIR}_fixed/model.urdf.xacro")
   endforeach(EUSMODEL_FILE)
-  add_custom_target(eusurdf_models ALL DEPENDS ${URDF_FILES})
+  add_custom_target(eusurdf_models ALL DEPENDS ${URDF_FILES} ${XACRO_FILES})
 endfunction(convert_eusmodel_to_urdf)
