@@ -15,16 +15,13 @@
 
 (deftest irteus2urdf-room-for-gazebo-test ()
   (load "models/room610-scene.l")
-  (irteus2urdf-room-for-gazebo (room610))
+  (irteus2urdf-room-for-gazebo (room610) (ros::resolve-ros-path "package://eusurdf/worlds/room610.world"))
   )
 
 (deftest generate-room-models-test ()
   (generate-room-models "room610")
   ;; check existence of world file
   (assert (equal (probe-file (ros::resolve-ros-path "package://eusurdf/worlds/room610.world")) :file))
-  ;; check file size of urdf world file
-  (assert (> (file-size (ros::resolve-ros-path "package://eusurdf/worlds/room610.world"))
-             (file-size (ros::resolve-ros-path "package://eusurdf/worlds/world_source.world")) 0))
   )
 
 (run-all-tests)
