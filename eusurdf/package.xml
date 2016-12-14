@@ -23,6 +23,7 @@
 
   <run_depend>collada_urdf_jsk_patch</run_depend>
   <run_depend>gazebo_ros</run_depend>
+  <run_depend>python-lxml</run_depend>
   <run_depend>rostest</run_depend>
 
   <export>
