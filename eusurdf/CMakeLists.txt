@@ -9,8 +9,9 @@ catkin_package()
 include(cmake/eusurdf.cmake)
 convert_eusmodel_to_urdf()
 convert_eusscene_to_gazebo_world()
+convert_eusscene_to_urdf_xacro()
 
-install(DIRECTORY models worlds
+install(DIRECTORY models textured_models worlds launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   USE_SOURCE_PERMISSIONS)
 
