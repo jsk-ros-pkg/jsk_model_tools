@@ -51,7 +51,7 @@
    make-static make-fixed
    eusurdf-package-path
    collada-to-urdf-exe-path
-   (tmp-dir "/tmp")
+   (tmp-dir "/tmp/")
    )
   "Convert each model in irteus scene to urdf model. Generate world file for gazebo.
 - room : irteus scene instance
