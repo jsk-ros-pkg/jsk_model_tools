@@ -8,13 +8,13 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-mac-burger-box/meshes/nil_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-mac-burger-box/meshes/nil_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-mac-burger-box/meshes/nil_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-mac-burger-box/meshes/nil_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </collision>
       <inertial>

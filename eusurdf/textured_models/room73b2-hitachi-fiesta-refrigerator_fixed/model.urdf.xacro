@@ -8,13 +8,13 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOT_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOT_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOT_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOT_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </collision>
       <inertial>
@@ -31,13 +31,13 @@
       <visual>
         <origin xyz="0.3 0.25 0.85" rpy="-1.57 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="0.3 0.245 0.85" rpy="-1.57 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET7_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </collision>
       <inertial>
@@ -54,13 +54,13 @@
       <visual>
         <origin xyz="0.05 0 0.66" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="0.05 0 0.66" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET6_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </collision>
       <inertial>
@@ -77,13 +77,13 @@
       <visual>
         <origin xyz="0.06 0 0.24" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="0.06 0 0.24" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET5_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </collision>
       <inertial>
@@ -100,13 +100,13 @@
       <visual>
         <origin xyz="-0.095 0 1.275" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="-0.095 0 1.275" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET4_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </collision>
       <inertial>
@@ -123,13 +123,13 @@
       <visual>
         <origin xyz="-0.095 0 1.085" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="-0.095 0 1.085" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET3_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </collision>
       <inertial>
@@ -146,13 +146,13 @@
       <visual>
         <origin xyz="-0.095 0 0.935" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="-0.095 0 0.935" rpy="0 -0 0"/>
         <geometry>
-          <mesh filename="model://room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link_mesh.dae" scale="1 1 1"/>
+          <mesh filename="package://eusurdf/textured_models/room73b2-hitachi-fiesta-refrigerator/meshes/ROOM73B2-HITACHI-FIESTA-REFRIGERATOR-BODYSET2_link_mesh.dae" scale="1 1 1"/>
         </geometry>
       </collision>
       <inertial>
