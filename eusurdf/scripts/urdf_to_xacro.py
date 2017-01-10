@@ -145,13 +145,16 @@ class URDF2XACRO(object):
             t_actuator.set("name", ns_str + t_actuator.get("name"))
 
     def replace_model_path(self):
-        for param in ["visual", "collision", "inertial"]:
-            for m in self.root.xpath("//robot/link/%s/geometry/mesh" % param):
-                if "filename" in m.attrib:
-                    modelpath = m.attrib["filename"]
-                    pkgpath = resolve_gazebo_model_path(modelpath)
-                    printf(modelpath, "->", pkgpath)
-                    m.attrib["filename"] = pkgpath
+        try:
+            for param in ["visual", "collision", "inertial"]:
+                for m in self.root.xpath("//robot/link/%s/geometry/mesh" % param):
+                    if "filename" in m.attrib:
+                        modelpath = m.attrib["filename"]
+                        pkgpath = resolve_gazebo_model_path(modelpath)
+                        printf(modelpath, "->", pkgpath)
+                        m.attrib["filename"] = pkgpath
+        except:
+            pass
 
     def inject_macro(self):
         self.add_namespace("name")
