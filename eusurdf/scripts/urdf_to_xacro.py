@@ -93,11 +93,12 @@ def resolve_gazebo_model_path(path):
     return _gazebo.resolve_path(path)
 
 class URDF2XACRO(object):
-    def __init__(self, urdf_path, xacro_path):
+    def __init__(self, urdf_path, xacro_path, force_rename=None):
         printf("loading", urdf_path)
         self.root = lxml.etree.parse(urdf_path,
                                      parser=lxml.etree.XMLParser(remove_blank_text=True))
         self.xacro_path = xacro_path
+        self.force_rename = None
 
     def find_root_link(self):
         links = self.root.xpath("//robot/link")
@@ -150,7 +151,10 @@ class URDF2XACRO(object):
                 for m in self.root.xpath("//robot/link/%s/geometry/mesh" % param):
                     if "filename" in m.attrib:
                         modelpath = m.attrib["filename"]
-                        pkgpath = resolve_gazebo_model_path(modelpath)
+                        if self.force_rename and modelpath.startswith("model://"):
+                            pkgpath = self.force_rename + modelpath[len("model://"):]
+                        else:
+                            pkgpath = resolve_gazebo_model_path(modelpath)
                         printf(modelpath, "->", pkgpath)
                         m.attrib["filename"] = pkgpath
         except:
@@ -201,7 +205,9 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description="xacrify urdf file")
     p.add_argument("urdf", type=str, help="path to input urdf file")
     p.add_argument("xacro", type=str, help="path to output xacro file")
+    p.add_argument("-f", "--force-rename", type=str,
+                   default=None, help="force replace model:// tag with specified name")
     args = p.parse_args()
 
-    c = URDF2XACRO(args.urdf, args.xacro)
+    c = URDF2XACRO(args.urdf, args.xacro, args.force_rename)
     c.convert()

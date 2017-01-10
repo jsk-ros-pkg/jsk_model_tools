@@ -136,19 +136,19 @@ function(convert_eusmodel_to_urdf)
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}/model.urdf.xacro
       COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
-      ARGS ${MODEL_OUT_DIR}/model.urdf ${MODEL_OUT_DIR}/model.urdf.xacro
+      ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}/model.urdf ${MODEL_OUT_DIR}/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}/model.urdf.xacro")
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}_static/model.urdf.xacro
       COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
-      ARGS ${MODEL_OUT_DIR}_static/model.urdf ${MODEL_OUT_DIR}_static/model.urdf.xacro
+      ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}_static/model.urdf ${MODEL_OUT_DIR}_static/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}_static/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}_static/model.urdf.xacro")
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
       COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
-      ARGS ${MODEL_OUT_DIR}_fixed/model.urdf ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
+      ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}_fixed/model.urdf ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}_fixed/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}_fixed/model.urdf.xacro")
   endforeach(EUSMODEL_FILE)
