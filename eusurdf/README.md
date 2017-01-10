@@ -33,8 +33,25 @@ roslaunch gazebo_ros empty_world.launch world_name:=`rospack find eusurdf`/world
 
 ``` bash
 roslaunch gazebo_ros empty_world.launch
-roslaunch eusurdf gazebo_spawn_room73b2.launch
+roslaunch eusurdf gazebo_spawn_scene.launch scene:=room73b2
 ```
+
+## Visualize gazebo scene to RViz
+
+1. Launch gazebo and RViz, and spawn scene model
+
+``` bash
+roslaunch gazebo_ros empty_world.launch
+roslaunch eusurdf gazebo_spawn_scene.launch scene:=room73b2 publish_tf:=true
+rviz # launch rviz
+```
+
+2. Add `RobotModel` to RViz, and configure
+
+- Set `Robot Description` to `room73b2/robot_description`
+- Set `TF Prefix` to `room73b2`
+
+3. Select Fixed Frame Appropriately
 
 ## Apply changes of URDF in textured_models to urdf.xacro
 

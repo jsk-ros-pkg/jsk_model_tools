@@ -87,7 +87,7 @@ function(convert_eusscene_to_urdf_xacro)
     add_custom_command(
       OUTPUT ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro
       COMMAND ${EUS_EXE}
-      ARGS ${PROJECT_SOURCE_DIR}/euslisp/eusscene_to_xacro.l ${EUSSCENE_FILE} ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro ${PROJECT_SOURCE_DIR}/launch/gazebo_spawn_${EUS_SCENE_NAME}.launch
+      ARGS ${PROJECT_SOURCE_DIR}/euslisp/eusscene_to_xacro.l ${EUSSCENE_FILE} ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro
       MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/euslisp/eusscene_to_xacro.l
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     list(APPEND XACRO_FILES "${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro")
