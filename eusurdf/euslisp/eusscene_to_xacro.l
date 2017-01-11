@@ -5,15 +5,6 @@
 (defparameter *eusurdf-package-path* (unix:getwd))
 (require :conversion-utils (format nil "~A/euslisp/conversion-utils.l" *eusurdf-package-path*))
 
-(defun write-spawn-launch-file (s scene-name xacro-path)
-  (format s "<launch>~%")
-  (format s "  <!-- spawn ~A to gazebo -->~%" xacro-path)
-  (format s "  <arg name=\"model\" default=\"~A\"/>~%" xacro-path)
-  (format s "  <param name=\"~A_description\" command=\"$(find xacro)/xacro.py '$(arg model)'\"/>~%" scene-name)
-  (format s "  <node name=\"spawn_~A\" pkg=\"gazebo_ros\" type=\"spawn_model\"~%" scene-name)
-  (format s "        args=\"-param ~A_description -urdf -model ~A\"/>~%" scene-name scene-name)
-  (format s "</launch>~%"))
-
 (defun write-xacro-file-header (s name root-link-name)
   (format s "<?xml version=\"1.0\" ?>~%~%")
   (format s "<robot name=\"~A\" xmlns:xacro=\"http://ros.org/wiki/xacro\">~%~%" name)
@@ -46,7 +37,7 @@
     (format s "~A  <origin xyz=\"~A\" rpy=\"~A\"/>~%" indent-string pos-string rpy-string)
     (format s "~A</~A~A>~%" indent-string (send model :name) model-name-suffix)))
 
-(defun eusscene2xacro (scene-file-name xacro-file-name launch-file-name)
+(defun eusscene2xacro (scene-file-name xacro-file-name)
   (unless (probe-file scene-file-name)
     (errorf "file ~A not exists" scene-file-name))
   (load scene-file-name)
@@ -95,23 +86,10 @@
                    (format nil "$(find eusurdf)/textured_models/~A/model.urdf.xacro" (send model :name)))))
           (write-model-include-xml-stirng f model model-name-suffix xacro-path root-link-name model-name)))
       (write-xacro-file-footer f))
-
-    ;; make spawn launch file
-    (make-dirs (send (pathname launch-file-name) :directory-string))
-    (let ((short-xacro-file-name (copy-seq xacro-file-name)))
-      (when (substringp *eusurdf-package-path* short-xacro-file-name)
-        (setq short-xacro-file-name
-              (format nil "$(find eusurdf)/~A"
-                      (subseq short-xacro-file-name
-                              (1+ (length *eusurdf-package-path*))
-                              (length short-xacro-file-name)))))
-      (with-open-file (f launch-file-name :direction :output :if-exists :overwrite)
-        (write-spawn-launch-file f scene-name short-xacro-file-name)))
     ))
 
-(setq scene-file-path (car (last (butlast (butlast lisp::*eustop-argument*)))))
-(setq xacro-file-path (car (last (butlast lisp::*eustop-argument*))))
-(setq launch-file-path (car (last lisp::*eustop-argument*)))
-(format t "converting eus scene ~A -> ~A, ~A~%" scene-file-path xacro-file-path launch-file-path)
-(eusscene2xacro scene-file-path xacro-file-path launch-file-path)
+(setq scene-file-path (car (last (butlast lisp::*eustop-argument*)))))
+(setq xacro-file-path (car (last lisp::*eustop-argument*))))
+(format t "converting eus scene ~A -> ~A~%" scene-file-path xacro-file-path)
+(eusscene2xacro scene-file-path xacro-file-path)
 (exit)
