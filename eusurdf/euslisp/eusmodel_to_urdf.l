@@ -8,7 +8,7 @@
 (defun make-model-conf (name fpath &optional desc)
   (unless desc
     (setq desc (format nil "This is automatically generated eus model from ~A" name)))
-  (with-open-file (f fpath :direction :output :if-exists :overwrite)
+  (with-open-file (f fpath :direction :output :if-exists :new-version)
     (format f "<?xml version='1.0'?>~%")
     (format f "<model>~%")
     (format f "  <name>~A</name>~%" name)

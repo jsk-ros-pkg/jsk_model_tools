@@ -48,7 +48,7 @@
          (root-link-name (format nil "~A_root_link" scene-name))
          (model-count (make-hash-table)))
     (make-dirs (send (pathname xacro-file-name) :directory-string))
-    (with-open-file (f xacro-file-name :direction :output :if-exists :overwrite)
+    (with-open-file (f xacro-file-name :direction :output :if-exists :new-version)
       (write-xacro-file-header f scene-name root-link-name)
       (dolist (model (remove-if-not #'(lambda (x)
                                         (and (subclassp (class x) cascaded-link)
