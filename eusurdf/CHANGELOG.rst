@@ -2,6 +2,39 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [eusurdf] fix: use :if-exists :new-version instead of :overwrite  (`#196  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/196>`_)
+
+* use package://eusurdf instead of model:// (`#195  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/195>`_)
+  * [eusurdf] fix: try catch
+  * [eusurdf] use 1 launch file to spawn; add option to publish tf for model
+  * [eusurdf][convert-eus-to-urdf.l] fix: add / for directory path
+  * [eusurdf][textured_models] use package://eusurdf instead of model:// for xacro
+  * [eusurdf][urdf_to_xacro.py] convert model:// -> package://eusurdf
+
+* [eusurdf] generate urdf.xacro for model / scene (`#193  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/193>`_)
+  * [eusurdf][package.xml] add python-lxml as run_depend
+  * [eusurdf][README.md] append usage about spawning urdf
+  * [eusurdf][textured_models] add urdf.xacro for textured_models
+  * [eusurdf] generate urdf.xacro from eusmodel / eusscene to make unified urdf
+
+* parallelize model generation (`#188  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/188>`_)
+  * [eusurdf][convert-eus-to-urdf.l] remove tmp-dir-no-duplication
+  * [eusurdf][eusscene_to_world.l] raise error when model name is undefined
+  * [eusurdf][convert-eus-to-urdf.l] fix: forgot to update
+  * [eusurdf][convert-eus-to-urdf-test.l] update test
+  * [eusurdf][convert-eus-to-urdf.l] create directory for world file if not created
+  * [eusurdf][convert-eus-to-urdf.l] make argument world-file-path necessary; remove random-seed
+  * [eusurdf] get collada_to_urdf bin path from cmake
+  * [eusurdf] avoid intermediate files permission issue
+  * [eusurdf][convert-eus-to-urdf.l] keep back compatibility
+  * [eusurdf] cleanup old stuff
+  * [eusurdf][textured_models] drop suffix for models
+  * [eusurdf] parallelize model generation
+
+* Contributors: Yuki Furuta
+
 0.2.5 (2016-10-18)
 ------------------
 * [eusurdf] add test of model conversion (`#181  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/181>`_)
