@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.0 (2017-01-16)
+------------------
 * [eusurdf] fix: use :if-exists :new-version instead of :overwrite  (`#196  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/196>`_)
 
 * use package://eusurdf instead of model:// (`#195  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/195>`_)

@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.0 (2017-01-16)
+------------------
 * Fix conversion of mass properties (`#192  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/192>`_)
   * [euscollada] fix test (samplerobot centroid and pose)
   * [collada2eus] fix conversion of mass properties, when there are links which are not member of links
