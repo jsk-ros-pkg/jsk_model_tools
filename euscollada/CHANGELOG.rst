@@ -2,6 +2,12 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* for kinetic release (`#197 <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/197>`_)
+  * collada2eus : convertnig const char* makes strange behavior (il->second becomes NONE)
+* Contributors: Kei Okada
+
 0.3.0 (2017-01-16)
 ------------------
 * Fix conversion of mass properties (`#192  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/192>`_)

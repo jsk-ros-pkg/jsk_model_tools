@@ -2,6 +2,13 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* for kinetic release (`#197 <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/197>`_)
+  * eusurdf/euslisp/eusmodel_to_urdf.l: if collada_urdf_jsk_patch does not exists, use collada_urdf
+  * CMakeLists.txt, cmake/eusurdf.cmake : use collada_urdf if collada_urdf_jsk_patch is not found
+* Contributors: Kei Okada
+
 0.3.0 (2017-01-16)
 ------------------
 * [eusurdf] fix: use :if-exists :new-version instead of :overwrite  (`#196  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/196>`_)
