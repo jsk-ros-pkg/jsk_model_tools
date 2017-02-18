@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.3 (2017-02-18)
+------------------
 * urdfdom is for hydro, now we can drop (forget to remove run_depends)
 * Contributors: Kei Okada
 
