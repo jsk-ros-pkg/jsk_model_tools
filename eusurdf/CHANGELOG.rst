@@ -2,6 +2,9 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.3.1 (2017-02-18)
 ------------------
 * for kinetic release (`#197 <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/197>`_)
