@@ -35,7 +35,11 @@
     (collada::eus2collada model tmpdir)
     (make-dirs mesh-out-dir)
     (unless collada-to-urdf-exe-path
-      (setq collada-to-urdf-exe-path "rosrun collada_urdf_jsk_patch collada_to_urdf"))
+      (cond ((= (unix::system "rospack find collada_urdf_jsk_patch") 0)
+	     (setq collada-to-urdf-exe-path "rosrun collada_urdf_jsk_patch collada_to_urdf"))
+	    (t
+	     (setq collada-to-urdf-exe-path "rosrun collada_urdf collada_to_urdf"))))
+
     (unix:system (format nil "~A ~A -G -A --mesh_output_dir ~A --mesh_prefix \"model://~A/meshes\" -O ~A"
                          collada-to-urdf-exe-path
                          (send (concatenate-pathnames tmpdir model-name ".dae") :namestring)

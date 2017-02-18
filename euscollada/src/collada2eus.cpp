@@ -854,9 +854,9 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       vector<pair<domInstance_geometry*, string> > geometryNameArray;
       for(int currentGeometryCount=0;currentGeometryCount<geometryCount;currentGeometryCount++) {
 	domInstance_geometry *thisGeometry  = geomNode->getInstance_geometry_array()[currentGeometryCount];
-	const char * geometryName = (string("b_")+thisGeometry->getUrl().id()).c_str();
+	string geometryName = (string("b_")+thisGeometry->getUrl().id());
         if (verbose) {
-          fprintf(stderr, " geometry:%d %s\n",currentGeometryCount, geometryName);
+          fprintf(stderr, " geometry:%d %s\n",currentGeometryCount, geometryName.c_str());
         }
 	geometryNameArray.push_back(pair<domInstance_geometry*, string>(thisGeometry, geometryName));
       }
