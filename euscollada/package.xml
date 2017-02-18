@@ -1,6 +1,6 @@
 <package>
   <name>euscollada</name>
-  <version>0.3.0</version>
+  <version>0.3.1</version>
   <description>euscollada</description>
 
   <maintainer email="youhei@jsk.t.u-tokyo.ac.jp">Yohei Kakiuchi</maintainer>

@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2017-02-18)
+------------------
 * for kinetic release (`#197 <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/197>`_)
   * eusurdf/euslisp/eusmodel_to_urdf.l: if collada_urdf_jsk_patch does not exists, use collada_urdf
   * CMakeLists.txt, cmake/eusurdf.cmake : use collada_urdf if collada_urdf_jsk_patch is not found
