@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.2 (2017-02-18)
+------------------
 * urdfdom is for hydro, now we can drop
 * Contributors: Kei Okada
 
