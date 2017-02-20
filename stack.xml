@@ -1,8 +1,0 @@
-<stack>
-  <description brief="jsk_common">jsk_model_tools</description>
-  <author>Maintained by Yohei Kakiuchi</author>
-  <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/jsk_model_tools</url>
-  <depend stack="ros" />
-</stack>
