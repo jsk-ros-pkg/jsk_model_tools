@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.5 (2017-02-23)
+------------------
 * add gazebo_ros to build_depend
 * Contributors: Kei Okada
 
