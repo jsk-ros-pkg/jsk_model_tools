@@ -2,6 +2,11 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add gazebo_ros to build_depend
+* Contributors: Kei Okada
+
 0.3.4 (2017-02-22)
 ------------------
 * add python-lxml
