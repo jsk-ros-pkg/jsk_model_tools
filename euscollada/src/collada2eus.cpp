@@ -1614,9 +1614,8 @@ int main(int argc, char* argv[]){
       }
       fprintf(output_fp,
               "\n"
-              "    (:%s\n"
-              "      (&optional (limbs '(%s)))\n"
-              "      \"\"\"Predefined pose named %s.\"\"\"\n"
+              "    (:%s (&optional (limbs '(%s)))\n"
+              "      \"Predefined pose named %s.\"\n"
               "      (unless (listp limbs) (setq limbs (list limbs)))\n"
               "      (dolist (limb limbs)\n"
               "        (case limb", name.c_str(), limbs_symbols.c_str(), name.c_str());
