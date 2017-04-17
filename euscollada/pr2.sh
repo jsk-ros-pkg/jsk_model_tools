@@ -3,10 +3,16 @@
 cd `rospack find euscollada`
 
 #rosrun collada_urdf_jsk_patch urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf pr2.dae
-if [ -e `rospack find pr2_mechanism_model`/pr2.urdf ];
+if [ -e /etc/ros/distro/urdf/robot.xml ];
 then
+    echo "Use /etc/ros/distro/urdf/robot.xml"
+    rosrun collada_urdf urdf_to_collada /etc/ros/distro/urdf/robot.xml pr2.dae
+elif [ -e `rospack find pr2_mechanism_model`/pr2.urdf ];
+then
+    echo "Use "`rospack find pr2_mechanism_model`/pr2.urdf
     rosrun collada_urdf urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf pr2.dae
 else
+    echo "Use "`rospack find pr2_description`/robots/pr2.urdf.xacro
     rosrun xacro xacro.py `rospack find pr2_description`/robots/pr2.urdf.xacro > /tmp/pr2.$$.urdf
     rosrun collada_urdf urdf_to_collada /tmp/pr2.$$.urdf pr2.dae
 fi
