@@ -242,6 +242,7 @@
      ((find-method obj :bodies)
       (let (glv-lst)
         (dolist (bd (send obj :bodies))
+          (setq faces (send bd :faces))
           (let (mat)
             (if material (setq mat material))
             ;; TODO: get color and set matterial
