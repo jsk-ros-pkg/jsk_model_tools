@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 project(eusurdf)
 
 find_package(catkin REQUIRED)
-find_package(collada_urdf_jsk_patch)
 
 catkin_package()
 

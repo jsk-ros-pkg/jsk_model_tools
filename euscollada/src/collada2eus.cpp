@@ -854,9 +854,9 @@ void writeNodes(FILE *fp, domNode_Array thisNodeArray, domRigid_body_Array thisR
       vector<pair<domInstance_geometry*, string> > geometryNameArray;
       for(int currentGeometryCount=0;currentGeometryCount<geometryCount;currentGeometryCount++) {
 	domInstance_geometry *thisGeometry  = geomNode->getInstance_geometry_array()[currentGeometryCount];
-	const char * geometryName = (string("b_")+thisGeometry->getUrl().id()).c_str();
+	string geometryName = (string("b_")+thisGeometry->getUrl().id());
         if (verbose) {
-          fprintf(stderr, " geometry:%d %s\n",currentGeometryCount, geometryName);
+          fprintf(stderr, " geometry:%d %s\n",currentGeometryCount, geometryName.c_str());
         }
 	geometryNameArray.push_back(pair<domInstance_geometry*, string>(thisGeometry, geometryName));
       }
@@ -1614,9 +1614,8 @@ int main(int argc, char* argv[]){
       }
       fprintf(output_fp,
               "\n"
-              "    (:%s\n"
-              "      (&optional (limbs '(%s)))\n"
-              "      \"\"\"Predefined pose named %s.\"\"\"\n"
+              "    (:%s (&optional (limbs '(%s)))\n"
+              "      \"Predefined pose named %s.\"\n"
               "      (unless (listp limbs) (setq limbs (list limbs)))\n"
               "      (dolist (limb limbs)\n"
               "        (case limb", name.c_str(), limbs_symbols.c_str(), name.c_str());

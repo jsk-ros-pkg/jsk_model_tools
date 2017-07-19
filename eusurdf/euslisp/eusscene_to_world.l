@@ -45,7 +45,7 @@
   (format s "</sdf>~%"))
 
 (defun write-empty-world-file (world-file-path)
-  (with-open-file (f world-file-path :direction :output :if-exists :overwrite)
+  (with-open-file (f world-file-path :direction :output :if-exists :new-version)
     (write-world-file-header f)
     (write-world-file-footer f)))
 
@@ -83,7 +83,7 @@
 (defun eusscene2world (scene world-file-name)
   (let ((model-count (make-hash-table)))
     (make-dirs (send (pathname world-file-name) :directory-string))
-    (with-open-file (f world-file-name :direction :output :if-exists :overwrite)
+    (with-open-file (f world-file-name :direction :output :if-exists :new-version)
       (write-world-file-header f)
       (dolist (model (remove-if-not #'(lambda (x)
                                         (and (subclassp (class x) cascaded-link)

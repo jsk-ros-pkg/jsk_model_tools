@@ -2,6 +2,36 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.5 (2017-02-23)
+------------------
+
+0.3.4 (2017-02-22)
+------------------
+
+0.3.3 (2017-02-18)
+------------------
+* urdfdom is for hydro, now we can drop (forget to remove run_depends)
+* Contributors: Kei Okada
+
+0.3.2 (2017-02-18)
+------------------
+* urdfdom is for hydro, now we can drop
+* Contributors: Kei Okada
+
+0.3.1 (2017-02-18)
+------------------
+* for kinetic release (`#197 <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/197>`_)
+  * collada2eus : convertnig const char* makes strange behavior (il->second becomes NONE)
+* Contributors: Kei Okada
+
+0.3.0 (2017-01-16)
+------------------
+* Fix conversion of mass properties (`#192  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/192>`_)
+  * [euscollada] fix test (samplerobot centroid and pose)
+  * [collada2eus] fix conversion of mass properties, when there are links which are not member of links
+  * [euscollda] add tests
+* Contributors: Yohei Kakiuchi
+
 0.2.5 (2016-10-18)
 ------------------
 * [collada2eus] fix closing /dev/null (`#186  <https://github.com/jsk-ros-pkg/jsk_model_tools/pull/186>`_)

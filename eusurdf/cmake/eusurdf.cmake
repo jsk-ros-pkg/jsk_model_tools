@@ -1,6 +1,11 @@
 macro(get_collada_to_urdf_exe _collada_to_urdf_exe)
-  find_package(collada_urdf_jsk_patch REQUIRED)
-  set(${_collada_to_urdf_exe} ${collada_urdf_jsk_patch_PREFIX}/lib/collada_urdf_jsk_patch/collada_to_urdf)
+  find_package(collada_urdf_jsk_patch)
+  find_package(collada_urdf)
+  if(collada_urdf_jsk_patch_FOUND)
+    set(${_collada_to_urdf_exe} ${collada_urdf_jsk_patch_PREFIX}/lib/collada_urdf_jsk_patch/collada_to_urdf)
+  else()
+    set(${_collada_to_urdf_exe} ${collada_urdf_PREFIX}/lib/collada_urdf/collada_to_urdf)
+  endif()
   if(NOT EXISTS ${${_collada_to_urdf_exe}})
     message(FATAL_ERROR "could not find ${${_collada_to_urdf_exe}}")
   endif()
@@ -115,7 +120,7 @@ function(convert_eusscene_to_urdf_xacro)
     add_custom_command(
       OUTPUT ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro
       COMMAND ${EUS_EXE}
-      ARGS ${PROJECT_SOURCE_DIR}/euslisp/eusscene_to_xacro.l ${EUSSCENE_FILE} ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro ${PROJECT_SOURCE_DIR}/launch/gazebo_spawn_${EUS_SCENE_NAME}.launch
+      ARGS ${PROJECT_SOURCE_DIR}/euslisp/eusscene_to_xacro.l ${EUSSCENE_FILE} ${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro
       MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/euslisp/eusscene_to_xacro.l
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     list(APPEND XACRO_FILES "${PROJECT_SOURCE_DIR}/worlds/${EUS_SCENE_NAME}.urdf.xacro")
@@ -164,19 +169,19 @@ function(convert_eusmodel_to_urdf)
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}/model.urdf.xacro
       COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
-      ARGS ${MODEL_OUT_DIR}/model.urdf ${MODEL_OUT_DIR}/model.urdf.xacro
+      ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}/model.urdf ${MODEL_OUT_DIR}/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}/model.urdf.xacro")
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}_static/model.urdf.xacro
       COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
-      ARGS ${MODEL_OUT_DIR}_static/model.urdf ${MODEL_OUT_DIR}_static/model.urdf.xacro
+      ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}_static/model.urdf ${MODEL_OUT_DIR}_static/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}_static/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}_static/model.urdf.xacro")
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
       COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
-      ARGS ${MODEL_OUT_DIR}_fixed/model.urdf ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
+      ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}_fixed/model.urdf ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}_fixed/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}_fixed/model.urdf.xacro")
   endforeach(EUSMODEL_FILE)
