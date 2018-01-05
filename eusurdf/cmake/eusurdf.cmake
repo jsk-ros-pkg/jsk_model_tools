@@ -36,6 +36,9 @@ macro(get_eusexe _eus_exe)
     elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES amd64* OR
         ${CMAKE_SYSTEM_PROCESSOR} MATCHES x86_64* )
       set(ARCHDIR Linux64)
+    elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES armv* OR
+	${CMAKE_SYSTEM_PROCESSOR} MATCHES aarch64* )
+      set(ARCHDIR LinuxARM)
     else()
       set(ARCHDIR Linux)
     endif()

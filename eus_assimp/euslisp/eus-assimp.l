@@ -147,14 +147,22 @@
 (setf (symbol-function 'store-glvertices)
       (symbol-function 'save-mesh-file))
 ;;
-(defun append-glvertices (glv-lst)
+(defun append-glvertices (glv-lst &key (use-coordinate nil))
   (let (ret)
     (dolist (glv glv-lst)
-      (let ((mlst (glv . gl::mesh-list))
+      (let ((mlst (copy-object (glv . gl::mesh-list)))
             (cds (send glv :worldcoords)))
-        ;; not concerning coordinates
-        (setq ret (append ret mlst))
-        ))
+        (if use-coordinate
+            (let ((lglv (instance gl::glvertices :init mlst)))
+              ;; move vertices using given coordinates
+              (send lglv :set-offset cds)
+              (setq ret (append ret mlst))
+              )
+          (progn
+            ;; not concerning coordinates
+            (setq ret (append ret mlst))
+            )
+          )))
     (instance gl::glvertices :init ret)))
 
 (defun convex-decomposition-glvertices (glvtcs
@@ -242,6 +250,7 @@
      ((find-method obj :bodies)
       (let (glv-lst)
         (dolist (bd (send obj :bodies))
+          (setq faces (send bd :faces))
           (let (mat)
             (if material (setq mat material))
             ;; TODO: get color and set matterial
