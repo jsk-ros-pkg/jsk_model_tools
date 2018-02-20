@@ -1138,10 +1138,12 @@ domLink* ModelEuslisp::findLinkfromKinematics (domLink* thisLink, const string& 
   return NULL;
 }
 void ModelEuslisp::parseSensors () {
-  int iRet = dae.load(collada_file.c_str());
-
+  int iRet = DAE_OK + 1;
+  if(!collada_file.empty()) {
+    iRet = dae.load(collada_file.c_str());
+  }
   if ( iRet != DAE_OK ) {
-    ROS_WARN("This file (%s) is not collada file.", collada_file.c_str());
+    ROS_WARN("read sensor settings from yaml");
     // read yaml
     // sensor_name: 'sname', sensor_type: 'type', parent_link: 'LINK', translate: '0 0 0',  rotate: '1 0 0 90'
     // type -> base_force6d {force}, base_imu {gyro, acceleration}, base_pinhole_camera {camera}, they came from openrave collada
@@ -1601,6 +1603,7 @@ int main(int argc, char** argv)
   {
     ROS_DEBUG("Parsing robot urdf xml string");
     robot = parseURDF(xml_string);
+    input_file.clear(); // this file is urdf
   }
 
   if (!robot){
