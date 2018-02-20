@@ -1048,21 +1048,48 @@ void ModelEuslisp::printEndCoords () {
     for(YAML::Iterator it = n.begin(); it != n.end(); it++) {
       string name; it.first() >> name;
 #endif
-      fprintf(fp, "  (:%s () (send self :angle-vector (float-vector", name.c_str());
+      string limbs_symbols = "";
+      for (size_t i = 0; i < limbs.size(); i++) {
+        string limb_name = limbs[i].first;
+        limbs_symbols += i == 0 ? (":" + limb_name) : (" :" + limb_name);
+      }
+      fprintf(fp,
+              "\n"
+              "    (:%s (&optional (limbs '(%s)))\n"
+              "      \"Predefined pose named %s.\"\n"
+              "      (unless (listp limbs) (setq limbs (list limbs)))\n"
+              "      (dolist (limb limbs)\n"
+              "        (case limb", name.c_str(), limbs_symbols.c_str(), name.c_str());
 #ifdef USE_CURRENT_YAML
       const YAML::Node& v = it->second;
 #else
       const YAML::Node& v = it.second();
 #endif
-      for(unsigned int i = 0; i < v.size(); i++){
+      size_t i_joint = 0;
+      for (size_t i = 0; i < limbs.size(); i++) {
+        string limb_name = limbs[i].first;
+        fprintf(fp,
+                "\n"
+                "          (:%s (send self limb :angle-vector (float-vector",
+                limb_name.c_str());
+        vector<string> joint_names = limbs[i].second.second;
+        for (size_t j = 0; j < joint_names.size(); j++) {
 #ifdef USE_CURRENT_YAML
-        fprintf(fp, " %f", v[i].as<double>());
+          fprintf(fp, " %f", v[i_joint].as<double>());
 #else
-        double d; v[i] >> d;
-        fprintf(fp, " %f", d);
+          double d; v[i_joint] >> d;
+          fprintf(fp, " %f", d);
 #endif
+          i_joint += 1;
+        }
+        fprintf(fp, ")))");
       }
-      fprintf(fp, ")))\n");
+      fprintf(fp,
+              "\n"
+              "          (t (format t \"Unknown limb is passed: ~a~%\" limb))");
+      fprintf(fp,
+              "))\n"
+              "      (send self :angle-vector))");
     }
   } catch(YAML::RepresentationException& e) {
   }
