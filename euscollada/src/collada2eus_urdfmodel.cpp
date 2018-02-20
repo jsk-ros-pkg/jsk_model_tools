@@ -827,6 +827,9 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     fprintf(fp, "\n");
     fprintf(fp, "                     :max-joint-velocity %f\n", joint->limits->velocity);
     fprintf(fp, "                     :max-joint-torque %f\n", joint->limits->effort);
+  } else if (joint->type ==Joint::CONTINUOUS) {
+    // no limitation for rotation
+    fprintf(fp, "                     :min *-inf* :max *inf*\n");
   } else {
     // fixed joint
     fprintf(fp, "                     :min 0.0 :max 0.0\n");
