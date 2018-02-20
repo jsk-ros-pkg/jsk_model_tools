@@ -407,7 +407,20 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
     if (printq) fprintf(fp, "                   (list :type :triangles)\n");
     if (printq) fprintf(fp, "                   (list :material (list");
     if (material_name.size() > 0) {
-      if (printq) fprintf(fp, ";; material: %s not using\n", material_name.c_str());
+      if (printq) fprintf(fp, ";; material: %s\n", material_name.c_str());
+      map <string, boost::shared_ptr<const Material> >::iterator it = m_materials.find(material_name);
+      if (it != m_materials.end()) {
+
+        boost::shared_ptr<const Material> m = it->second;
+        float col_r = m->color.r;
+        float col_g = m->color.g;
+        float col_b = m->color.b;
+        float col_a = m->color.a;
+        if (printq) fprintf(fp, "\n                    (list :ambient (float-vector %f %f %f %f))", col_r, col_g, col_b, col_a);
+        if (printq) fprintf(fp, "\n                    (list :diffuse (float-vector %f %f %f %f))", col_r, col_g, col_b, col_a);
+      } else {
+        std::cerr << "can not find material " << material_name << std::endl;
+      }
     } else {
       if (!!scene->mMaterials) {
         aiMaterial *am = scene->mMaterials[input_mesh->mMaterialIndex];
@@ -1368,16 +1381,83 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     fprintf(fp, ")))\n");
   }
 
-  if (g->type == Geometry::SPHERE) {
-    // TODO: make eus geometry
-    // g->radius
-  } else if (g->type == Geometry::BOX) {
-    // TODO: make eus geometry
-    // g->dim
-  } else if (g->type == Geometry::CYLINDER) {
-    // TODO: make eus geometry
-    // g->length
-    // g->radius
+  if (g->type != Geometry::MESH) {
+    float col_r = 0.6;
+    float col_g = 0.6;
+    float col_b = 0.6;
+    float col_a = 1.0;
+    if (material_name.size() > 0) {
+      map <string, boost::shared_ptr<const Material> >::iterator it = m_materials.find(material_name);
+      if (it != m_materials.end()) {
+        boost::shared_ptr<const Material> m = it->second;
+        col_r = m->color.r;
+        col_g = m->color.g;
+        col_b = m->color.b;
+        col_a = m->color.a;
+#if 0
+        std::cerr << "material " << material_name << " found" << std::endl;
+        std::cerr << "color: "
+                  << m->color.r << " "
+                  << m->color.g << " "
+                  << m->color.b << " "
+                  << m->color.a << std::endl;
+        std::cerr << "fname: " << m->texture_filename << std::endl;
+#endif
+      } else {
+        std::cerr << "can not find material " << material_name << std::endl;
+      }
+    }
+    if (g->type == Geometry::SPHERE) {
+#if 0
+      std::cerr << "SPHERE: " << name
+                << ", radius = " << ((Sphere *)g.get())->radius
+                << std::endl;
+#endif
+      double radius = ((Sphere *)g.get())->radius;
+      fprintf(fp, "      (let ((bdy (make-sphere %f)))\n", 1000*radius);
+      fprintf(fp, "         (setq qhull bdy)\n");
+      fprintf(fp, "         (setq glv (gl::make-glvertices-from-faceset bdy\n");
+      fprintf(fp, "                     :material (list (list :ambient (float-vector %f %f %f %f))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "                                     (list :diffuse (float-vector %f %f %f %f)))))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "         (send glv :transform local-cds)\n");
+      fprintf(fp, "         (send bdy :transform local-cds)\n");
+      fprintf(fp, "         (send glv :calc-normals))\n");
+    } else if (g->type == Geometry::BOX) {
+      Vector3 vec = ((Box *)g.get())->dim;
+#if 0
+      std::cerr << "BOX: " << name
+                << ", dim = " << vec.x << " " << vec.y << " " << vec.z
+                << std::endl;
+#endif
+      fprintf(fp, "      (let ((bdy (make-cube %f %f %f)))\n", 1000*vec.x, 1000*vec.y, 1000*vec.z);
+      fprintf(fp, "         (setq qhull bdy)\n");
+      fprintf(fp, "         (setq glv (gl::make-glvertices-from-faceset bdy\n");
+      fprintf(fp, "                     :material (list (list :ambient (float-vector %f %f %f %f))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "                                     (list :diffuse (float-vector %f %f %f %f)))))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "         (send glv :transform local-cds)\n");
+      fprintf(fp, "         (send bdy :transform local-cds)\n");
+      fprintf(fp, "         (send glv :calc-normals))\n");
+    } else if (g->type == Geometry::CYLINDER) {
+#if 0
+      std::cerr << "CYLINDER: " << name
+                << ", len = " << ((Cylinder *)g.get())->length
+                << ", radius = " << ((Cylinder *)g.get())->radius
+                << std::endl;
+#endif
+      double length = ((Cylinder *)g.get())->length;
+      double radius = ((Cylinder *)g.get())->radius;
+      fprintf(fp, "      (let ((bdy (make-cylinder %f %f :segments 24)))\n", 1000*radius, 1000*length);
+      fprintf(fp, "         (send bdy :translate-vertices (float-vector 0 0 %f))\n", -500*length);
+      fprintf(fp, "         (setq qhull bdy)\n");
+      fprintf(fp, "         (setq glv (gl::make-glvertices-from-faceset bdy\n");
+      fprintf(fp, "                     :material (list (list :ambient (float-vector %f %f %f %f))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "                                     (list :diffuse (float-vector %f %f %f %f)))))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "         (send glv :transform local-cds)\n");
+      fprintf(fp, "         (send bdy :transform local-cds)\n");
+      fprintf(fp, "         (send glv :calc-normals))\n");
+    } else {
+      std::cerr << "unknown geometry type: " << name << std::endl;
+    }
   } else { // g->type == Geometry::MESH
     Assimp::Importer importer;
     importer.SetIOHandler(new ResourceIOSystem());
@@ -1455,10 +1535,9 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     }
   }
   fprintf(fp, "      (setq geom (instance collada-body :init :replace-obj qhull :name \"%s\"))\n", gname.c_str());
-  if (g->type == Geometry::MESH) {
-    fprintf(fp, "      (setq (geom . gl::aglvertices) glv)\n");
-    fprintf(fp, "      (send geom :assoc glv)\n");
-  }
+  fprintf(fp, "      (when glv\n");
+  fprintf(fp, "        (setq (geom . gl::aglvertices) glv)\n");
+  fprintf(fp, "        (send geom :assoc glv))\n");
   fprintf(fp, "      geom))\n");
 }
 
