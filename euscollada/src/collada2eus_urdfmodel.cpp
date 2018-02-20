@@ -400,11 +400,13 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
   inverse_transpose_rotation.Transpose();
   for (uint32_t i = 0; i < node->mNumMeshes; i++) {
     aiMesh* input_mesh = scene->mMeshes[node->mMeshes[i]];
+    if (input_mesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE) {
+      continue; // print only triangle mesh
+    }
     if (printq) fprintf(fp, "                  (list ;; mesh description\n");
     if (printq) fprintf(fp, "                   (list :type :triangles)\n");
     if (printq) fprintf(fp, "                   (list :material (list");
     if (material_name.size() > 0) {
-      // TODO: using material_name on urdf
       if (printq) fprintf(fp, ";; material: %s not using\n", material_name.c_str());
     } else {
       if (!!scene->mMaterials) {
