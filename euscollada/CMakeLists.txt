@@ -52,8 +52,11 @@ install(DIRECTORY src scripts
   PATTERN "*.cpp" EXCLUDE)
 
 
-file(GLOB _install_files RELATIVE ${PROJECT_SOURCE_DIR} *.yaml *.sh)
-install(FILES ${_install_files}
+file(GLOB _install_yaml_files RELATIVE ${PROJECT_SOURCE_DIR} *.yaml)
+install(FILES ${_install_yaml_files}
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+file(GLOB _install_sh_files RELATIVE ${PROJECT_SOURCE_DIR} *.sh)
+install(PROGRAMS ${_install_sh_files}
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 add_rostest(test/euscollada-model-conversion.test)
