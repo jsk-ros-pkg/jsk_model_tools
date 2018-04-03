@@ -1,6 +1,10 @@
 #!/bin/bash
 
-cd `rospack find euscollada`
+if [ -w `rospack find euscollada` ]; then
+    cd `rospack find euscollada`
+else
+    echo "euscollada direcotry is not writable, so write to current directory"
+fi
 
 #rosrun collada_urdf_jsk_patch urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf pr2.dae
 if [ -e `rospack find pr2_mechanism_model`/pr2.urdf ];
@@ -12,12 +16,12 @@ else
 fi
 if [ "$?" != 0 ] ;  then exit ; fi
 
-rosrun euscollada collada2eus pr2.dae pr2.yaml pr2.l.$$.tmp; mv pr2.l.$$.tmp pr2.l
+rosrun euscollada collada2eus pr2.dae `rospack find euscollada`/pr2.yaml pr2.l.$$.tmp; mv pr2.l.$$.tmp pr2.l
 if [ "$?" != 0 ] ;  then exit ; fi
 
 rosrun roseus roseus lib/llib/unittest.l "(init-unit-test)" "\
 (progn									\
-  (load \"package://euscollada/pr2.l\")					\
+  (load \"pr2.l\")					\
   (if (and x::*display* (> x::*display* 0) (not (boundp '*irtviewer*))) (make-irtviewer :title \"pr2.sh\"))			\
   (if (not (boundp '*pr2*)) (pr2))					\
 									\

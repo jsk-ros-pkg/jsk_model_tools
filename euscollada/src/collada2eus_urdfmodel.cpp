@@ -400,12 +400,27 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
   inverse_transpose_rotation.Transpose();
   for (uint32_t i = 0; i < node->mNumMeshes; i++) {
     aiMesh* input_mesh = scene->mMeshes[node->mMeshes[i]];
+    if (input_mesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE) {
+      continue; // print only triangle mesh
+    }
     if (printq) fprintf(fp, "                  (list ;; mesh description\n");
     if (printq) fprintf(fp, "                   (list :type :triangles)\n");
     if (printq) fprintf(fp, "                   (list :material (list");
     if (material_name.size() > 0) {
-      // TODO: using material_name on urdf
-      if (printq) fprintf(fp, ";; material: %s not using\n", material_name.c_str());
+      if (printq) fprintf(fp, ";; material: %s\n", material_name.c_str());
+      map <string, boost::shared_ptr<const Material> >::iterator it = m_materials.find(material_name);
+      if (it != m_materials.end()) {
+
+        boost::shared_ptr<const Material> m = it->second;
+        float col_r = m->color.r;
+        float col_g = m->color.g;
+        float col_b = m->color.b;
+        float col_a = m->color.a;
+        if (printq) fprintf(fp, "\n                    (list :ambient (float-vector %f %f %f %f))", col_r, col_g, col_b, col_a);
+        if (printq) fprintf(fp, "\n                    (list :diffuse (float-vector %f %f %f %f))", col_r, col_g, col_b, col_a);
+      } else {
+        std::cerr << "can not find material " << material_name << std::endl;
+      }
     } else {
       if (!!scene->mMaterials) {
         aiMaterial *am = scene->mMaterials[input_mesh->mMaterialIndex];
@@ -825,6 +840,9 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     fprintf(fp, "\n");
     fprintf(fp, "                     :max-joint-velocity %f\n", joint->limits->velocity);
     fprintf(fp, "                     :max-joint-torque %f\n", joint->limits->effort);
+  } else if (joint->type ==Joint::CONTINUOUS) {
+    // no limitation for rotation
+    fprintf(fp, "                     :min *-inf* :max *inf*\n");
   } else {
     // fixed joint
     fprintf(fp, "                     :min 0.0 :max 0.0\n");
@@ -1043,21 +1061,48 @@ void ModelEuslisp::printEndCoords () {
     for(YAML::Iterator it = n.begin(); it != n.end(); it++) {
       string name; it.first() >> name;
 #endif
-      fprintf(fp, "  (:%s () (send self :angle-vector (float-vector", name.c_str());
+      string limbs_symbols = "";
+      for (size_t i = 0; i < limbs.size(); i++) {
+        string limb_name = limbs[i].first;
+        limbs_symbols += i == 0 ? (":" + limb_name) : (" :" + limb_name);
+      }
+      fprintf(fp,
+              "\n"
+              "    (:%s (&optional (limbs '(%s)))\n"
+              "      \"Predefined pose named %s.\"\n"
+              "      (unless (listp limbs) (setq limbs (list limbs)))\n"
+              "      (dolist (limb limbs)\n"
+              "        (case limb", name.c_str(), limbs_symbols.c_str(), name.c_str());
 #ifdef USE_CURRENT_YAML
       const YAML::Node& v = it->second;
 #else
       const YAML::Node& v = it.second();
 #endif
-      for(unsigned int i = 0; i < v.size(); i++){
+      size_t i_joint = 0;
+      for (size_t i = 0; i < limbs.size(); i++) {
+        string limb_name = limbs[i].first;
+        fprintf(fp,
+                "\n"
+                "          (:%s (send self limb :angle-vector (float-vector",
+                limb_name.c_str());
+        vector<string> joint_names = limbs[i].second.second;
+        for (size_t j = 0; j < joint_names.size(); j++) {
 #ifdef USE_CURRENT_YAML
-        fprintf(fp, " %f", v[i].as<double>());
+          fprintf(fp, " %f", v[i_joint].as<double>());
 #else
-        double d; v[i] >> d;
-        fprintf(fp, " %f", d);
+          double d; v[i_joint] >> d;
+          fprintf(fp, " %f", d);
 #endif
+          i_joint += 1;
+        }
+        fprintf(fp, ")))");
       }
-      fprintf(fp, ")))\n");
+      fprintf(fp,
+              "\n"
+              "          (t (format t \"Unknown limb is passed: ~a~%\" limb))");
+      fprintf(fp,
+              "))\n"
+              "      (send self :angle-vector))");
     }
   } catch(YAML::RepresentationException& e) {
   }
@@ -1133,10 +1178,12 @@ domLink* ModelEuslisp::findLinkfromKinematics (domLink* thisLink, const string& 
   return NULL;
 }
 void ModelEuslisp::parseSensors () {
-  int iRet = dae.load(collada_file.c_str());
-
+  int iRet = DAE_OK + 1;
+  if(!collada_file.empty()) {
+    iRet = dae.load(collada_file.c_str());
+  }
   if ( iRet != DAE_OK ) {
-    ROS_WARN("This file (%s) is not collada file.", collada_file.c_str());
+    ROS_WARN("read sensor settings from yaml");
     // read yaml
     // sensor_name: 'sname', sensor_type: 'type', parent_link: 'LINK', translate: '0 0 0',  rotate: '1 0 0 90'
     // type -> base_force6d {force}, base_imu {gyro, acceleration}, base_pinhole_camera {camera}, they came from openrave collada
@@ -1334,16 +1381,83 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     fprintf(fp, ")))\n");
   }
 
-  if (g->type == Geometry::SPHERE) {
-    // TODO: make eus geometry
-    // g->radius
-  } else if (g->type == Geometry::BOX) {
-    // TODO: make eus geometry
-    // g->dim
-  } else if (g->type == Geometry::CYLINDER) {
-    // TODO: make eus geometry
-    // g->length
-    // g->radius
+  if (g->type != Geometry::MESH) {
+    float col_r = 0.6;
+    float col_g = 0.6;
+    float col_b = 0.6;
+    float col_a = 1.0;
+    if (material_name.size() > 0) {
+      map <string, boost::shared_ptr<const Material> >::iterator it = m_materials.find(material_name);
+      if (it != m_materials.end()) {
+        boost::shared_ptr<const Material> m = it->second;
+        col_r = m->color.r;
+        col_g = m->color.g;
+        col_b = m->color.b;
+        col_a = m->color.a;
+#if 0
+        std::cerr << "material " << material_name << " found" << std::endl;
+        std::cerr << "color: "
+                  << m->color.r << " "
+                  << m->color.g << " "
+                  << m->color.b << " "
+                  << m->color.a << std::endl;
+        std::cerr << "fname: " << m->texture_filename << std::endl;
+#endif
+      } else {
+        std::cerr << "can not find material " << material_name << std::endl;
+      }
+    }
+    if (g->type == Geometry::SPHERE) {
+#if 0
+      std::cerr << "SPHERE: " << name
+                << ", radius = " << ((Sphere *)g.get())->radius
+                << std::endl;
+#endif
+      double radius = ((Sphere *)g.get())->radius;
+      fprintf(fp, "      (let ((bdy (make-sphere %f)))\n", 1000*radius);
+      fprintf(fp, "         (setq qhull bdy)\n");
+      fprintf(fp, "         (setq glv (gl::make-glvertices-from-faceset bdy\n");
+      fprintf(fp, "                     :material (list (list :ambient (float-vector %f %f %f %f))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "                                     (list :diffuse (float-vector %f %f %f %f)))))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "         (send glv :transform local-cds)\n");
+      fprintf(fp, "         (send bdy :transform local-cds)\n");
+      fprintf(fp, "         (send glv :calc-normals))\n");
+    } else if (g->type == Geometry::BOX) {
+      Vector3 vec = ((Box *)g.get())->dim;
+#if 0
+      std::cerr << "BOX: " << name
+                << ", dim = " << vec.x << " " << vec.y << " " << vec.z
+                << std::endl;
+#endif
+      fprintf(fp, "      (let ((bdy (make-cube %f %f %f)))\n", 1000*vec.x, 1000*vec.y, 1000*vec.z);
+      fprintf(fp, "         (setq qhull bdy)\n");
+      fprintf(fp, "         (setq glv (gl::make-glvertices-from-faceset bdy\n");
+      fprintf(fp, "                     :material (list (list :ambient (float-vector %f %f %f %f))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "                                     (list :diffuse (float-vector %f %f %f %f)))))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "         (send glv :transform local-cds)\n");
+      fprintf(fp, "         (send bdy :transform local-cds)\n");
+      fprintf(fp, "         (send glv :calc-normals))\n");
+    } else if (g->type == Geometry::CYLINDER) {
+#if 0
+      std::cerr << "CYLINDER: " << name
+                << ", len = " << ((Cylinder *)g.get())->length
+                << ", radius = " << ((Cylinder *)g.get())->radius
+                << std::endl;
+#endif
+      double length = ((Cylinder *)g.get())->length;
+      double radius = ((Cylinder *)g.get())->radius;
+      fprintf(fp, "      (let ((bdy (make-cylinder %f %f :segments 24)))\n", 1000*radius, 1000*length);
+      fprintf(fp, "         (send bdy :translate-vertices (float-vector 0 0 %f))\n", -500*length);
+      fprintf(fp, "         (setq qhull bdy)\n");
+      fprintf(fp, "         (setq glv (gl::make-glvertices-from-faceset bdy\n");
+      fprintf(fp, "                     :material (list (list :ambient (float-vector %f %f %f %f))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "                                     (list :diffuse (float-vector %f %f %f %f)))))\n", col_r, col_g, col_b, col_a);
+      fprintf(fp, "         (send glv :transform local-cds)\n");
+      fprintf(fp, "         (send bdy :transform local-cds)\n");
+      fprintf(fp, "         (send glv :calc-normals))\n");
+    } else {
+      std::cerr << "unknown geometry type: " << name << std::endl;
+    }
   } else { // g->type == Geometry::MESH
     Assimp::Importer importer;
     importer.SetIOHandler(new ResourceIOSystem());
@@ -1421,10 +1535,9 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     }
   }
   fprintf(fp, "      (setq geom (instance collada-body :init :replace-obj qhull :name \"%s\"))\n", gname.c_str());
-  if (g->type == Geometry::MESH) {
-    fprintf(fp, "      (setq (geom . gl::aglvertices) glv)\n");
-    fprintf(fp, "      (send geom :assoc glv)\n");
-  }
+  fprintf(fp, "      (when glv\n");
+  fprintf(fp, "        (setq (geom . gl::aglvertices) glv)\n");
+  fprintf(fp, "        (send geom :assoc glv))\n");
   fprintf(fp, "      geom))\n");
 }
 
@@ -1596,6 +1709,7 @@ int main(int argc, char** argv)
   {
     ROS_DEBUG("Parsing robot urdf xml string");
     robot = parseURDF(xml_string);
+    input_file.clear(); // this file is urdf
   }
 
   if (!robot){
