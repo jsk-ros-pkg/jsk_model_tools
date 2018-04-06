@@ -206,6 +206,7 @@ public:
   void setUseCollision(bool &b) { use_collision = b; };
   void setUseSimpleGeometry(bool &b) { use_simple_geometry = b; };
   void setUseLoadbleMesh(bool &b) { use_loadable_mesh = b; };
+  void setRemoveNormal(bool &b) { remove_normal = b; };
   void setAddJointSuffix(bool &b) { add_joint_suffix = b; };
   void setAddLinkSuffix(bool &b) { add_link_suffix = b; };
   void setAddSensorSuffix(bool &b) { add_sensor_suffix = b; };
@@ -295,6 +296,7 @@ private:
   bool use_simple_geometry;
   bool use_collision;
   bool use_loadable_mesh;
+  bool remove_normal;
 
 };
 
@@ -306,6 +308,7 @@ ModelEuslisp::ModelEuslisp (boost::shared_ptr<ModelInterface> r) {
   use_simple_geometry = false;
   use_collision = false;
   use_loadable_mesh = false;
+  remove_normal = false;
 }
 
 ModelEuslisp::~ModelEuslisp () {
@@ -458,31 +461,32 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
     }
     if (printq) fprintf(fp, "))\n");
 
-    if (printq) fprintf(fp, "                   (list :vertices #2f(");
+    if (printq) fprintf(fp, "                   (list :vertices (let ((mat (make-matrix %d 3))) (fvector-replace (array-entity mat) #f(", input_mesh->mNumVertices);
     // Add the vertices
     for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
       aiVector3D p = input_mesh->mVertices[j];
       p *= transform;
       //p *= scale;
-      if (printq) fprintf(fp, "(%f %f %f)", 1000 * p.x * scale.x, 1000 * p.y * scale.y, 1000 * p.z * scale.z);
+      if (printq) fprintf(fp, FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" ",
+                          1000 * p.x * scale.x, 1000 * p.y * scale.y, 1000 * p.z * scale.z);
     }
-    if (printq) fprintf(fp, "))");
+    if (printq) fprintf(fp, ")) mat))");
 
     if (input_mesh->HasNormals()) {
       if (printq) fprintf(fp, "\n");
-      if (printq) fprintf(fp, "                   (list :normals #2f(");
+      if (printq) fprintf(fp, "                   (list :normals (let ((mat (make-matrix %d 3))) (fvector-replace (array-entity mat) #f(", input_mesh->mNumVertices);
       for (uint32_t j = 0; j < input_mesh->mNumVertices; j++)  {
         if (isnan(input_mesh->mNormals[j].x) ||
             isnan(input_mesh->mNormals[j].y) ||
             isnan(input_mesh->mNormals[j].z)) {
-          if (printq) fprintf(fp, "(0 0 0)"); // should be normalized vector #f(1 0 0) ???
+          if (printq) fprintf(fp, " 0 0 0"); // should be normalized vector #f(1 0 0) ???
         } else {
           aiVector3D n = inverse_transpose_rotation * input_mesh->mNormals[j];
           n.Normalize();
-          if (printq) fprintf(fp, "(%f %f %f)", n.x, n.y, n.z);
+          if (printq) fprintf(fp, FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" ", n.x, n.y, n.z);
         }
       }
-      if (printq) fprintf(fp, "))");
+      if (printq) fprintf(fp, ")) mat))");
     }
 #if 0
     if (input_mesh->HasTextureCoords(0)) {
@@ -1462,10 +1466,16 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     Assimp::Importer importer;
     importer.SetIOHandler(new ResourceIOSystem());
 
-    //const aiScene* scene = importer.ReadFile(gname, aiProcessPreset_TargetRealtime_MaxQuality);
-    const aiScene* scene = importer.ReadFile(gname,
-                                             (aiProcessPreset_TargetRealtime_MaxQuality & ~aiProcess_GenSmoothNormals)
-                                             | aiProcess_GenNormals);
+    const aiScene* raw_scene = importer.ReadFile(gname, 0);
+    if (remove_normal) {
+      // remove normal for reducing vertices
+      for (unsigned int m = 0; m < raw_scene->mNumMeshes; m++) {
+        aiMesh *a = raw_scene->mMeshes[m];
+        if (!!a->mNormals) { a->mNormals = NULL; }
+      }
+    }
+    const aiScene* scene = importer.ApplyPostProcessing (aiProcessPreset_TargetRealtime_MaxQuality &
+                                                         ((~aiProcess_GenNormals) & (~aiProcess_GenSmoothNormals)));
 
     Vector3 scale = ((Mesh *)(g.get()))->scale;
     vector<coordT> points;
@@ -1614,6 +1624,7 @@ int main(int argc, char** argv)
   bool use_collision = false;
   bool use_simple_geometry = false;
   bool use_loadable_mesh = false;
+  bool remove_normal = true;
 
   string arobot_name;
 
@@ -1626,6 +1637,7 @@ int main(int argc, char** argv)
     ("help", "produce help message")
     ("simple_geometry,V", "use bounding box for geometry")
     ("loadable_mesh,L", "loading mesh when creating robot model")
+    ("add_normal,R", "remove normals from mesh for reducing vertices")
     ("use_collision,U", "use collision geometry (default collision is the same as visual)")
     ("robot_name,N", po::value< vector<string> >(), "output robot name")
     ("input_file,I", po::value< vector<string> >(), "input file")
@@ -1682,6 +1694,10 @@ int main(int argc, char** argv)
     use_collision = true;
     cerr << ";; Using simple_geometry" << endl;
   }
+  if (vm.count("add_normal")) {
+    remove_normal = false;
+    cerr << ";; Adding normals from mesh" << endl;
+  }
   if (vm.count("robot_name")) {
     vector<string> aa = vm["robot_name"].as< vector<string> >();
     cerr << ";; robot_name is: "
@@ -1729,6 +1745,7 @@ int main(int argc, char** argv)
   eusmodel.setUseCollision(use_collision);
   eusmodel.setUseSimpleGeometry(use_simple_geometry);
   eusmodel.setUseLoadbleMesh(use_loadable_mesh);
+  eusmodel.setRemoveNormal(remove_normal);
   eusmodel.collada_file = input_file;
   //eusmodel.setAddJointSuffix();
   //eusmodel.setAddLinkSuffix();
