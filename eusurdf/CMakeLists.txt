@@ -10,7 +10,18 @@ convert_eusmodel_to_urdf()
 convert_eusscene_to_gazebo_world()
 convert_eusscene_to_urdf_xacro()
 
-install(DIRECTORY models textured_models worlds launch
+set(INSTALL_DIRS models textured_models worlds launch)
+
+find_package(knowrob_map_tools)
+if(${knowrob_map_tools_FOUND})
+  convert_eusscene_to_sem()
+  install(DIRECTORY owl
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  USE_SOURCE_PERMISSIONS)
+  list(APPEND INSTALL_DIRS owl)
+endif()
+
+install(DIRECTORY ${INSTALL_DIRS}
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   USE_SOURCE_PERMISSIONS)
 
