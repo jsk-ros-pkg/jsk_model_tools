@@ -720,11 +720,14 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
         geom_counter++;
       }
     }
+#if 0
     if(geom_counter == 0) {
       fprintf(fp, "(make-cube 10 10 10)))) ;; no geometry in this link\n");
     } else {
       fprintf(fp, ")))\n");
     }
+#endif
+    fprintf(fp, ")))\n"); //
   }
   fprintf(fp, "       (dolist (g (cdr geom-lst)) (send (car geom-lst) :assoc g))\n");
   fprintf(fp, "       (setq %s\n", thisNodeName.c_str());
