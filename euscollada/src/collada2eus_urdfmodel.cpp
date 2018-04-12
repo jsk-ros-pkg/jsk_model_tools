@@ -632,7 +632,11 @@ void ModelEuslisp::printRobotDefinition() {
   for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
     if(add_joint_suffix) {
-      fprintf(fp, " %s_jt", joint->second->name.c_str());
+      if (joint->second->type == Joint::FIXED) {
+        fprintf(fp, " %s_fixed_jt", joint->second->name.c_str());
+      } else {
+        fprintf(fp, " %s_jt", joint->second->name.c_str());
+      }
     } else {
       fprintf(fp, " %s", joint->second->name.c_str());
     }
@@ -826,6 +830,9 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     fprintf(fp, "                     :parent-link %s :child-link %s\n",
             joint->parent_link_name.c_str(), joint->child_link_name.c_str());
   }
+  if (joint->axis.x == 0.0 && joint->axis.y == 0.0 && joint->axis.z == 0.0) {
+    fprintf(fp, "                     :axis (float-vector 1 1 1) ;; fixed joint??\n");
+  } else
   { // axis
     fprintf(fp, "                     :axis ");
     fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
@@ -835,13 +842,17 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     float min = joint->limits->lower;
     float max = joint->limits->upper;
     fprintf(fp, "                     ");
-    fprintf(fp, ":min ");
-    if (min == -FLT_MAX) fprintf(fp, "*-inf*"); else
-      fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? min * 1000 : min * 180.0 / M_PI);
-    fprintf(fp, " :max ");
-    if (max == FLT_MAX) fprintf(fp,  "*inf*"); else
-      fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? max * 1000 : max * 180.0 / M_PI);
-    fprintf(fp, "\n");
+    if (joint->type ==Joint::CONTINUOUS) {
+      fprintf(fp, "                     :min *-inf* :max *inf*\n");
+    } else {
+      fprintf(fp, ":min ");
+      if (min == -FLT_MAX) fprintf(fp, "*-inf*"); else
+        fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? min * 1000 : min * 180.0 / M_PI);
+      fprintf(fp, " :max ");
+      if (max == FLT_MAX) fprintf(fp,  "*inf*"); else
+        fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? max * 1000 : max * 180.0 / M_PI);
+      fprintf(fp, "\n");
+    }
     fprintf(fp, "                     :max-joint-velocity %f\n", joint->limits->velocity);
     fprintf(fp, "                     :max-joint-torque %f\n", joint->limits->effort);
   } else if (joint->type ==Joint::CONTINUOUS) {
@@ -1116,7 +1127,11 @@ void ModelEuslisp::printEndCoords () {
   for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
     if(add_joint_suffix) {
-      fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_jt args))\n", joint->first.c_str(), joint->first.c_str());
+      if (joint->second->type == Joint::FIXED) {
+        fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_fixed_jt args))\n", joint->first.c_str(), joint->first.c_str());
+      } else {
+        fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_jt args))\n", joint->first.c_str(), joint->first.c_str());
+      }
     } else {
       fprintf(fp, "  (:%s (&rest args) (forward-message-to %s args))\n", joint->first.c_str(), joint->first.c_str());
     }
