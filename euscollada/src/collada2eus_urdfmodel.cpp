@@ -1104,7 +1104,9 @@ void ModelEuslisp::printEndCoords () {
                 "          (:%s (send self limb :angle-vector (float-vector",
                 limb_name.c_str());
         vector<string> joint_names = limbs[i].second.second;
-        for (size_t j = 0; j < joint_names.size(); j++) {
+        size_t j;
+        try {
+        for (j = 0; j < joint_names.size(); j++) {
 #ifdef USE_CURRENT_YAML
           fprintf(fp, " %f", v[i_joint].as<double>());
 #else
@@ -1112,6 +1114,13 @@ void ModelEuslisp::printEndCoords () {
           fprintf(fp, " %f", d);
 #endif
           i_joint += 1;
+        }
+        } catch(YAML::RepresentationException& e) {
+          ROS_ERROR("****** Angle-vector may be shorter than joint-list, please fix .yaml ******");
+          while ( j < joint_names.size() ) {
+            fprintf(fp, " 0.0"); // padding dummy
+            j++;
+          }
         }
         fprintf(fp, ")))");
       }
@@ -1123,6 +1132,7 @@ void ModelEuslisp::printEndCoords () {
               "      (send self :angle-vector))");
     }
   } catch(YAML::RepresentationException& e) {
+    ROS_ERROR("****** Some trouble for reading limbs, please fix .yaml ******");
   }
 
   // all joint and link name
