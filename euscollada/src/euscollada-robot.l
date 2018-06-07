@@ -13,13 +13,14 @@
                         (mapcan #'(lambda (x) (if (and (derivedp (cdr x) bodyset-link)
                                                        (not (memq (cdr x) links)))
                                                   (list (cdr x)))) (send self :slots))))
+       (unless (= (send l :weight) 0.0)
        (setq (l . acentroid) (send l :inverse-transform-vector
                                    (send (send (car links) :worldcoords) :transform-vector
                                          (l . acentroid))))
        (setq (l . inertia-tensor) (m* (transpose (send l :worldrot))
                                       (m* (send (car links) :worldrot)
                                           (l . inertia-tensor))))
-       ))
+       )))
    (send-super :init-ending)
    (send self :make-collision-model-for-links)
    ;;
