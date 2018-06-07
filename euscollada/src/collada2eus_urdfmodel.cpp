@@ -1061,11 +1061,9 @@ void ModelEuslisp::printEndCoords () {
   fprintf(fp, "))))\n\n");
 
   // when - angle-vector: reset-pose is defined in yaml file
-  try {
-    doc["angle-vector"]["reset-pose"];
-    fprintf(fp, "     (send self :reset-pose) ;; :set reset-pose\n\n");
-  } catch(YAML::RepresentationException& e) {
-  }
+  fprintf(fp, "     (when (member :reset-pose (send self :methods))");
+  fprintf(fp, "           (send self :reset-pose)) ;; :set reset-pose\n\n");
+  //fprintf(fp, "     (send self :reset-pose) ;; :set reset-pose\n\n");
 
   fprintf(fp, "     self)) ;; end of :init\n\n");
 
