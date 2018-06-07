@@ -771,10 +771,10 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
             link->inertial->iyz * 1000 * 1000 * 1000,
             link->inertial->izz * 1000 * 1000 * 1000);
     fprintf(fp, "                 ) (transpose (send tmp-cds :worldrot))))\n");
-    fprintf(fp, "         (setq (%s . acentroid) (send tmp-cds :worldpos))\n", thisNodeName.c_str());
+    fprintf(fp, "         (setq (%s . acentroid) (copy-seq (send tmp-cds :worldpos)))\n", thisNodeName.c_str());
     fprintf(fp, "         )\n");
   } else {
-    fprintf(fp, "       (progn (send %s :weight 0.0) (send %s :centroid (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
+    fprintf(fp, "       (progn (send %s :weight 0.0) (setq (%s . acentroid) (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
             thisNodeName.c_str(), thisNodeName.c_str(), thisNodeName.c_str());
   }
   //

@@ -798,7 +798,7 @@ void writeNodeMassFrames (FILE *fp, domRigid_body* thisRigidbody, const string &
         fprintf(fp, "         (setq (%s . acentroid) (send tmp-c :worldpos))\n", thisNodeName.c_str());
         fprintf(fp, "        )\n");
       } else {
-	fprintf(fp, "        (progn (send %s :weight 0.0) (send %s :centroid (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
+	fprintf(fp, "        (progn (send %s :weight 0.0) (setq (%s . acentroid) (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
                 thisNodeName.c_str(), thisNodeName.c_str(), thisNodeName.c_str());
       }
 }
