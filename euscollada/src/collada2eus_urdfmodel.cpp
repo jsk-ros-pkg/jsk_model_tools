@@ -1656,6 +1656,7 @@ int main(int argc, char** argv)
 
   string input_file;
   string config_file;
+  string pconfig_file; // backward compatibility (positional option)
   string output_file;
 
   po::options_description desc("Options for collada_to_urdf");
@@ -1668,12 +1669,13 @@ int main(int argc, char** argv)
     ("robot_name,N", po::value< vector<string> >(), "output robot name")
     ("input_file,I", po::value< vector<string> >(), "input file")
     ("config_file,C", po::value< vector<string> >(), "configuration yaml file")
+    ("pconfig_file", po::value< vector<string> >(), "not used (used internally)")
     ("output_file,O", po::value< vector<string> >(), "output file")
     ;
 
   po::positional_options_description p;
-  p.add("input_file", 1);
-  p.add("config_file", 1);
+  p.add("input_file",  1);
+  p.add("pconfig_file", 1);
   p.add("output_file", 1);
 
   po::variables_map vm;
@@ -1692,20 +1694,18 @@ int main(int argc, char** argv)
   }
   if (vm.count("input_file")) {
     vector<string> aa = vm["input_file"].as< vector<string> >();
-    cerr << ";; Input file is: "
-         <<  aa[0] << endl;
     input_file = aa[0];
   }
   if (vm.count("config_file")) {
     vector<string> aa = vm["config_file"].as< vector<string> >();
-    cerr << ";; Config file is: "
-         <<  aa[0] << endl;
     config_file = aa[0];
+  }
+  if (vm.count("pconfig_file")) {
+    vector<string> aa = vm["pconfig_file"].as< vector<string> >();
+    pconfig_file = aa[0];
   }
   if (vm.count("output_file")) {
     vector<string> aa = vm["output_file"].as< vector<string> >();
-    cerr << ";; Output file is: "
-         <<  aa[0] << endl;
     output_file = aa[0];
   }
   if (vm.count("simple_geometry")) {
@@ -1726,11 +1726,11 @@ int main(int argc, char** argv)
   }
   if (vm.count("robot_name")) {
     vector<string> aa = vm["robot_name"].as< vector<string> >();
-    cerr << ";; robot_name is: "
-         <<  aa[0] << endl;
     arobot_name = aa[0];
   }
 
+  cerr << ";; Input file is: "
+       <<  input_file << endl;
   string xml_string;
   fstream xml_file(input_file.c_str(), fstream::in);
   while ( xml_file.good() )
@@ -1759,12 +1759,29 @@ int main(int argc, char** argv)
     return -1;
   }
 
-  if (arobot_name == "") {
+  if (arobot_name.empty()) {
     arobot_name = robot->getName();
   }
-  if (output_file == "") {
-    output_file =  arobot_name + ".l";
+  if (output_file.empty()) {
+    if(pconfig_file.empty()) {
+      output_file =  arobot_name + ".l";
+    } else {
+      // assume existing arguments of positional1 and positional2
+      output_file = pconfig_file;
+      pconfig_file.clear();
+    }
   }
+  if (config_file.empty() && !pconfig_file.empty()) {
+    config_file = pconfig_file;
+  }
+  if (!config_file.empty()) {
+    cerr << ";; Config file is: "
+	 <<  config_file << endl;
+  }
+  cerr << ";; Output file is: "
+       <<  output_file << endl;
+  cerr << ";; robot_name is: "
+       <<  arobot_name << endl;
 
   ModelEuslisp eusmodel(robot);
   eusmodel.setRobotName(arobot_name);
@@ -1776,7 +1793,7 @@ int main(int argc, char** argv)
   //eusmodel.setAddJointSuffix();
   //eusmodel.setAddLinkSuffix();
 
-  if (config_file.size() > 0) {
+  if (!config_file.empty()) {
     eusmodel.readYaml(config_file);
   }
   eusmodel.writeToFile (output_file);
