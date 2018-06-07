@@ -1569,7 +1569,7 @@ int main(int argc, char* argv[]){
 
   // init ending
   fprintf(output_fp, "     ;; init-ending\n");
-  fprintf(output_fp, "     (send self :init-ending)\n");
+  fprintf(output_fp, "     (send self :init-ending :collada)\n");
   fprintf(output_fp, "\n");
 
   // bodies

@@ -1045,7 +1045,7 @@ void ModelEuslisp::printEndCoords () {
   fprintf(fp, "\n");
   // init ending
   fprintf(fp, "     ;; init-ending\n");
-  fprintf(fp, "     (send self :init-ending :urdf)\n\n");
+  fprintf(fp, "     (send self :init-ending) ;; :urdf\n\n");
 
   // bodies
   fprintf(fp, "     ;; overwrite bodies to return draw-things links not (send link :bodies)\n");

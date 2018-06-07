@@ -6,7 +6,7 @@
   )
 (defmethod euscollada-robot
   (:init-ending
-   (&optional (type :collada))
+   (&optional (type :urdf))
    (when (eq type :collada)
      ;; fix all links' mass properties ;; root link relative (collada) -> link local (euslisp)
      (dolist (l (append links
