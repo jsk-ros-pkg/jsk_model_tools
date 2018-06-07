@@ -11,10 +11,15 @@
                          col-file eus-file)))))
     ;; (assert (select-stream (list strm) 240) (format nil ";; faild to generate ~A within 240 second" eus-file)) ;; why return nil immidiately
     (dotimes (i 240)
-      (when (eq :eof (read strm nil :eof))
-        (return))
+      (when
+	  (while (and (select-stream (list strm) 1)
+		      (not (eq :eof (read-line strm nil :eof))))
+	    (return t))
+	(return))
       (assert (/= i  239) (format nil ";; faild to generate ~A within 240 second" eus-file))
-      (unix::sleep 1))
+      (unix::sleep 1)
+      )
+    (unix::sleep 1)
     (close strm)
     ))
 
@@ -55,7 +60,7 @@
   (samplerobot)
   (send *samplerobot* :init-pose)
   (eusmodel-validity-check-one *samplerobot*)
-
+  (send *samplerobot* :fix-leg-to-coords (make-coords))
   (assert (eps= 1.308000e+05 (send *samplerobot* :weight))
           ";; sample robot has not valid weight ~A" (send *samplerobot* :weight))
   (assert (eps-v= #f(2.32416 0.0 791.942) (send *samplerobot* :centroid))
@@ -73,9 +78,10 @@
 
   (eusmodel-validity-check-one *samplerobot*)
   (send *samplerobot* :init-pose)
+  (send *samplerobot* :move-coords (make-coords) (send (car (send *samplerobot* :links)) :worldcoords))
   (assert (eps= 1.308000e+05 (send *samplerobot* :weight))
           ";; sample robot has not valid weight ~A" (send *samplerobot* :weight))
-  (assert (eps-v= #f(2.32416 0.0 791.942) (send *samplerobot* :centroid))
+  (assert (eps-v= #f(2.32416 0.0 68.4419) (send *samplerobot* :centroid))
           ";; sample robot has not valid centroid ~A" (send *samplerobot* :centroid))
   )
 
