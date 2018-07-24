@@ -31,17 +31,18 @@ pkg_check_modules(assimpdevel assimp_devel REQUIRED)
 include_directories(${catkin_INCLUDE_DIRS} ${colladadom_INCLUDE_DIRS} ${yaml_cpp_INCLUDE_DIRS} ${assimpdevel_INCLUDE_DIRS} ${urdf_dom_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS} ${assimpdevel_LIBRARY_DIRS})
 
-add_executable(collada2eus src/collada2eus.cpp)
-target_link_libraries(collada2eus ${catkin_LIBRARIES} qhull ${yaml_cpp_LIBRARIES} ${colladadom_LIBRARIES} ${recource_retriever_LIBRARIES})
-add_dependencies(collada2eus libassimp_devel)
+### original collada2eus until ver 0.3.5
+add_executable(collada2eus.orig src/collada2eus.cpp)
+target_link_libraries(collada2eus.orig ${catkin_LIBRARIES} qhull ${yaml_cpp_LIBRARIES} ${colladadom_LIBRARIES} ${recource_retriever_LIBRARIES})
+add_dependencies(collada2eus.orig libassimp_devel)
 
 find_package(Boost REQUIRED system filesystem)
 include_directories(${Boost_INCLUDE_DIR})
-add_executable(collada2eus_urdfmodel src/collada2eus_urdfmodel.cpp)
-target_link_libraries(collada2eus_urdfmodel ${catkin_LIBRARIES} qhull ${yaml_cpp_LIBRARIES} ${colladadom_LIBRARIES} ${collada_parser_LIBRARIES} ${recource_retriever_LIBRARIES} ${assimpdevel_LIBRARIES} ${Boost_LIBRARIES} ${urdf_dom_LIBRARIES})
-add_dependencies(collada2eus_urdfmodel libassimp_devel)
+add_executable(collada2eus src/collada2eus_urdfmodel.cpp)
+target_link_libraries(collada2eus ${catkin_LIBRARIES} qhull ${yaml_cpp_LIBRARIES} ${colladadom_LIBRARIES} ${collada_parser_LIBRARIES} ${recource_retriever_LIBRARIES} ${assimpdevel_LIBRARIES} ${Boost_LIBRARIES} ${urdf_dom_LIBRARIES})
+add_dependencies(collada2eus libassimp_devel)
 
-install(TARGETS collada2eus collada2eus_urdfmodel
+install(TARGETS collada2eus collada2eus.orig
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

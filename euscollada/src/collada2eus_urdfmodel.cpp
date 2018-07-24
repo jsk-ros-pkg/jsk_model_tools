@@ -632,7 +632,11 @@ void ModelEuslisp::printRobotDefinition() {
   for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
     if(add_joint_suffix) {
-      fprintf(fp, " %s_jt", joint->second->name.c_str());
+      if (joint->second->type == Joint::FIXED) {
+        fprintf(fp, " %s_fixed_jt", joint->second->name.c_str());
+      } else {
+        fprintf(fp, " %s_jt", joint->second->name.c_str());
+      }
     } else {
       fprintf(fp, " %s", joint->second->name.c_str());
     }
@@ -716,11 +720,14 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
         geom_counter++;
       }
     }
+#if 0
     if(geom_counter == 0) {
       fprintf(fp, "(make-cube 10 10 10)))) ;; no geometry in this link\n");
     } else {
       fprintf(fp, ")))\n");
     }
+#endif
+    fprintf(fp, ")))\n"); //
   }
   fprintf(fp, "       (dolist (g (cdr geom-lst)) (send (car geom-lst) :assoc g))\n");
   fprintf(fp, "       (setq %s\n", thisNodeName.c_str());
@@ -764,10 +771,10 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
             link->inertial->iyz * 1000 * 1000 * 1000,
             link->inertial->izz * 1000 * 1000 * 1000);
     fprintf(fp, "                 ) (transpose (send tmp-cds :worldrot))))\n");
-    fprintf(fp, "         (setq (%s . acentroid) (send tmp-cds :worldpos))\n", thisNodeName.c_str());
+    fprintf(fp, "         (setq (%s . acentroid) (copy-seq (send tmp-cds :worldpos)))\n", thisNodeName.c_str());
     fprintf(fp, "         )\n");
   } else {
-    fprintf(fp, "       (progn (send %s :weight 0.0) (send %s :centroid (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
+    fprintf(fp, "       (progn (send %s :weight 0.0) (setq (%s . acentroid) (float-vector 0 0 0)) (send %s :inertia-tensor #2f((0 0 0)(0 0 0)(0 0 0))))\n",
             thisNodeName.c_str(), thisNodeName.c_str(), thisNodeName.c_str());
   }
   //
@@ -826,6 +833,9 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     fprintf(fp, "                     :parent-link %s :child-link %s\n",
             joint->parent_link_name.c_str(), joint->child_link_name.c_str());
   }
+  if (joint->axis.x == 0.0 && joint->axis.y == 0.0 && joint->axis.z == 0.0) {
+    fprintf(fp, "                     :axis (float-vector 1 1 1) ;; fixed joint??\n");
+  } else
   { // axis
     fprintf(fp, "                     :axis ");
     fprintf(fp, "(float-vector "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE" "FLOAT_PRECISION_FINE")\n",
@@ -835,13 +845,17 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     float min = joint->limits->lower;
     float max = joint->limits->upper;
     fprintf(fp, "                     ");
-    fprintf(fp, ":min ");
-    if (min == -FLT_MAX) fprintf(fp, "*-inf*"); else
-      fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? min * 1000 : min * 180.0 / M_PI);
-    fprintf(fp, " :max ");
-    if (max == FLT_MAX) fprintf(fp,  "*inf*"); else
-      fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? max * 1000 : max * 180.0 / M_PI);
-    fprintf(fp, "\n");
+    if (joint->type ==Joint::CONTINUOUS) {
+      fprintf(fp, "                     :min *-inf* :max *inf*\n");
+    } else {
+      fprintf(fp, ":min ");
+      if (min == -FLT_MAX) fprintf(fp, "*-inf*"); else
+        fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? min * 1000 : min * 180.0 / M_PI);
+      fprintf(fp, " :max ");
+      if (max == FLT_MAX) fprintf(fp,  "*inf*"); else
+        fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? max * 1000 : max * 180.0 / M_PI);
+      fprintf(fp, "\n");
+    }
     fprintf(fp, "                     :max-joint-velocity %f\n", joint->limits->velocity);
     fprintf(fp, "                     :max-joint-torque %f\n", joint->limits->effort);
   } else if (joint->type ==Joint::CONTINUOUS) {
@@ -1031,7 +1045,7 @@ void ModelEuslisp::printEndCoords () {
   fprintf(fp, "\n");
   // init ending
   fprintf(fp, "     ;; init-ending\n");
-  fprintf(fp, "     (send self :init-ending :urdf)\n\n");
+  fprintf(fp, "     (send self :init-ending) ;; :urdf\n\n");
 
   // bodies
   fprintf(fp, "     ;; overwrite bodies to return draw-things links not (send link :bodies)\n");
@@ -1047,11 +1061,9 @@ void ModelEuslisp::printEndCoords () {
   fprintf(fp, "))))\n\n");
 
   // when - angle-vector: reset-pose is defined in yaml file
-  try {
-    doc["angle-vector"]["reset-pose"];
-    fprintf(fp, "     (send self :reset-pose) ;; :set reset-pose\n\n");
-  } catch(YAML::RepresentationException& e) {
-  }
+  fprintf(fp, "     (when (member :reset-pose (send self :methods))");
+  fprintf(fp, "           (send self :reset-pose)) ;; :set reset-pose\n\n");
+  //fprintf(fp, "     (send self :reset-pose) ;; :set reset-pose\n\n");
 
   fprintf(fp, "     self)) ;; end of :init\n\n");
 
@@ -1090,7 +1102,9 @@ void ModelEuslisp::printEndCoords () {
                 "          (:%s (send self limb :angle-vector (float-vector",
                 limb_name.c_str());
         vector<string> joint_names = limbs[i].second.second;
-        for (size_t j = 0; j < joint_names.size(); j++) {
+        size_t j;
+        try {
+        for (j = 0; j < joint_names.size(); j++) {
 #ifdef USE_CURRENT_YAML
           fprintf(fp, " %f", v[i_joint].as<double>());
 #else
@@ -1098,6 +1112,13 @@ void ModelEuslisp::printEndCoords () {
           fprintf(fp, " %f", d);
 #endif
           i_joint += 1;
+        }
+        } catch(YAML::RepresentationException& e) {
+          ROS_ERROR("****** Angle-vector may be shorter than joint-list, please fix .yaml ******");
+          while ( j < joint_names.size() ) {
+            fprintf(fp, " 0.0"); // padding dummy
+            j++;
+          }
         }
         fprintf(fp, ")))");
       }
@@ -1109,6 +1130,7 @@ void ModelEuslisp::printEndCoords () {
               "      (send self :angle-vector))");
     }
   } catch(YAML::RepresentationException& e) {
+    ROS_ERROR("****** Some trouble for reading limbs, please fix .yaml ******");
   }
 
   // all joint and link name
@@ -1116,7 +1138,11 @@ void ModelEuslisp::printEndCoords () {
   for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
        joint != robot->joints_.end(); joint++) {
     if(add_joint_suffix) {
-      fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_jt args))\n", joint->first.c_str(), joint->first.c_str());
+      if (joint->second->type == Joint::FIXED) {
+        fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_fixed_jt args))\n", joint->first.c_str(), joint->first.c_str());
+      } else {
+        fprintf(fp, "  (:%s (&rest args) (forward-message-to %s_jt args))\n", joint->first.c_str(), joint->first.c_str());
+      }
     } else {
       fprintf(fp, "  (:%s (&rest args) (forward-message-to %s args))\n", joint->first.c_str(), joint->first.c_str());
     }
@@ -1630,6 +1656,7 @@ int main(int argc, char** argv)
 
   string input_file;
   string config_file;
+  string pconfig_file; // backward compatibility (positional option)
   string output_file;
 
   po::options_description desc("Options for collada_to_urdf");
@@ -1642,12 +1669,13 @@ int main(int argc, char** argv)
     ("robot_name,N", po::value< vector<string> >(), "output robot name")
     ("input_file,I", po::value< vector<string> >(), "input file")
     ("config_file,C", po::value< vector<string> >(), "configuration yaml file")
+    ("pconfig_file", po::value< vector<string> >(), "not used (used internally)")
     ("output_file,O", po::value< vector<string> >(), "output file")
     ;
 
   po::positional_options_description p;
-  p.add("input_file", 1);
-  p.add("config_file", 1);
+  p.add("input_file",  1);
+  p.add("pconfig_file", 1);
   p.add("output_file", 1);
 
   po::variables_map vm;
@@ -1666,20 +1694,18 @@ int main(int argc, char** argv)
   }
   if (vm.count("input_file")) {
     vector<string> aa = vm["input_file"].as< vector<string> >();
-    cerr << ";; Input file is: "
-         <<  aa[0] << endl;
     input_file = aa[0];
   }
   if (vm.count("config_file")) {
     vector<string> aa = vm["config_file"].as< vector<string> >();
-    cerr << ";; Config file is: "
-         <<  aa[0] << endl;
     config_file = aa[0];
+  }
+  if (vm.count("pconfig_file")) {
+    vector<string> aa = vm["pconfig_file"].as< vector<string> >();
+    pconfig_file = aa[0];
   }
   if (vm.count("output_file")) {
     vector<string> aa = vm["output_file"].as< vector<string> >();
-    cerr << ";; Output file is: "
-         <<  aa[0] << endl;
     output_file = aa[0];
   }
   if (vm.count("simple_geometry")) {
@@ -1700,11 +1726,11 @@ int main(int argc, char** argv)
   }
   if (vm.count("robot_name")) {
     vector<string> aa = vm["robot_name"].as< vector<string> >();
-    cerr << ";; robot_name is: "
-         <<  aa[0] << endl;
     arobot_name = aa[0];
   }
 
+  cerr << ";; Input file is: "
+       <<  input_file << endl;
   string xml_string;
   fstream xml_file(input_file.c_str(), fstream::in);
   while ( xml_file.good() )
@@ -1733,12 +1759,29 @@ int main(int argc, char** argv)
     return -1;
   }
 
-  if (arobot_name == "") {
+  if (arobot_name.empty()) {
     arobot_name = robot->getName();
   }
-  if (output_file == "") {
-    output_file =  arobot_name + ".l";
+  if (output_file.empty()) {
+    if(pconfig_file.empty()) {
+      output_file =  arobot_name + ".l";
+    } else {
+      // assume existing arguments of positional1 and positional2
+      output_file = pconfig_file;
+      pconfig_file.clear();
+    }
   }
+  if (config_file.empty() && !pconfig_file.empty()) {
+    config_file = pconfig_file;
+  }
+  if (!config_file.empty()) {
+    cerr << ";; Config file is: "
+	 <<  config_file << endl;
+  }
+  cerr << ";; Output file is: "
+       <<  output_file << endl;
+  cerr << ";; robot_name is: "
+       <<  arobot_name << endl;
 
   ModelEuslisp eusmodel(robot);
   eusmodel.setRobotName(arobot_name);
@@ -1750,7 +1793,7 @@ int main(int argc, char** argv)
   //eusmodel.setAddJointSuffix();
   //eusmodel.setAddLinkSuffix();
 
-  if (config_file.size() > 0) {
+  if (!config_file.empty()) {
     eusmodel.readYaml(config_file);
   }
   eusmodel.writeToFile (output_file);
