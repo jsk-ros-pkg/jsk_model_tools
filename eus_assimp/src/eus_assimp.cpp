@@ -1468,12 +1468,12 @@ pointer ASSIMP_LOAD_IMAGE(register context *ctx,int n,pointer *argv)
 
 pointer ___eus_assimp(register context *ctx, int n, pointer *argv, pointer env)
 {
-  defun(ctx,"C-ASSIMP-GET-GLVERTICES", argv[0], (pointer (*)())GET_MESHES);
-  defun(ctx,"C-ASSIMP-DUMP-GLVERTICES", argv[0], (pointer (*)())DUMP_GL_VERTICES);
-  defun(ctx,"C-CONVEX-DECOMPOSITION-GLVERTICES", argv[0], (pointer (*)())CONVEX_DECOMP_GL_VERTICES);
-  defun(ctx,"C-ASSIMP-DESCRIBE", argv[0], (pointer (*)())ASSIMP_DESCRIBE);
+  defun(ctx,"C-ASSIMP-GET-GLVERTICES", argv[0], (pointer (*)())GET_MESHES, NULL);
+  defun(ctx,"C-ASSIMP-DUMP-GLVERTICES", argv[0], (pointer (*)())DUMP_GL_VERTICES, NULL);
+  defun(ctx,"C-CONVEX-DECOMPOSITION-GLVERTICES", argv[0], (pointer (*)())CONVEX_DECOMP_GL_VERTICES, NULL);
+  defun(ctx,"C-ASSIMP-DESCRIBE", argv[0], (pointer (*)())ASSIMP_DESCRIBE, NULL);
 #if USE_SDL_IMAGE
-  defun(ctx,"C-ASSIMP-LOAD-IMAGE", argv[0], (pointer (*)())ASSIMP_LOAD_IMAGE);
+  defun(ctx,"C-ASSIMP-LOAD-IMAGE", argv[0], (pointer (*)())ASSIMP_LOAD_IMAGE, NULL);
 #endif
 
   K_VERTICES  = defkeyword(ctx, "VERTICES");
