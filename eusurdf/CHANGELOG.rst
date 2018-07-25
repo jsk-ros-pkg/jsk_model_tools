@@ -2,8 +2,8 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2018-07-25)
+------------------
 * [eusurdf] add cmake target for generating Semantic map from eusmodel (`#194 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/194>`_)
   * [eusurdf] add cmake target for generating ontology if generator exists
   * [eusurdf][package.xml] add python-lxml as run_depend

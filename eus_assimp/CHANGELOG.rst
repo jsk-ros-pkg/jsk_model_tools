@@ -2,8 +2,8 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2018-07-25)
+------------------
 * since euslisp 9.25.0, we need to add 5 arguments including doc string with defun() (`#217 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/217>`_)
 * [eus_assimp] add use-coordinate option to append-vertices in order to express all the vertices respect to world frame (`#210 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/210>`_)
 * [eus_assimp] need to set faces before calling gl::make-glvertices-fro (`#208 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/208>`_)

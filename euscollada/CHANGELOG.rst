@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2018-07-25)
+------------------
 * Replace euscollada for using ROS collada/urdf parser. It can convert both collada and urdf to eusmodel (`#216 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/216>`_)
   * [euscollada] previous collada2eus can be used by collada2eus.orig
   * [euscollada, collada2eus_urdfmodel] switch default model format (:collada->:urdf)
