@@ -2,6 +2,17 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [eusurdf] add cmake target for generating Semantic map from eusmodel (`#194 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/194>`_)
+  * [eusurdf] add cmake target for generating ontology if generator exists
+  * [eusurdf][package.xml] add python-lxml as run_depend
+
+* Fix for arm processor (`#209 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/209>`_)
+  * use LinuxARM ARCHDIR for CMKAE_SYSTEM_PROCESSOR armv/aarch64
+
+* Contributors: Yohei Kakiuchi, Yuki Furuta
+
 0.3.5 (2017-02-23)
 ------------------
 * add gazebo_ros to build_depend

@@ -2,6 +2,18 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* since euslisp 9.25.0, we need to add 5 arguments including doc string with defun() (`#217 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/217>`_)
+* [eus_assimp] add use-coordinate option to append-vertices in order to express all the vertices respect to world frame (`#210 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/210>`_)
+* [eus_assimp] need to set faces before calling gl::make-glvertices-fro (`#208 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/208>`_)
+* Fix for arm processor (`#209 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/209>`_)
+  * fix for arm64/v8 aarch64 is 64bit
+
+* [eus_assimp] mesh2wrl.sh: add utility scripts  (`#206 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/206>`_)
+
+* Contributors: Eisoku Kuroiwa, Kei Okada, Yohei Kakiuchi
+
 0.3.5 (2017-02-23)
 ------------------
 

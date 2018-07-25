@@ -2,6 +2,40 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Replace euscollada for using ROS collada/urdf parser. It can convert both collada and urdf to eusmodel (`#216 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/216>`_)
+  * [euscollada] previous collada2eus can be used by collada2eus.orig
+  * [euscollada, collada2eus_urdfmodel] switch default model format (:collada->:urdf)
+  * [euscollada] use collada2eus_urdfmodel as collada2eus
+  * [euscollada,collada2eus_urdfmodel] fix parsing arguments
+  * [euscollada,collada2eus_urdfmodel] fix reset-pose
+  * [euscollada,collada2eus,collada2eus_urdfmodel] fix centroid
+  * [euscollada, euscollada-robot.l] fix inertia conversion when weight is zero
+  * [euscollada] fix message when robot.yaml has shorter length of angle-vector
+  * [euscollada] do not make small cube for link without geometry
+  * [euscollada] fix using _fixed_jt as slot name for fixed joint
+  * [euscollada] add add_normal argument
+
+* [euscollada] fix travis testtest (`#215 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/215>`_)
+  * fix timeout for reading stream
+  * set origin of robot before comparing centroid
+
+* Update collada2eus_urdfmodel (`#212 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/212>`_)
+  * [euscollada/collada2eus_urdfmodel] update for using non mesh geometry(BOX, CYLINDER, SPHERE)
+  * [euscollada/collada2eus_urdfmodel] fix, the same as `#174 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/174>`_
+  * [euscollada/collada2eus_urdfmodel] fix warning message for reading urdf file
+  * [euscollada/collada2eus_urdfmodel] fix min-max range for a continuous joint
+  * [euscollada/collada2eus_urdfmodel] fix for writing non mesh geometry
+
+* fix to run installed euscollada (`#213 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/213>`_)
+  * enable to run within write-protected directory
+  * euscollada: install sh fails as PROGRAMS
+
+* src/collada2eus.cpp: fix wrong python style string `#174 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/174>`_ (`#204 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/204>`_)
+
+* Contributors: Kei Okada, Yohei Kakiuchi
+
 0.3.5 (2017-02-23)
 ------------------
 
