@@ -70,14 +70,14 @@
    (dolist (ll ls)
      (let (fs glv usefs)
        (dolist (bd (send ll :bodies))
-         (if (find-method bd :def-gl-vertices)
+         (if (derivedp bd collada-body)
              (push (send bd :glvertices) glv)
            (push (send bd :faces) fs)))
        (setq fs (flatten fs))
        (cond
         ((and (not fs) glv) ;; if there is no faces, use glvertices for creating pqpmodel
          (setq usefs (instance gl::glvertices :init nil))
-         (send usefs :transform (send (car glv) :worldcoords))
+         (send usefs :transform (send ll :worldcoords))
          (send usefs :append-glvertices glv)
          (let ((m (send usefs (read-from-string
                                (format nil ":make-~Amodel"
