@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2018-08-01)
+------------------
 * [euscollada] fix collision model for version 0.4.0f( `#218 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/218>`_)
 * Contributors: Yohei Kakiuchi
 
