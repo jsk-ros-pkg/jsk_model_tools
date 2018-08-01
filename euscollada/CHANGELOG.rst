@@ -2,6 +2,11 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [euscollada] fix collision model for version 0.4.0f( `#218 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/218>`_)
+* Contributors: Yohei Kakiuchi
+
 0.4.0 (2018-07-25)
 ------------------
 * Replace euscollada for using ROS collada/urdf parser. It can convert both collada and urdf to eusmodel (`#216 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/216>`_)

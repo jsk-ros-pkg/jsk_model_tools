@@ -2,6 +2,9 @@
 Changelog for package eus_assimp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.4.0 (2018-07-25)
 ------------------
 * since euslisp 9.25.0, we need to add 5 arguments including doc string with defun() (`#217 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/217>`_)
