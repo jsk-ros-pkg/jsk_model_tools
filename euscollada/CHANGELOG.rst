@@ -2,6 +2,11 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* collada2eus_urdfmodel: append :provide on bottom; force flush (`#219 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/219>`_)
+* Contributors: Yuki Furuta
+
 0.4.1 (2018-08-01)
 ------------------
 * [euscollada] fix collision model for version 0.4.0f( `#218 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/218>`_)
