@@ -10,7 +10,7 @@ convert_eusmodel_to_urdf()
 convert_eusscene_to_gazebo_world()
 convert_eusscene_to_urdf_xacro()
 
-set(INSTALL_DIRS models textured_models worlds launch)
+set(INSTALL_DIRS models textured_models worlds launch euslisp)
 
 find_package(knowrob_map_tools)
 if(${knowrob_map_tools_FOUND})
