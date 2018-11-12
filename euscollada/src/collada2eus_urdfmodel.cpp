@@ -198,7 +198,11 @@ class ModelEuslisp {
 
 public:
   ModelEuslisp () { } ;
+#if URDFDOM_1_0_0_API
+  ModelEuslisp (ModelInterfaceSharedPtr r);
+#else
   ModelEuslisp (boost::shared_ptr<ModelInterface> r);
+#endif
   ~ModelEuslisp ();
 
   // accessor
@@ -217,7 +221,11 @@ public:
                  const string &material_name, vector<coordT> &store_pt, bool printq);
   void readYaml(string &config_file);
 
+#if URDFDOM_1_0_0_API
+  Pose getLinkPose(LinkConstSharedPtr link) {
+#else
   Pose getLinkPose(boost::shared_ptr<const Link> link) {
+#endif
     if (!link->parent_joint) {
       Pose ret;
       return ret;
@@ -231,10 +239,17 @@ public:
     return ret;
   }
 
+#if URDFDOM_1_0_0_API
+  void printLink (LinkConstSharedPtr Link, Pose &pose);
+  void printJoint (JointConstSharedPtr joint);
+  void printGeometry (GeometrySharedPtr g, const Pose &pose,
+                      const string &name, const string &material_name);
+#else
   void printLink (boost::shared_ptr<const Link> Link, Pose &pose);
   void printJoint (boost::shared_ptr<const Joint> joint);
   void printGeometry (boost::shared_ptr<Geometry> g, const Pose &pose,
                       const string &name, const string &material_name);
+#endif
   void printLinks ();
   void printJoints ();
   void printEndCoords();
@@ -272,17 +287,33 @@ public:
   vector<daeSensor> m_sensors;
 
 private:
+#if URDFDOM_1_0_0_API
+  typedef map <string, VisualConstSharedPtr> MapVisual;
+  typedef map <string, CollisionConstSharedPtr> MapCollision;
+#else
   typedef map <string, boost::shared_ptr<const Visual> > MapVisual;
   typedef map <string, boost::shared_ptr<const Collision> > MapCollision;
+#endif
   typedef pair<vector<string>, vector<string> > link_joint;
   typedef pair<string, link_joint > link_joint_pair;
 
+#if URDFDOM_1_0_0_API
+  ModelInterfaceSharedPtr robot;
+#else
   boost::shared_ptr<ModelInterface> robot;
+#endif
   string arobot_name;
+#if URDFDOM_1_0_0_API
+  map <LinkConstSharedPtr, Pose > m_link_coords;
+  map <LinkConstSharedPtr, MapVisual > m_link_visual;
+  map <LinkConstSharedPtr, MapCollision > m_link_collision;
+  map <string, MaterialConstSharedPtr> m_materials;
+#else
   map <boost::shared_ptr<const Link>, Pose > m_link_coords;
   map <boost::shared_ptr<const Link>, MapVisual > m_link_visual;
   map <boost::shared_ptr<const Link>, MapCollision > m_link_collision;
   map <string, boost::shared_ptr<const Material> > m_materials;
+#endif
   vector<pair<string, string> > g_all_link_names;
   vector<link_joint_pair> limbs;
 
@@ -300,7 +331,11 @@ private:
 
 };
 
+#if URDFDOM_1_0_0_API
+ModelEuslisp::ModelEuslisp (ModelInterfaceSharedPtr r) {
+#else
 ModelEuslisp::ModelEuslisp (boost::shared_ptr<ModelInterface> r) {
+#endif
   robot = r;
   add_joint_suffix = true;
   add_link_suffix = true;
@@ -316,11 +351,19 @@ ModelEuslisp::~ModelEuslisp () {
 }
 
 void ModelEuslisp::addLinkCoords() {
+#if URDFDOM_1_0_0_API
+  for (map<string, LinkSharedPtr>::iterator link = robot->links_.begin();
+#else
   for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+#endif
        link != robot->links_.end(); link++) {
     Pose p = getLinkPose(link->second);
     m_link_coords.insert
+#if URDFDOM_1_0_0_API
+      (map<LinkConstSharedPtr, Pose >::value_type (link->second, p));
+#else
       (map<boost::shared_ptr<const Link>, Pose >::value_type (link->second, p));
+#endif
 #if DEBUG
     cerr << "name: " << link->first;
     cerr << ", #f(" << p.position.x << " ";
@@ -335,7 +378,11 @@ void ModelEuslisp::addLinkCoords() {
       int counter = 0;
       if(link->second->collision_array.size() > 0) {
         MapCollision mc;
+#if URDFDOM_1_0_0_API
+        for (vector<CollisionSharedPtr >::iterator it = link->second->collision_array.begin();
+#else
         for (vector<boost::shared_ptr <Collision> >::iterator it = link->second->collision_array.begin();
+#endif
              it != link->second->collision_array.end(); it++) {
           stringstream ss;
           ss << link->second->name << "_geom" << counter;
@@ -343,7 +390,11 @@ void ModelEuslisp::addLinkCoords() {
           counter++;
         }
         m_link_collision.insert
+#if URDFDOM_1_0_0_API
+          (map <LinkConstSharedPtr, MapCollision >::value_type
+#else
           (map <boost::shared_ptr<const Link>, MapCollision >::value_type
+#endif
            (link->second, mc));
       } else if(!!link->second->collision) {
         MapCollision mc;
@@ -351,35 +402,59 @@ void ModelEuslisp::addLinkCoords() {
         gname += "_geom0";
         mc.insert(MapCollision::value_type (gname, link->second->collision));
         m_link_collision.insert
+#if URDFDOM_1_0_0_API
+          (map <LinkConstSharedPtr, MapCollision >::value_type
+#else
           (map <boost::shared_ptr<const Link>, MapCollision >::value_type
+#endif
            (link->second, mc));
       }
     } else {
       int counter = 0;
       if(link->second->visual_array.size() > 0) {
         MapVisual mv;
+#if URDFDOM_1_0_0_API
+        for (vector<VisualSharedPtr>::iterator it = link->second->visual_array.begin();
+#else
         for (vector<boost::shared_ptr <Visual> >::iterator it = link->second->visual_array.begin();
+#endif
              it != link->second->visual_array.end(); it++) {
           m_materials.insert
+#if URDFDOM_1_0_0_API
+            (map <string, MaterialConstSharedPtr>::value_type ((*it)->material_name, (*it)->material));
+#else
             (map <string, boost::shared_ptr<const Material> >::value_type ((*it)->material_name, (*it)->material));
+#endif
           stringstream ss;
           ss << link->second->name << "_geom" << counter;
           mv.insert(MapVisual::value_type (ss.str(), (*it)));
           counter++;
         }
         m_link_visual.insert
+#if URDFDOM_1_0_0_API
+          (map <LinkConstSharedPtr, MapVisual >::value_type
+#else
           (map <boost::shared_ptr<const Link>, MapVisual >::value_type
+#endif
            (link->second, mv));
       } else if(!!link->second->visual) {
         m_materials.insert
+#if URDFDOM_1_0_0_API
+          (map <string, MaterialConstSharedPtr>::value_type
+#else
           (map <string, boost::shared_ptr<const Material> >::value_type
+#endif
            (link->second->visual->material_name, link->second->visual->material));
         MapVisual mv;
         string gname(link->second->name);
         gname += "_geom0";
         mv.insert(MapVisual::value_type (gname, link->second->visual));
         m_link_visual.insert
+#if URDFDOM_1_0_0_API
+          (map <LinkConstSharedPtr, MapVisual >::value_type
+#else
           (map <boost::shared_ptr<const Link>, MapVisual >::value_type
+#endif
            (link->second, mv));
       }
     }
@@ -411,10 +486,18 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
     if (printq) fprintf(fp, "                   (list :material (list");
     if (material_name.size() > 0) {
       if (printq) fprintf(fp, ";; material: %s\n", material_name.c_str());
+#if URDFDOM_1_0_0_API
+      map <string, MaterialConstSharedPtr>::iterator it = m_materials.find(material_name);
+#else
       map <string, boost::shared_ptr<const Material> >::iterator it = m_materials.find(material_name);
+#endif
       if (it != m_materials.end()) {
 
+#if URDFDOM_1_0_0_API
+        MaterialConstSharedPtr m = it->second;
+#else
         boost::shared_ptr<const Material> m = it->second;
+#endif
         float col_r = m->color.r;
         float col_g = m->color.g;
         float col_b = m->color.b;
@@ -566,7 +649,11 @@ void ModelEuslisp::readYaml (string &config_file) {
           string key, value; it.first() >> key; it.second() >> value;
 #endif
           tmp_joint_names.push_back(key);
+#if URDFDOM_1_0_0_API
+          JointConstSharedPtr jnt = robot->getJoint(key);
+#else
           boost::shared_ptr<const Joint> jnt = robot->getJoint(key);
+#endif
           if (!!jnt) {
             tmp_link_names.push_back(jnt->child_link_name);
           } else {
@@ -619,7 +706,11 @@ void ModelEuslisp::printRobotDefinition() {
   fprintf(fp, "  :super euscollada-robot\n");
   fprintf(fp, "  :slots ( ;; link names\n");
   fprintf(fp, "         ");
+#if URDFDOM_1_0_0_API
+  for (map<string, LinkSharedPtr>::iterator link = robot->links_.begin();
+#else
   for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+#endif
        link != robot->links_.end(); link++) {
     if (add_link_suffix) {
       fprintf(fp," %s_lk", link->second->name.c_str());
@@ -629,7 +720,11 @@ void ModelEuslisp::printRobotDefinition() {
   }
   fprintf(fp, "\n         ;; joint names\n");
   fprintf(fp, "         ");
+#if URDFDOM_1_0_0_API
+  for (map<string, JointSharedPtr>::iterator joint = robot->joints_.begin();
+#else
   for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+#endif
        joint != robot->joints_.end(); joint++) {
     if(add_joint_suffix) {
       if (joint->second->type == Joint::FIXED) {
@@ -676,12 +771,20 @@ void ModelEuslisp::printRobotMethods() {
 }
 
 void ModelEuslisp::printLinks () {
+#if URDFDOM_1_0_0_API
+  for (map<LinkConstSharedPtr, Pose >::iterator it = m_link_coords.begin();
+#else
   for (map<boost::shared_ptr<const Link>, Pose >::iterator it = m_link_coords.begin();
+#endif
        it != m_link_coords.end(); it++) {
     printLink(it->first, it->second);
   }
 
+#if URDFDOM_1_0_0_API
+  for (map<string, JointSharedPtr>::iterator it = robot->joints_.begin();
+#else
   for (map<string, boost::shared_ptr<Joint> >::iterator it = robot->joints_.begin();
+#endif
        it != robot->joints_.end(); it++) {
     if (add_link_suffix) {
       fprintf(fp, "     (send %s_lk :assoc %s_lk)\n",
@@ -699,7 +802,11 @@ void ModelEuslisp::printLinks () {
   }
 }
 
+#if URDFDOM_1_0_0_API
+void ModelEuslisp::printLink (LinkConstSharedPtr link, Pose &pose) {
+#else
 void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
+#endif
   string thisNodeName;
   if (add_link_suffix) {
     thisNodeName.assign(link->name);
@@ -711,7 +818,11 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
   fprintf(fp, "     (let ((geom-lst (list\n");
   {
     int geom_counter = 0;
+#if URDFDOM_1_0_0_API
+    map <LinkConstSharedPtr, MapVisual >::iterator it = m_link_visual.find (link);
+#else
     map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.find (link);
+#endif
     if (it != m_link_visual.end()) {
       for( MapVisual::iterator vmap = it->second.begin();
            vmap != it->second.end(); vmap++) {
@@ -799,13 +910,21 @@ void ModelEuslisp::printLink (boost::shared_ptr<const Link> link, Pose &pose) {
 
 void ModelEuslisp::printJoints () {
   fprintf(fp, "\n     ;; joint models\n");
+#if URDFDOM_1_0_0_API
+  for (map<string, JointSharedPtr>::iterator joint = robot->joints_.begin();
+#else
   for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+#endif
        joint != robot->joints_.end(); joint++) {
     printJoint(joint->second);
   }
 }
 
+#if URDFDOM_1_0_0_API
+void ModelEuslisp::printJoint (JointConstSharedPtr joint) {
+#else
 void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
+#endif
   bool linear = (joint->type==Joint::PRISMATIC);
   if (joint->type != Joint::REVOLUTE && joint->type !=Joint::CONTINUOUS
       && joint->type !=Joint::PRISMATIC && joint->type != Joint::FIXED) {
@@ -1050,7 +1169,11 @@ void ModelEuslisp::printEndCoords () {
   // bodies
   fprintf(fp, "     ;; overwrite bodies to return draw-things links not (send link :bodies)\n");
   fprintf(fp, "     (setq bodies (flatten (mapcar #'(lambda (b) (if (find-method b :bodies) (send b :bodies))) (list");
+#if URDFDOM_1_0_0_API
+  for (map<string, LinkSharedPtr>::iterator link = robot->links_.begin();
+#else
   for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+#endif
        link != robot->links_.end(); link++) {
     if (add_link_suffix) {
       fprintf(fp, " %s_lk", link->first.c_str());
@@ -1135,7 +1258,11 @@ void ModelEuslisp::printEndCoords () {
 
   // all joint and link name
   fprintf(fp, "\n  ;; all joints\n");
+#if URDFDOM_1_0_0_API
+  for (map<string, JointSharedPtr>::iterator joint = robot->joints_.begin();
+#else
   for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+#endif
        joint != robot->joints_.end(); joint++) {
     if(add_joint_suffix) {
       if (joint->second->type == Joint::FIXED) {
@@ -1154,7 +1281,11 @@ void ModelEuslisp::printEndCoords () {
     fprintf(fp, "   (if (null args) (return-from :links (send-super :links)))\n");
     fprintf(fp, "   (let ((key (car args))\n           (nargs (cdr args)))\n");
     fprintf(fp, "     (unless (keywordp key)\n         (return-from :links (send-super* :links args)))\n       (case key\n");
+#if URDFDOM_1_0_0_API
+    for (map<string, LinkSharedPtr>::iterator link = robot->links_.begin();
+#else
     for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+#endif
          link != robot->links_.end(); link++) {
       fprintf(fp, "       (:%s (forward-message-to %s_lk nargs))\n", link->first.c_str(), link->first.c_str());
     }
@@ -1162,7 +1293,11 @@ void ModelEuslisp::printEndCoords () {
   }
   fprintf(fp, "\n  ;; all links\n");
 
+#if URDFDOM_1_0_0_API
+  for (map<string, LinkSharedPtr>::iterator link = robot->links_.begin();
+#else
   for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+#endif
        link != robot->links_.end(); link++) {
     if (add_link_suffix) {
       fprintf(fp, "  (:%s_lk (&rest args) (forward-message-to %s_lk args))\n", link->first.c_str(), link->first.c_str());
@@ -1309,7 +1444,11 @@ void ModelEuslisp::parseSensors () {
     domKinematics_model *thisKinematics;
     dae.getDatabase()->getElement((daeElement**)&thisKinematics, 0, NULL, "kinematics_model");
 
+#if URDFDOM_1_0_0_API
+    for (map<string, LinkSharedPtr>::iterator link = robot->links_.begin();
+#else
     for (map<string, boost::shared_ptr<Link> >::iterator link = robot->links_.begin();
+#endif
          link != robot->links_.end(); link++) {
 
       domLink* thisLink = findLinkfromKinematics(thisKinematics->getTechnique_common()->getLink_array()[0],
@@ -1389,7 +1528,11 @@ void ModelEuslisp::printSensorLists() {
   fprintf(fp, "))\n");
 }
 
+#if URDFDOM_1_0_0_API
+void ModelEuslisp::printGeometry (GeometrySharedPtr g, const Pose &pose,
+#else
 void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pose,
+#endif
                                   const string &name, const string &material_name) {
   string gname(name);
   if (g->type == Geometry::MESH) gname = ((Mesh *)(g.get()))->filename;
@@ -1417,9 +1560,17 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     float col_b = 0.6;
     float col_a = 1.0;
     if (material_name.size() > 0) {
+#if URDFDOM_1_0_0_API
+      map <string, MaterialConstSharedPtr>::iterator it = m_materials.find(material_name);
+#else
       map <string, boost::shared_ptr<const Material> >::iterator it = m_materials.find(material_name);
+#endif
       if (it != m_materials.end()) {
+#if URDFDOM_1_0_0_API
+        MaterialConstSharedPtr m = it->second;
+#else
         boost::shared_ptr<const Material> m = it->second;
+#endif
         col_r = m->color.r;
         col_g = m->color.g;
         col_b = m->color.b;
@@ -1580,7 +1731,11 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
 void ModelEuslisp::printGeometries () {
   fprintf(fp, "\n  ;; geometries\n");
   if (use_collision) {
+#if URDFDOM_1_0_0_API
+    for(map <LinkConstSharedPtr, MapCollision >::iterator it = m_link_collision.begin();
+#else
     for(map <boost::shared_ptr<const Link>, MapCollision >::iterator it = m_link_collision.begin();
+#endif
         it != m_link_collision.end(); it++) {
       for( MapCollision::iterator cmap = it->second.begin();
            cmap != it->second.end(); cmap++) {
@@ -1589,7 +1744,11 @@ void ModelEuslisp::printGeometries () {
       }
     }
   } else {
+#if URDFDOM_1_0_0_API
+    for(map <LinkConstSharedPtr, MapVisual >::iterator it = m_link_visual.begin();
+#else
     for(map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.begin();
+#endif
         it != m_link_visual.end(); it++) {
       for( MapVisual::iterator vmap = it->second.begin();
            vmap != it->second.end(); vmap++) {
@@ -1747,7 +1906,11 @@ int main(int argc, char** argv)
   }
   xml_file.close();
 
+#if URDFDOM_1_0_0_API
+  ModelInterfaceSharedPtr robot;
+#else
   boost::shared_ptr<ModelInterface> robot;
+#endif
   if( xml_string.find("<COLLADA") != string::npos )
   {
     ROS_DEBUG("Parsing robot collada xml string");

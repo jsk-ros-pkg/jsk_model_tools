@@ -28,6 +28,10 @@ IF(${yaml_cpp_VERSION} VERSION_GREATER "0.5.0")
   add_definitions("-DUSE_CURRENT_YAML")
 ENDIF()
 pkg_check_modules(assimpdevel assimp_devel REQUIRED)
+
+pkg_check_modules(URDFDOM REQUIRED urdfdom)
+message(STATUS "Find URDFDOM ${URDFDOM_VERSION}")
+
 include_directories(${catkin_INCLUDE_DIRS} ${colladadom_INCLUDE_DIRS} ${yaml_cpp_INCLUDE_DIRS} ${assimpdevel_INCLUDE_DIRS} ${urdf_dom_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS} ${assimpdevel_LIBRARY_DIRS})
 
@@ -41,6 +45,9 @@ include_directories(${Boost_INCLUDE_DIR})
 add_executable(collada2eus src/collada2eus_urdfmodel.cpp)
 target_link_libraries(collada2eus ${catkin_LIBRARIES} qhull ${yaml_cpp_LIBRARIES} ${colladadom_LIBRARIES} ${collada_parser_LIBRARIES} ${recource_retriever_LIBRARIES} ${assimpdevel_LIBRARIES} ${Boost_LIBRARIES} ${urdf_dom_LIBRARIES})
 add_dependencies(collada2eus libassimp_devel)
+if ("${URDFDOM_VERSION}" VERSION_EQUAL "1.0.0" OR "${URDFDOM_VERSION}" VERSION_GREATER "1.0.0")
+  target_compile_definitions(collada2eus PRIVATE -DURDFDOM_1_0_0_API)
+endif()
 
 install(TARGETS collada2eus collada2eus.orig
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
