@@ -16,8 +16,11 @@ env:
     - ROS_DISTRO=indigo ROSWS=wstool BUILDER=catkin USE_DEB=false
     - ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=true
     - ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=false
+    - ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=true
+    - ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=false
 matrix:
   allow_failures:
     - env: ROS_DISTRO=indigo ROSWS=wstool BUILDER=catkin USE_DEB=false
     - env: ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=false
+    - env: ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=false
 script: source .travis/travis.sh
