@@ -52,9 +52,13 @@ rosrun collada_urdf_jsk_patch urdf_to_collada my_model.urdf my_model.dae
 
 - Convert4. convert to eus
 ```
-rosrun euscollada collada2eus my_model.dae my_model.l
+rosrun euscollada collada2eus my_model.dae my_model.l # fixed model version
+rosrun euscollada collada2eus my_model.dae my_model.yaml my_model.l
 ```
-=> my_model.l is generated.
+=> my_model.l is generated.\
+my_model.yaml is used to set joints and endcoords settings.
+Please refer to [example file of PR2](euscollada/pr2.yaml).\
+Without the yaml file, the model can not move or get/send `:angle-vector`.
 
 - Visualize1. visualize urdf with Rviz
 ```
