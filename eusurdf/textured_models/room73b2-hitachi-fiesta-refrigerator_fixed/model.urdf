@@ -180,7 +180,7 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <gazebo reference="DOOR1">
-    <cfmDamping>0.4</cfmDamping>
+    <implicitSpringDamper>0.4</implicitSpringDamper>
   </gazebo>
   <joint name="DRAWER1" type="prismatic">
     <parent link="ROOT_link"/>
@@ -196,7 +196,7 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <gazebo reference="DRAWER1">
-    <cfmDamping>0.4</cfmDamping>
+    <implicitSpringDamper>0.4</implicitSpringDamper>
   </gazebo>
   <joint name="DRAWER2" type="prismatic">
     <parent link="ROOT_link"/>
@@ -212,7 +212,7 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <gazebo reference="DRAWER2">
-    <cfmDamping>0.4</cfmDamping>
+    <implicitSpringDamper>0.4</implicitSpringDamper>
   </gazebo>
   <joint name="SHELF1" type="prismatic">
     <parent link="ROOT_link"/>
@@ -228,7 +228,7 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <gazebo reference="SHELF1">
-    <cfmDamping>0.4</cfmDamping>
+    <implicitSpringDamper>0.4</implicitSpringDamper>
   </gazebo>
   <joint name="SHELF2" type="prismatic">
     <parent link="ROOT_link"/>
@@ -244,7 +244,7 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <gazebo reference="SHELF2">
-    <cfmDamping>0.4</cfmDamping>
+    <implicitSpringDamper>0.4</implicitSpringDamper>
   </gazebo>
   <joint name="SHELF3" type="prismatic">
     <parent link="ROOT_link"/>
@@ -260,7 +260,7 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <gazebo reference="SHELF3">
-    <cfmDamping>0.4</cfmDamping>
+    <implicitSpringDamper>0.4</implicitSpringDamper>
   </gazebo>
   <!-- Used for fixing robot to Gazebo 'base_link' -->
   <link name="world"/>
