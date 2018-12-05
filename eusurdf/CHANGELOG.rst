@@ -2,6 +2,12 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix for being deprecated tag: cfmDamping -> implicitSpringDamper (`#222 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/222>`_)
+* [eusurdf] add euslisp to INSTALL_DIRS (`#220 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/220>`_)
+* Contributors: Juntaro Tamura, Kentaro Wada
+
 0.4.2 (2018-09-04)
 ------------------
 

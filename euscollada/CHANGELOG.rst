@@ -2,6 +2,11 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix for urdfmodel 1.0.0 (melodic) (`#221 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/221>`_)
+* Contributors: Kei Okada
+
 0.4.2 (2018-09-04)
 ------------------
 * collada2eus_urdfmodel: append :provide on bottom; force flush (`#219 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/219>`_)
