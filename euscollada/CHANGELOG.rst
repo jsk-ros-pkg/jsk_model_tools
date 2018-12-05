@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.3 (2018-12-05)
+------------------
 * fix for urdfmodel 1.0.0 (melodic) (`#221 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/221>`_)
 * Contributors: Kei Okada
 
