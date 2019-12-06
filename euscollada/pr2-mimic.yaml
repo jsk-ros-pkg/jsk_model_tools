@@ -1,0 +1,8 @@
+##
+## - collada_joint_name : euslisp_joint_name (start with :)
+##
+
+larm:
+  - r_gripper_l_finger_joint : r_gripper
+rarm:
+  - l_gripper_l_finger_joint : l_gripper

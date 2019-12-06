@@ -136,3 +136,49 @@
           org-mesh)))
      ))
   )
+
+;; copy mimic-joint class definition from euscollada/src/euscollada-robot.l
+;; This mimic-joint class is for mimic-joints in URDF file
+(defclass mimic-joint-param
+  :super propertied-object
+  :slots (joint multiplier offset))
+(defmethod mimic-joint-param
+  (:init (j &key ((:multiplier m) 1) ((:offset o) 0))
+         (setq joint j multiplier m offset o)
+         self)
+  (:joint (&rest args) (forward-message-to joint args))
+  (:multiplier (&rest args) (forward-message-to multiplier args))
+  (:offset (&rest args) (forward-message-to offset args))
+  )
+
+(defclass rotational-mimic-joint
+       :super rotational-joint
+       :slots (mimic-joints))
+(defmethod rotational-mimic-joint
+  (:init (&rest args &key ((:mimic-joints mjs)) &allow-other-keys)
+         (send-super* :init args)
+         (setq mimic-joints mjs)
+         self)
+  (:joint-angle (&rest args)
+         (prog1
+             (send-super* :joint-angle args)
+           (dolist (j mimic-joints)
+             (send j :joint :joint-angle (+ (* joint-angle (send j :multiplier)) (send j :offset))))
+           ))
+  )
+
+(defclass linear-mimic-joint
+       :super linear-joint
+       :slots (mimic-joints))
+(defmethod linear-mimic-joint
+  (:init (&rest args &key ((:mimic-joints mjs)) &allow-other-keys)
+         (send-super* :init args)
+         (setq mimic-joints mjs)
+         self)
+  (:joint-angle (&rest args)
+         (prog1
+             (send-super* :joint-angle args)
+           (dolist (j mimic-joints)
+             (send j :joint :joint-angle (+ (* joint-angle (send j :multiplier)) (send j :offset))))
+           ))
+  )

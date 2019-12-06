@@ -252,6 +252,7 @@ public:
 #endif
   void printLinks ();
   void printJoints ();
+  void printMimicJoints ();
   void printEndCoords();
   void printSensors();
   void printSensorLists();
@@ -761,6 +762,8 @@ void ModelEuslisp::printRobotMethods() {
 
   printJoints();
 
+  printMimicJoints();
+
   printEndCoords();
 
   printSensors();
@@ -986,6 +989,50 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
   }
   fprintf(fp, "                     ))\n");
 }
+
+void ModelEuslisp::printMimicJoints () {
+  fprintf(fp, "\n     ;; mimic joint re-definition\n");
+#if URDFDOM_1_0_0_API
+  map<JointSharedPtr, list<JointSharedPtr> > mimic_joint_list;
+#else
+  map<boost::shared_ptr<Joint>, list<boost::shared_ptr<Joint> > > mimic_joint_list;
+#endif
+#if URDFDOM_1_0_0_API
+  for (map<string, JointSharedPtr>::iterator joint = robot->joints_.begin();
+#else
+  for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+#endif
+       joint != robot->joints_.end(); joint++) {
+    if (joint->second->mimic) {
+      mimic_joint_list[robot->joints_[joint->second->mimic->joint_name]].push_back(joint->second);
+    }
+  }
+
+#if URDFDOM_1_0_0_API
+  for (map<JointSharedPtr, list<JointSharedPtr> >::iterator mimic = mimic_joint_list.begin();
+#else
+  for (map<boost::shared_ptr<Joint>, list<boost::shared_ptr<Joint> > >::iterator mimic = mimic_joint_list.begin();
+#endif
+       mimic != mimic_joint_list.end(); mimic++){
+    bool linear = (mimic->first->type==Joint::PRISMATIC);
+    fprintf(fp, "     ;; re-define %s as mimic-joint\n", mimic->first->name.c_str());
+    fprintf(fp, "     (let (tmp-mimic-joint)\n");
+    fprintf(fp, "       (setq tmp-mimic-joint (replace-object (instance %s :init :parent-link (make-cascoords) :child-link (make-cascoords) :max-joint-velocity 0 :max-joint-torque 0) %s_jt))\n", linear?"linear-mimic-joint":"rotational-mimic-joint", mimic->first->name.c_str());
+    fprintf(fp, "       (setq %s_jt tmp-mimic-joint))\n", mimic->first->name.c_str());
+    fprintf(fp, "     (setq (%s_jt . mimic-joints)\n", mimic->first->name.c_str());
+    fprintf(fp, "           (list\n");
+#if URDFDOM_1_0_0_API
+    for (list<JointSharedPtr>::iterator joint = mimic->second.begin();
+#else
+    for (list<boost::shared_ptr<Joint> >::iterator joint = mimic->second.begin();
+#endif
+         joint != mimic->second.end(); joint++){
+      fprintf(fp, "            (instance mimic-joint-param :init %s_jt :multiplier %f :offset %f)\n", (*joint)->name.c_str(), (*joint)->mimic->multiplier, (*joint)->mimic->offset);
+    }
+    fprintf(fp, "            ))\n");
+  }
+}
+
 
 void ModelEuslisp::printEndCoords () {
   // TODO: end coords from collada ...
