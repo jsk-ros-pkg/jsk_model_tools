@@ -1742,26 +1742,46 @@ void ModelEuslisp::printGeometries () {
   fprintf(fp, "\n  ;; geometries\n");
   if (use_collision) {
 #if URDFDOM_1_0_0_API
+    map<string, LinkConstSharedPtr> m_link_collision_sorted;
     for(map <LinkConstSharedPtr, MapCollision >::iterator it = m_link_collision.begin();
 #else
+    map<string, boost::shared_ptr<const Link>> m_link_collision_sorted;
     for(map <boost::shared_ptr<const Link>, MapCollision >::iterator it = m_link_collision.begin();
 #endif
         it != m_link_collision.end(); it++) {
-      for( MapCollision::iterator cmap = it->second.begin();
-           cmap != it->second.end(); cmap++) {
+      m_link_collision_sorted[it->first->name]=it->first;
+    }
+#if URDFDOM_1_0_0_API
+    for (map<string, LinkConstSharedPtr >::iterator it = m_link_collision_sorted.begin();
+#else
+    for (map<string, boost::shared_ptr<const Link> >::iterator it = m_link_collision_sorted.begin();
+#endif
+        it != m_link_collision_sorted.end(); it++) {
+      for( MapCollision::iterator cmap = m_link_collision[it->second].begin();
+           cmap != m_link_collision[it->second].end(); cmap++) {
         printGeometry(cmap->second->geometry, cmap->second->origin,
                       cmap->first, "");
       }
     }
   } else {
 #if URDFDOM_1_0_0_API
+    map<string, LinkConstSharedPtr> m_link_visual_sorted;
     for(map <LinkConstSharedPtr, MapVisual >::iterator it = m_link_visual.begin();
 #else
+    map<string, boost::shared_ptr<const Link>> m_link_visual_sorted;
     for(map <boost::shared_ptr<const Link>, MapVisual >::iterator it = m_link_visual.begin();
 #endif
         it != m_link_visual.end(); it++) {
-      for( MapVisual::iterator vmap = it->second.begin();
-           vmap != it->second.end(); vmap++) {
+      m_link_visual_sorted[it->first->name]=it->first;
+    }
+#if URDFDOM_1_0_0_API
+    for (map<string, LinkConstSharedPtr >::iterator it = m_link_visual_sorted.begin();
+#else
+    for (map<string, boost::shared_ptr<const Link> >::iterator it = m_link_visual_sorted.begin();
+#endif
+        it != m_link_visual_sorted.end(); it++) {
+      for( MapVisual::iterator vmap = m_link_visual[it->second].begin();
+           vmap != m_link_visual[it->second].end(); vmap++) {
         printGeometry(vmap->second->geometry, vmap->second->origin,
                       vmap->first, vmap->second->material_name);
       }
