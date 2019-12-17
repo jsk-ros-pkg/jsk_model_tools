@@ -772,12 +772,22 @@ void ModelEuslisp::printRobotMethods() {
 
 void ModelEuslisp::printLinks () {
 #if URDFDOM_1_0_0_API
+  map<string, LinkConstSharedPtr> m_link_coords_sorted;
   for (map<LinkConstSharedPtr, Pose >::iterator it = m_link_coords.begin();
 #else
+  map<string, boost::shared_ptr<const Link>> m_link_coords_sorted;
   for (map<boost::shared_ptr<const Link>, Pose >::iterator it = m_link_coords.begin();
 #endif
        it != m_link_coords.end(); it++) {
-    printLink(it->first, it->second);
+    m_link_coords_sorted[it->first->name]=it->first;
+  }
+#if URDFDOM_1_0_0_API
+  for (map<string, LinkConstSharedPtr >::iterator it = m_link_coords_sorted.begin();
+#else
+  for (map<string, boost::shared_ptr<const Link> >::iterator it = m_link_coords_sorted.begin();
+#endif
+       it != m_link_coords_sorted.end(); it++) {
+    printLink(it->second, m_link_coords[it->second]);
   }
 
 #if URDFDOM_1_0_0_API
@@ -1721,7 +1731,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       }
     }
   }
-  fprintf(fp, "      (setq geom (instance collada-body :init :replace-obj qhull :name \"%s\"))\n", gname.c_str());
+  fprintf(fp, "      (setq geom (instance collada-body :init :replace-obj qhull :name \"%s\"))\n", name.c_str());
   fprintf(fp, "      (when glv\n");
   fprintf(fp, "        (setq (geom . gl::aglvertices) glv)\n");
   fprintf(fp, "        (send geom :assoc glv))\n");
