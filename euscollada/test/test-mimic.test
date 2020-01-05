@@ -1,0 +1,5 @@
+<launch>
+  <test test-name="mimic_test" pkg="roseus" type="roseus"
+        args="$(find euscollada)/test/test-mimic.l"
+        />
+</launch>

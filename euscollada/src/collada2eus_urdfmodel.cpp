@@ -1030,6 +1030,14 @@ void ModelEuslisp::printMimicJoints () {
       fprintf(fp, "            (instance mimic-joint-param :init %s_jt :multiplier %f :offset %f)\n", (*joint)->name.c_str(), (*joint)->mimic->multiplier, (*joint)->mimic->offset);
     }
     fprintf(fp, "            ))\n");
+    fprintf(fp, "     ;; set offset as default-coords\n");
+    fprintf(fp, "     (dolist (j (%s_jt . mimic-joints))\n", mimic->first->name.c_str());
+    fprintf(fp, "       (cond ((derivedp (send j :joint) rotational-joint)\n");
+    fprintf(fp, "              (send (send j :joint :child-link) :rotate (send j :offset) ((send j :joint) . axis)))\n");
+    fprintf(fp, "             ((derivedp (send j :joint) linear-joint)\n");
+    fprintf(fp, "              (send (send j :joint :child-link) :translate (scale (* 1000 (send j :offset)) ((send j :joint) . axis))))\n");
+    fprintf(fp, "             (t (error \"unsupported mimic joint ~A\" (send j :joint))))\n");
+    fprintf(fp, "       (setq ((send j :joint) . default-coords) (send j :joint :child-link :copy-coords)))\n");
   }
 }
 

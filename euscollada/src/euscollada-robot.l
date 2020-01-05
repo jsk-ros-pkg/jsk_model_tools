@@ -151,6 +151,47 @@
   (:offset (&rest args) (forward-message-to offset args))
   )
 
+(defun calc-jacobian-mimic
+  (mimic-joints
+       fik row column joint paxis child-link world-default-coords child-reverse
+       move-target transform-coords rotation-axis translation-axis
+       tmp-v0 tmp-v1 tmp-v2 tmp-v3 tmp-v3a tmp-v3b tmp-m33)
+  (let* ((fik-tmp (copy-object fik))
+         (dim (* 6 (if (atom rotation-axis) 1 (length rotation-axis)))))
+    (dolist (axis (append (if (atom translation-axis)
+                              (list translation-axis) translation-axis)
+                          (if (atom rotation-axis)
+                              (list rotation-axis) rotation-axis)))
+      (case axis
+            ((:x :y :z :xx :yy :zz) (decf dim 1))
+            ((:xy :yx :yz :zy :zx :xz) (decf dim 2))
+            (nil (decf dim 3))))
+     ;;
+     (dolist (mj mimic-joints)
+       (let* ((j (send mj :joint))
+              (paxis (case (j . axis)
+                           (:x #f(1 0 0)) (:y #f(0 1 0)) (:z #f(0 0 1))
+                           (:xx #f(1 0 0)) (:yy #f(0 1 0)) (:zz #f(0 0 1))
+                           (:-x #f(-1 0 0)) (:-y #f(0 -1 0)) (:-z #f(0 0 -1))
+                           (t (j . axis))))
+              (child-link (send j :child-link))
+              (parent-link (send j :parent-link))
+              (default-coords (j . default-coords))
+              (world-default-coords (send (send parent-link :copy-worldcoords)
+                                          :transform default-coords)))
+         (fill (array-entity fik-tmp) 0)
+         (send j :calc-jacobian
+               fik-tmp row column j paxis child-link world-default-coords child-reverse
+               move-target transform-coords rotation-axis translation-axis
+               tmp-v0 tmp-v1 tmp-v2 tmp-v3 tmp-v3a tmp-v3b tmp-m33)
+         ;;
+         (dotimes (i dim)
+           (setf (aref fik (+ i row) column)
+                 (+ (aref fik (+ i row) column)
+                    (* (send mj :multiplier) (aref fik-tmp (+ i row) column)))))
+         ))
+     fik))
+
 (defclass rotational-mimic-joint
        :super rotational-joint
        :slots (mimic-joints))
@@ -158,13 +199,27 @@
   (:init (&rest args &key ((:mimic-joints mjs)) &allow-other-keys)
          (send-super* :init args)
          (setq mimic-joints mjs)
+         (dolist (j mimic-joints)
+           (send (send j :joint :child-link) :rotate (send j :offset) ((send j :joint) . axis))
+           (setq ((send j :joint) . default-coords) (send j :joint :child-link :copy-coords)))
          self)
   (:joint-angle (&rest args)
          (prog1
              (send-super* :joint-angle args)
            (dolist (j mimic-joints)
-             (send j :joint :joint-angle (+ (* joint-angle (send j :multiplier)) (send j :offset))))
+             (send j :joint :joint-angle (* joint-angle (send j :multiplier))))
            ))
+  (:calc-jacobian (fik row column joint paxis child-link world-default-coords child-reverse
+                       move-target transform-coords rotation-axis translation-axis
+                       tmp-v0 tmp-v1 tmp-v2 tmp-v3 tmp-v3a tmp-v3b tmp-m33)
+         (calc-jacobian-rotational fik row column joint paxis child-link world-default-coords child-reverse
+                                   move-target transform-coords rotation-axis translation-axis
+                                   tmp-v0 tmp-v1 tmp-v2 tmp-v3 tmp-v3a tmp-v3b tmp-m33)
+         (calc-jacobian-mimic mimic-joints
+                              fik row column joint paxis child-link world-default-coords child-reverse
+                              move-target transform-coords rotation-axis translation-axis
+                              tmp-v0 tmp-v1 tmp-v2 tmp-v3 tmp-v3a tmp-v3b tmp-m33)
+         ))
   )
 
 (defclass linear-mimic-joint
@@ -174,11 +229,25 @@
   (:init (&rest args &key ((:mimic-joints mjs)) &allow-other-keys)
          (send-super* :init args)
          (setq mimic-joints mjs)
+         (dolist (j mimic-joints)
+           (send (send j :joint :child-link) :translate (scale (* 1000 (send j :offset)) ((send j :joint) . axis)))
+           (setq ((send j :joint) . default-coords) (send j :joint :child-link :copy-coords)))
          self)
   (:joint-angle (&rest args)
          (prog1
              (send-super* :joint-angle args)
            (dolist (j mimic-joints)
-             (send j :joint :joint-angle (+ (* joint-angle (send j :multiplier)) (send j :offset))))
+             (send j :joint :joint-angle (* joint-angle (send j :multiplier))))
            ))
+  (:calc-jacobian (fik row column joint paxis child-link world-default-coords child-reverse
+                       move-target transform-coords rotation-axis translation-axis
+                       tmp-v0 tmp-v1 tmp-v2 tmp-v3 tmp-v3a tmp-v3b tmp-m33)
+         (calc-jacobian-linear fik row column joint paxis child-link world-default-coords child-reverse
+                               move-target transform-coords rotation-axis translation-axis
+                               tmp-v0 tmp-v1 tmp-v2 tmp-v3 tmp-v3a tmp-v3b tmp-m33)
+         (calc-jacobian-mimic mimic-joints
+                              fik row column joint paxis child-link world-default-coords child-reverse
+                              move-target transform-coords rotation-axis translation-axis
+                              tmp-v0 tmp-v1 tmp-v2 tmp-v3 tmp-v3a tmp-v3b tmp-m33)
+         ))
   )
