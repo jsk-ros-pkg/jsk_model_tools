@@ -1,0 +1,19 @@
+##
+## - collada_joint_name : euslisp_joint_name (start with :)
+##
+
+rarm:
+  - joint1 : rarm-shoulder-y
+  - joint2 : rarm-shoulder-p
+  - joint3 : rarm-elbow-p
+  - joint4 : rarm-wrist-p
+  - joint5 : rarm-wrist-r
+  - joint6 : rarm-wrist-y
+
+##
+## end-coords
+##
+rarm-end-coords:
+  translate : [0, 0, 0.2 ]
+  rotate    : [0, 0, 1, 0]
+  parent    : link6

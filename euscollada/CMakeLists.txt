@@ -68,3 +68,4 @@ install(PROGRAMS ${_install_sh_files}
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 add_rostest(test/euscollada-model-conversion.test)
+add_rostest(test/test-mimic.test)

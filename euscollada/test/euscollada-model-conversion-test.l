@@ -33,6 +33,7 @@
         (assert (select-stream (list strm) 120) ";; ;; faild to generate /tmp/pr2.dae within 120 second")
         (close strm))
     (let ((strm (piped-fork "rosrun xacro xacro.py `rospack find pr2_description`/robots/pr2.urdf.xacro > /tmp/pr2.$$.urdf && rosrun collada_urdf urdf_to_collada /tmp/pr2.$$.urdf /tmp/pr2.dae")))
+      (format *error-output* ";; check /tmp/pr2.dae file is generetad within 120 second .. ~A~%" (select-stream (list strm) 120)) ;; not sure why but we need double check since https://travis-ci.org/jsk-ros-pkg/jsk_model_tools/builds/632871892
       (assert (select-stream (list strm) 120) ";; faild to generate /tmp/pr2.dae within 120 second")
       (close strm))
     )
