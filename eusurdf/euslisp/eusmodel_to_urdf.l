@@ -19,15 +19,15 @@
     (format f "  </description>~%")
     (format f "</model>~%")))
 
-(defun eusmodelfile2urdf (fname outdir &key (tmpdir "/tmp/") collada-to-urdf-exe-path)
+(defun eusmodelfile2urdf (fname outdir &rest args &key (tmpdir "/tmp/") &allow-other-keys)
   (unless (probe-file fname)
     (errorf "file ~A not exists" fname))
   (load fname)
   (let* ((model-name (string-join "-" (butlast (string-split (send (pathname fname) :name) #\-))))
          (model (funcall (read-from-string model-name))))
-    (eusmodel2urdf model model-name outdir :tmpdir tmpdir :collada-to-urdf-exe-path collada-to-urdf-exe-path)))
+    (apply #'eusmodel2urdf model model-name outdir :tmpdir tmpdir args)))
 
-(defun eusmodel2urdf (model model-name outdir &key (tmpdir "/tmp/") collada-to-urdf-exe-path)
+(defun eusmodel2urdf (model model-name outdir &key (tmpdir "/tmp/") collada-to-urdf-exe-path use-stl)
   (let ((urdf-out-path (send (concatenate-pathnames outdir "model.urdf") :namestring))
         (mesh-out-dir (send (concatenate-pathnames outdir "meshes/") :namestring)))
     (cond ((null (send model :name)) (send model :name model-name))
@@ -40,9 +40,10 @@
 	    (t
 	     (setq collada-to-urdf-exe-path "rosrun collada_urdf collada_to_urdf"))))
 
-    (unix:system (format nil "~A ~A -G -A --mesh_output_dir ~A --mesh_prefix \"model://~A/meshes\" -O ~A"
+    (unix:system (format nil "~A ~A -G ~A -A --mesh_output_dir ~A --mesh_prefix \"model://~A/meshes\" -O ~A"
                          collada-to-urdf-exe-path
                          (send (concatenate-pathnames tmpdir model-name ".dae") :namestring)
+                         (if use-stl "--export_collision_mesh" "")
                          mesh-out-dir
                          model-name
                          urdf-out-path))
@@ -57,10 +58,13 @@
 (when (string= "eusmodel_to_urdf"
                (send (pathname (cadr lisp::*eustop-argument*)) :name))
   ;; eval-when :execute
-  (setq model-file-path (car (last (butlast (butlast lisp::*eustop-argument*)))))
-  (setq output-directory (car (last (butlast lisp::*eustop-argument*))))
-  (setq collada-to-urdf-exe-path (car (last lisp::*eustop-argument*)))
+  (setq model-file-path (elt lisp::*eustop-argument* 2))
+  (setq output-directory (elt lisp::*eustop-argument* 3))
+  (setq collada-to-urdf-exe-path (elt lisp::*eustop-argument* 4))
+  (setq use-stl nil)
+  (if (> (length lisp::*eustop-argument*) 5)
+      (setq use-stl (member "--use-stl" (subseq lisp::*eustop-argument* 5) :test #'string=)))
   (format t "converting eus object ~A -> ~A~%" model-file-path output-directory)
-  (eusmodelfile2urdf model-file-path output-directory :collada-to-urdf-exe-path collada-to-urdf-exe-path)
+  (eusmodelfile2urdf model-file-path output-directory :collada-to-urdf-exe-path collada-to-urdf-exe-path :use-stl use-stl)
   (exit))
 (provide :eusmodel_to_urdf)
