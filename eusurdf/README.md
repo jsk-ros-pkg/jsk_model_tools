@@ -16,7 +16,7 @@ roseus convert-eus-to-urdf.l
 ;; convert irteus scene to urdf and world file
 ;; some key arguments need to be set
 ;; using (generate-room-models) is recommended to convert room model
-(progn (load "models/room73b2-scene.l") (irteus2urdf-room-for-gazebo (room73b2) "models/room73b2,l"))
+(progn (load "models/room73b2-scene.l") (irteus2urdf-room-for-gazebo (room73b2) "models/room73b2.l"))
 ;; util wrapper function to convert room model
 (generate-room-models "room73b2")
 ```
