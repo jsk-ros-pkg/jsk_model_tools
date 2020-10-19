@@ -35,9 +35,9 @@ function(convert_gazebo_world_to_environment_yaml)
 
     add_custom_command(
       OUTPUT ${PROJECT_SOURCE_DIR}/worlds/${GAZEBO_WORLD_NAME}.yaml
-      COMMAND python
-      ARGS ${PROJECT_SOURCE_DIR}/scripts/convertworld.py ${GAZEBOWORLD_FILE} ${PROJECT_SOURCE_DIR}/worlds/${GAZEBO_WORLD_NAME}.yaml
-      DEPENDS ${PROJECT_SOURCE_DIR}/scripts/convertworld.py ${GAZEBOWORLD_FILE}
+      # convertworld.py requires virtualenv
+      COMMAND ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION}/convertworld.py ${GAZEBOWORLD_FILE} ${PROJECT_SOURCE_DIR}/worlds/${GAZEBO_WORLD_NAME}.yaml
+      DEPENDS ${PROJECT_SOURCE_DIR}/scripts/convertworld.py ${GAZEBOWORLD_FILE} ${PROJECT_NAME}_generate_virtualenv
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     list(APPEND WORLD_FILES "${PROJECT_SOURCE_DIR}/worlds/${GAZEBO_WORLD_NAME}.yaml")
 

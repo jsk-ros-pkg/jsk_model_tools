@@ -10,8 +10,12 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>catkin_virtualenv</build_depend>
   <build_depend>eusurdf</build_depend>
   <build_depend>meshlab</build_depend>
-  <build_depend>python-scipy</build_depend>
+
+  <export>
+    <pip_requirements>requirements.txt</pip_requirements>
+  </export>
 
 </package>

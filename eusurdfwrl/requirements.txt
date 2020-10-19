@@ -1,0 +1,1 @@
+scipy # Need a newer version than the one that comes from apt
