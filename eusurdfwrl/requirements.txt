@@ -1,1 +1,1 @@
-scipy # Need a newer version than the one that comes from apt
+scipy == 1.2.3 # Need a newer version than the one that comes from apt

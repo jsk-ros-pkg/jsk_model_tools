@@ -13,6 +13,7 @@ sudo python setup.py install
 Then, build eusurdfwrl
 ```
 rosdep install -r --from-paths . --ignore-src -y
+sudo apt install libcanberra-gtk-module #dependency of meshlab
 catkin build eusurdfwrl
 ```
 
