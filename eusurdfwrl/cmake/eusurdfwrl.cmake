@@ -52,35 +52,38 @@ function(convert_urdf_to_wrl)
 
   if(EXISTS "${SIMTRANS_EXE}")
     set(VRML_FILES "")
-    set(TMP_VRML_FILES "")
     file(GLOB URDF_FILES "${EUSURDFDIR}/models/*/model.urdf")
     set(GAZEBO_MODEL_PATH "${EUSURDFDIR}/models:$ENV{GAZEBO_MODEL_PATH}")
     foreach(URDF_FILE ${URDF_FILES})
       string(REGEX REPLACE "^.*/models/(.*)/model.urdf$" "\\1"
         URDF_NAME ${URDF_FILE})
-      set(MODEL_OUT_DIR ${PROJECT_SOURCE_DIR}/models)
-      set(TMP_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/models/${URDF_NAME})
-      if(NOT EXISTS "${TMP_OUT_DIR}")
-        file(MAKE_DIRECTORY "${TMP_OUT_DIR}")
-      endif()
 
       # generate model
-      add_custom_command(
-        OUTPUT ${TMP_OUT_DIR}/${URDF_NAME}.wrl
-        # -b : use both visual and collision
-        # -e 100: estimate mass and inertia from bounding box. (kg/m^3)
-        COMMAND GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH} ${SIMTRANS_EXE} -b -e 100 -i ${URDF_FILE} -o ${TMP_OUT_DIR}/${URDF_NAME}.wrl
-        DEPENDS ${URDF_FILE}
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-      list(APPEND TMP_VRML_FILES "${TMP_OUT_DIR}/${URDF_NAME}.wrl")
-
+      set(MODEL_OUT_DIR ${PROJECT_SOURCE_DIR}/models/${URDF_NAME})
+      if(NOT EXISTS "${MODEL_OUT_DIR}")
+        file(MAKE_DIRECTORY "${MODEL_OUT_DIR}")
+      endif()
       add_custom_command(
         OUTPUT ${MODEL_OUT_DIR}/${URDF_NAME}.wrl
-        COMMAND ls ${TMP_OUT_DIR} | grep collision.wrl | xargs -P 1 -I@ ${MESHLABSERVER_EXE} -i ${TMP_OUT_DIR}/@ -o ${TMP_OUT_DIR}/@ -s ${PROJECT_SOURCE_DIR}/scripts/filter.mlx
-        COMMAND ls ${TMP_OUT_DIR} | xargs -P 1 -I@ cp ${TMP_OUT_DIR}/@ ${MODEL_OUT_DIR}/
-        DEPENDS ${TMP_OUT_DIR}/${URDF_NAME}.wrl
+        # -b : use both visual and collision
+        # -e 100: estimate mass and inertia from bounding box. (kg/m^3)
+        COMMAND GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH} ${SIMTRANS_EXE} -b -e 100 -i ${URDF_FILE} -o ${MODEL_OUT_DIR}/${URDF_NAME}.wrl
+        DEPENDS ${URDF_FILE}
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
       list(APPEND VRML_FILES "${MODEL_OUT_DIR}/${URDF_NAME}.wrl")
+
+      # generate simple model
+      set(SIMPLE_MODEL_OUT_DIR ${PROJECT_SOURCE_DIR}/models/${URDF_NAME}_simple)
+      if(NOT EXISTS "${SIMPLE_MODEL_OUT_DIR}")
+        file(MAKE_DIRECTORY "${SIMPLE_MODEL_OUT_DIR}")
+      endif()
+      add_custom_command(
+        OUTPUT ${SIMPLE_MODEL_OUT_DIR}/${URDF_NAME}.wrl
+        COMMAND ls ${MODEL_OUT_DIR} | grep collision.wrl | xargs -P 1 -I@ ${MESHLABSERVER_EXE} -i ${MODEL_OUT_DIR}/@ -o ${SIMPLE_MODEL_OUT_DIR}/@ -s ${PROJECT_SOURCE_DIR}/scripts/filter.mlx
+        COMMAND ls ${MODEL_OUT_DIR} | grep -v collision.wrl | xargs -P 1 -I@ cp ${MODEL_OUT_DIR}/@ ${SIMPLE_MODEL_OUT_DIR}/
+        DEPENDS ${MODEL_OUT_DIR}/${URDF_NAME}.wrl
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+      list(APPEND VRML_FILES "${SIMPLE_MODEL_OUT_DIR}/${URDF_NAME}.wrl")
 
     endforeach(URDF_FILE)
     add_custom_target(eusurdfwrl_models ALL DEPENDS ${VRML_FILES})
