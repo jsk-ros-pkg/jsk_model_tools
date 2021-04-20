@@ -591,7 +591,7 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
 bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>& right) { return left.second < right.second; }
 void ModelEuslisp::readYaml (string &config_file) {
   // read yaml
-  string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head"}; // candidates of limb names
+  string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head", "rhand", "lhand"}; // candidates of limb names
 
   vector<pair<string, size_t> > limb_order;
 #ifndef USE_CURRENT_YAML
