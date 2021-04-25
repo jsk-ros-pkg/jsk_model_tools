@@ -7,14 +7,6 @@ macro(get_simtrans_exe _simtrans_exe)
   message(STATUS "Found simtrans: ${${_simtrans_exe}}")
 endmacro(get_simtrans_exe _simtrans_exe)
 
-macro(get_meshlabserver_exe _meshlabserver_exe)
-  find_program(${_meshlabserver_exe} meshlabserver)
-  if("${${_meshlabserver_exe}}$" STREQUAL "${_meshlabserver_exe}-NOTFOUND")
-    message(FATAL_ERROR "Could not find meshlabserver.")
-  endif()
-  message(STATUS "Found meshlabserver: ${${_meshlabserver_exe}}")
-endmacro(get_meshlabserver_exe _meshlabserver_exe)
-
 macro(get_eusurdfdir _eusurdfdir_var)
   find_package(eusurdf REQUIRED)
   if(EXISTS ${eusurdf_SOURCE_PREFIX})
@@ -48,7 +40,6 @@ endfunction(convert_gazebo_world_to_environment_yaml)
 function(convert_urdf_to_wrl)
   get_eusurdfdir(EUSURDFDIR)
   get_simtrans_exe(SIMTRANS_EXE)
-  get_meshlabserver_exe(MESHLABSERVER_EXE)
 
   if(EXISTS "${SIMTRANS_EXE}")
     set(VRML_FILES "")
@@ -71,19 +62,6 @@ function(convert_urdf_to_wrl)
         DEPENDS ${URDF_FILE}
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
       list(APPEND VRML_FILES "${MODEL_OUT_DIR}/${URDF_NAME}.wrl")
-
-      # generate simple model
-      set(SIMPLE_MODEL_OUT_DIR ${PROJECT_SOURCE_DIR}/models/${URDF_NAME}_simple)
-      if(NOT EXISTS "${SIMPLE_MODEL_OUT_DIR}")
-        file(MAKE_DIRECTORY "${SIMPLE_MODEL_OUT_DIR}")
-      endif()
-      add_custom_command(
-        OUTPUT ${SIMPLE_MODEL_OUT_DIR}/${URDF_NAME}.wrl
-        COMMAND ls ${MODEL_OUT_DIR} | grep collision.wrl | xargs -P 1 -I@ ${MESHLABSERVER_EXE} -i ${MODEL_OUT_DIR}/@ -o ${SIMPLE_MODEL_OUT_DIR}/@ -s ${PROJECT_SOURCE_DIR}/scripts/filter.mlx
-        COMMAND ls ${MODEL_OUT_DIR} | grep -v collision.wrl | xargs -P 1 -I@ cp ${MODEL_OUT_DIR}/@ ${SIMPLE_MODEL_OUT_DIR}/
-        DEPENDS ${MODEL_OUT_DIR}/${URDF_NAME}.wrl
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-      list(APPEND VRML_FILES "${SIMPLE_MODEL_OUT_DIR}/${URDF_NAME}.wrl")
 
     endforeach(URDF_FILE)
     add_custom_target(eusurdfwrl_models ALL DEPENDS ${VRML_FILES})
