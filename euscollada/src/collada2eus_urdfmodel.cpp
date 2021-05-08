@@ -591,7 +591,13 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
 bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>& right) { return left.second < right.second; }
 void ModelEuslisp::readYaml (string &config_file) {
   // read yaml
-  string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head", "rhand", "lhand"}; // candidates of limb names
+  std::vector<string> limb_candidates; // candidates of limb names
+  limb_candidates.push_back("torso");
+  limb_candidates.push_back("larm");
+  limb_candidates.push_back("rarm");
+  limb_candidates.push_back("lleg");
+  limb_candidates.push_back("rleg");
+  limb_candidates.push_back("head");
 
   vector<pair<string, size_t> > limb_order;
 #ifndef USE_CURRENT_YAML
@@ -607,6 +613,14 @@ void ModelEuslisp::readYaml (string &config_file) {
     // yaml-cpp is greater than 0.5.0
     doc = YAML::LoadFile(config_file.c_str());
 #endif
+#ifdef USE_CURRENT_YAML
+    if (doc["limbs"]) {
+#else
+    if ( doc.FindValue("limbs") ) {
+#endif
+      limb_candidates = doc["limbs"].as<std::vector<std::string> >();
+    }
+
     /* re-order limb name by lines of yaml */
     BOOST_FOREACH(string& limb, limb_candidates) {
 #ifdef USE_CURRENT_YAML
@@ -1043,13 +1057,17 @@ void ModelEuslisp::printMimicJoints () {
 
 
 void ModelEuslisp::printEndCoords () {
-  // TODO: end coords from collada ...
-  fprintf(fp, "     ;; end coords from yaml file\n");
   BOOST_FOREACH(link_joint_pair& limb, limbs) {
     string limb_name = limb.first;
     vector<string> link_names = limb.second.first;
 
     if (link_names.size()>0) {
+      fprintf(fp, "     (let (%s-end-coords\n", limb_name.c_str());
+      fprintf(fp, "           %s\n", limb_name.c_str());
+      fprintf(fp, "           %s-root-link)\n", limb_name.c_str());
+
+      // TODO: end coords from collada ...
+      fprintf(fp, "     ;; end coords from yaml file\n");
       string end_coords_parent_name(link_names.back());
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["parent"];
@@ -1061,17 +1079,17 @@ void ModelEuslisp::printEndCoords () {
       } catch(YAML::RepresentationException& e) {
       }
       if (add_link_suffix) {
-        fprintf(fp, "     (setq %s-end-coords (make-cascoords :coords (send %s_lk :copy-worldcoords) :name :%s-end-coords))\n",
+        fprintf(fp, "       (setq %s-end-coords (make-cascoords :coords (send %s_lk :copy-worldcoords) :name :%s-end-coords))\n",
                 limb_name.c_str(), end_coords_parent_name.c_str(), limb_name.c_str());
       } else {
-        fprintf(fp, "     (setq %s-end-coords (make-cascoords :coords (send %s :copy-worldcoords) :name %s-end-coords))\n",
+        fprintf(fp, "       (setq %s-end-coords (make-cascoords :coords (send %s :copy-worldcoords) :name %s-end-coords))\n",
                 limb_name.c_str(), end_coords_parent_name.c_str(), limb_name.c_str());
       }
       try {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["translate"];
         if ( n.size() > 0 ) {
           double value;
-          fprintf(fp, "     (send %s-end-coords :translate (float-vector", limb_name.c_str());
+          fprintf(fp, "       (send %s-end-coords :translate (float-vector", limb_name.c_str());
 #ifdef USE_CURRENT_YAML
           for(unsigned int i = 0; i < 3; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", 1000*n[i].as<double>());
 #else
@@ -1085,7 +1103,7 @@ void ModelEuslisp::printEndCoords () {
         const YAML::Node& n = doc[limb_name+"-end-coords"]["rotate"];
         if ( n.size() > 0 ) {
           double value;
-          fprintf(fp, "     (send %s-end-coords :rotate", limb_name.c_str());
+          fprintf(fp, "       (send %s-end-coords :rotate", limb_name.c_str());
 #if USE_CURRENT_YAML
           for(unsigned int i = 3; i < 4; i++) fprintf(fp, " "FLOAT_PRECISION_FINE"", M_PI/180*n[i].as<double>());
 #else
@@ -1102,21 +1120,15 @@ void ModelEuslisp::printEndCoords () {
       } catch(YAML::RepresentationException& e) {
       }
       if(add_link_suffix) {
-        fprintf(fp, "     (send %s_lk :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
+        fprintf(fp, "       (send %s_lk :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
       } else {
-        fprintf(fp, "     (send %s :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
+        fprintf(fp, "       (send %s :assoc %s-end-coords)\n", end_coords_parent_name.c_str(), limb_name.c_str());
       }
-    }
-  }
-  fprintf(fp, "\n");
+      fprintf(fp, "\n");
 
-  // limb name
-  fprintf(fp, "     ;; limbs\n");
-  BOOST_FOREACH(link_joint_pair& limb, limbs) {
-    string limb_name = limb.first;
-    vector<string> link_names = limb.second.first;
-    if ( link_names.size() > 0 ) {
-      fprintf(fp, "     (setq %s (list", limb_name.c_str());
+      // links
+      fprintf(fp, "       ;; links\n");
+      fprintf(fp, "       (setq %s (list", limb_name.c_str());
       if (add_link_suffix) {
         for (unsigned int i = 0; i < link_names.size(); i++)
           fprintf(fp, " %s_lk", link_names[i].c_str());
@@ -1128,13 +1140,16 @@ void ModelEuslisp::printEndCoords () {
       }
       fprintf(fp, "\n");
       // find root link by tracing limb's link list
-      fprintf(fp, "     (setq %s-root-link\n", limb_name.c_str());
-      fprintf(fp, "           (labels ((find-parent (l) (if (find (send l :parent) %s) (find-parent (send l :parent)) l)))\n",
+      fprintf(fp, "       (setq %s-root-link\n", limb_name.c_str());
+      fprintf(fp, "             (labels ((find-parent (l) (if (find (send l :parent) %s) (find-parent (send l :parent)) l)))\n",
               limb_name.c_str());
-      fprintf(fp, "             (find-parent (car %s))))\n", limb_name.c_str());
+      fprintf(fp, "               (find-parent (car %s))))\n", limb_name.c_str());
+      fprintf(fp, "\n");
+
+      fprintf(fp, "       (send self :add-limb :%s :end-coords %s-end-coords :links %s :root-link %s-root-link))\n", limb_name.c_str(), limb_name.c_str(), limb_name.c_str(), limb_name.c_str());
+
     }
   }
-  fprintf(fp, "\n");
 
   // link name
   fprintf(fp, "     ;; links\n");
@@ -1277,7 +1292,7 @@ void ModelEuslisp::printEndCoords () {
         string limb_name = limbs[i].first;
         fprintf(fp,
                 "\n"
-                "          (:%s (send self limb :angle-vector (float-vector",
+                "          (:%s (send self :limb limb :angle-vector (float-vector",
                 limb_name.c_str());
         vector<string> joint_names = limbs[i].second.second;
         size_t j;
