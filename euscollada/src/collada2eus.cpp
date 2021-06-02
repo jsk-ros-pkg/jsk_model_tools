@@ -1711,6 +1711,16 @@ int main(int argc, char* argv[]){
       fprintf(output_fp, "    (:%s (&rest args) (forward-message-to %s args))\n", it->second.c_str(), it->first.c_str());
     }
   }
+  fprintf(output_fp, "    (:user-defined-joints ()\n");
+  fprintf(output_fp, "       (list\n");
+  for(vector<pair<string, string> >::iterator it=g_all_link_names.begin();it!=g_all_link_names.end();it++){
+    if(add_joint_suffix) {
+      fprintf(output_fp, "          (cons :%s %s_jt)\n", it->second.c_str(), it->first.c_str());
+    } else {
+      fprintf(output_fp, "          (cons :%s %s)\n", it->second.c_str(), it->first.c_str());
+    }
+  }
+  fprintf(output_fp, "       ))\n");
   // sensor
   fprintf(output_fp, "\n    ;; attach_sensor\n");
   if ( g_dae->getDatabase()->getElementCount(NULL, "articulated_system", NULL) > 0 ) {
