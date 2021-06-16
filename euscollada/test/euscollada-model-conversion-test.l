@@ -66,8 +66,7 @@
           ";; sample robot has not valid weight ~A" (send *samplerobot* :weight))
   (assert (eps-v= #f(2.32416 0.0 791.942) (send *samplerobot* :centroid))
           ";; sample robot has not valid centroid ~A" (send *samplerobot* :centroid))
-  (assert (and (= (length (send *samplerobot* :force-sensors)) 4)
-               (every #'(lambda (fs name) (string= (send fs :name) name)) (send *samplerobot* :force-sensors) (list "lfsensor" "rfsensor" "lhsensor" "rhsensor")))) ;; See https://github.com/jsk-ros-pkg/jsk_model_tools/pull/236
+  (assert (equal (send-all (send *samplerobot* :force-sensors) :name) (list "lfsensor" "rfsensor" "lhsensor" "rhsensor"))) ;; See https://github.com/jsk-ros-pkg/jsk_model_tools/pull/236
   )
 
 (deftest generate-sample-robot-no-yaml-test
