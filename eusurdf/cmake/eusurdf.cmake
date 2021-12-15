@@ -1,3 +1,11 @@
+if("$ENV{ROS_DISTRO}" STREQUAL "noetic")
+  set(collada_urdf_CONFIG_INCLUDED TRUE)
+  set(libraries "collada_urdf")
+  foreach(library ${libraries})
+    list(APPEND collada_urdf_LIBRARIES ${library})
+  endforeach(library ${libraries})
+endif("$ENV{ROS_DISTRO}" STREQUAL "noetic")
+
 macro(get_collada_to_urdf_exe _collada_to_urdf_exe)
   find_package(collada_urdf_jsk_patch)
   find_package(collada_urdf)
