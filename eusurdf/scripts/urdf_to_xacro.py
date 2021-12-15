@@ -44,7 +44,7 @@ class GazeboModelPathResolver(object):
 
     def load_path_from_plugin(self):
         cmd = "rospack plugins --attrib=gazebo_model_path gazebo_ros"
-        lines = subprocess.check_output(cmd, shell=True)
+        lines = subprocess.check_output(cmd, shell=True).decode()
         if lines:
             for line in lines.split(os.linesep):
                 if not line:
@@ -192,7 +192,7 @@ class URDF2XACRO(object):
                                         xml_declaration=True,
                                         pretty_print=True,
                                         with_comments=True)
-        with open(out_path, "w") as f:
+        with open(out_path, "wb") as f:
             f.write(xmlstring)
         printf("saved to", out_path)
     def convert(self):
