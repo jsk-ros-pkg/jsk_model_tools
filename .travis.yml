@@ -26,18 +26,15 @@ env:
     - CHECK_PYTHON2_COMPILE=true
     - CHECK_PYTHON3_COMPILE=true
     - ROS_DISTRO=indigo ROSWS=wstool BUILDER=catkin USE_DEB=true
-    - ROS_DISTRO=indigo ROSWS=wstool BUILDER=catkin USE_DEB=false
     - ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=true
-    - ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=false
     - ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=true
-    - ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=false
     - ROS_DISTRO=noetic   ROSWS=wstool BUILDER=catkin USE_DEB=true
     - ROS_DISTRO=noetic   ROSWS=wstool BUILDER=catkin USE_DEB=false
-matrix:
-  allow_failures:
-    - env: ROS_DISTRO=indigo ROSWS=wstool BUILDER=catkin USE_DEB=false
-    - env: ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=false
-    - env: ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=false
+# matrix:
+#   allow_failures:
+#     - env: ROS_DISTRO=indigo ROSWS=wstool BUILDER=catkin USE_DEB=false
+#     - env: ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=false
+#     - env: ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=false
 script:
   # check python2 compatibility
   - if [ "${CHECK_PYTHON2_COMPILE}" == "true" ]; then python2 -m compileall . ; exit $?; fi
