@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import sys, os, math
 from xml.dom.minidom import parse, parseString
