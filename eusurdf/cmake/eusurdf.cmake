@@ -155,7 +155,7 @@ function(convert_eusmodel_to_urdf)
     # generate static model
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}_static/model.urdf
-      COMMAND ${PROJECT_SOURCE_DIR}/scripts/make_static_model.py
+      COMMAND python$ENV{ROS_PYTHON_VERSION} ${PROJECT_SOURCE_DIR}/scripts/make_static_model.py
       ARGS ${EUS_MODEL_NAME} ${PROJECT_SOURCE_DIR}
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}/model.urdf)
     list(APPEND URDF_FILES "${MODEL_OUT_DIR}_static/model.urdf")
@@ -163,7 +163,7 @@ function(convert_eusmodel_to_urdf)
     # generate fixed model
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}_fixed/model.urdf
-      COMMAND ${PROJECT_SOURCE_DIR}/scripts/make_fixed_model.py
+      COMMAND python$ENV{ROS_PYTHON_VERSION} ${PROJECT_SOURCE_DIR}/scripts/make_fixed_model.py
       ARGS ${EUS_MODEL_NAME} ${PROJECT_SOURCE_DIR}
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}/model.urdf)
     list(APPEND URDF_FILES "${MODEL_OUT_DIR}_fixed/model.urdf")
@@ -171,19 +171,19 @@ function(convert_eusmodel_to_urdf)
     # generate xacro
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}/model.urdf.xacro
-      COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
+      COMMAND python$ENV{ROS_PYTHON_VERSION} ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
       ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}/model.urdf ${MODEL_OUT_DIR}/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}/model.urdf.xacro")
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}_static/model.urdf.xacro
-      COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
+      COMMAND python$ENV{ROS_PYTHON_VERSION} ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
       ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}_static/model.urdf ${MODEL_OUT_DIR}_static/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}_static/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}_static/model.urdf.xacro")
     add_custom_command(
       OUTPUT ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
-      COMMAND ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
+      COMMAND python$ENV{ROS_PYTHON_VERSION} ${PROJECT_SOURCE_DIR}/scripts/urdf_to_xacro.py
       ARGS -f package://eusurdf/models/ ${MODEL_OUT_DIR}_fixed/model.urdf ${MODEL_OUT_DIR}_fixed/model.urdf.xacro
       MAIN_DEPENDENCY ${MODEL_OUT_DIR}_fixed/model.urdf)
     list(APPEND XACRO_FILES "${MODEL_OUT_DIR}_fixed/model.urdf.xacro")
