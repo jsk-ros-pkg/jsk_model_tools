@@ -74,10 +74,10 @@ def runPatch(input_file, patch_yaml, output_file):
     patch_param = yaml.load(open(patch_yaml))
     for joint_name in patch_param.keys():
         diff = patch_param[joint_name]
-        if diff.has_key("xyz"):
+        if "xyz" in diff:
             j = input_robot.joint_map[joint_name]
             j.origin.xyz = diff["xyz"]
-        if diff.has_key("rpy"):
+        if "rpy" in diff:
             j = input_robot.joint_map[joint_name]
             j.origin.rpy = diff["rpy"]
     if output_file:

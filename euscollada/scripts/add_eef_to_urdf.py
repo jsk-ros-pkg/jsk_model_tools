@@ -14,15 +14,15 @@ def usage():
 
 
 def addEEF(xdoc, end_effector_info, limb_info, limb_name):
-    if end_effector_info.has_key("parent"):
+    if "parent" in end_effector_info:
         parent = end_effector_info["parent"]
     else:
         parent = limb_info[-1].keys()[0].replace("JOINT", "LINK") # not goood!
-    if end_effector_info.has_key("translate"):
+    if "translate" in end_effector_info:
         pos = end_effector_info["translate"]
     else:
         pos = [0, 0, 0]
-    if end_effector_info.has_key("rotate"):
+    if "rotate" in end_effector_info:
         q = quaternion_about_axis(math.radians(end_effector_info['rotate'][3]), 
                             end_effector_info['rotate'][:3])
         rpy = euler_from_quaternion(q)
