@@ -2,7 +2,10 @@
 
 import sys
 import os
-import commands
+try:
+    import commands
+except ImportError: #py3k
+    import subprocess as commands # python3 / subprocess supports getoutput
 
 
 def make_static_model (name, eusurdf_package_path=commands.getoutput('rospack find eusurdf'), overwrite=True):
