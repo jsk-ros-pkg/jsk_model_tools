@@ -429,7 +429,7 @@ class yamlParser:
                 root  = eff['root'] if 'root' in eff else 'BODY'
                 if not parent:
                     if not self.yaml_data.has_key(limb):
-                        print >>sys.stderr, "cannot find limb: %s" %(limb)
+                        print("cannot find limb: %s" %(limb), file=sys.stderr)
                         return
                     limb_lst = self.yaml_data[limb]
                     parent = limb_lst[-1].keys()[0].replace("JOINT", "LINK") # not goood!

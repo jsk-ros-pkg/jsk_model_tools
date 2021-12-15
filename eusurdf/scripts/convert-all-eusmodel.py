@@ -15,7 +15,7 @@ def convert_all_eusmodel ():
 
     for eusmodel_file_path in eusmodel_file_path_list.split('\n'):
         eusmodel_file_name = os.path.basename(eusmodel_file_path)
-        print "[convert-all-eusmodel] converting %s" % eusmodel_file_name
+        print("[convert-all-eusmodel] converting %s" % eusmodel_file_name)
         regexp_search_res = re.compile("(.*)\-object\.l").search(eusmodel_file_name)
         if regexp_search_res:
             eusmodel_function_name = regexp_search_res.group(1)

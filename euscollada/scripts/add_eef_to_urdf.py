@@ -9,8 +9,8 @@ import add_sensor_to_urdf
 import math
 
 def usage():
-    print "Usage:"
-    print "  add_eef_to_urdf.py input_urdf input_yaml output_urdf"
+    print("Usage:")
+    print("  add_eef_to_urdf.py input_urdf input_yaml output_urdf")
 
 
 def addEEF(xdoc, end_effector_info, limb_info, limb_name):

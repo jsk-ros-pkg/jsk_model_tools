@@ -5,8 +5,8 @@ import sys
 import tf
 from tf.transformations import *
 def usage():
-    print "Usage:"
-    print "  add_sensor_to_urdf.py x y z roll pitch yaw    parent child(new link) input_urdf output_urdf"
+    print("Usage:")
+    print("  add_sensor_to_urdf.py x y z roll pitch yaw    parent child(new link) input_urdf output_urdf")
 
 def addLink(xdoc, pos, rpy, parent, child):
     robot = xdoc.getElementsByTagName("robot")[0]

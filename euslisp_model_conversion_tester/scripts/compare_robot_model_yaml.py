@@ -27,17 +27,17 @@ def check_var (t1, t2, prop_name, eps=EPSILON):
     else:
         v2 = t2.get(prop_name)
     if v1 == None and v2 == None:
-        print "Neglected"
+        print("Neglected")
         return True
     elif v1 != None and v2 != None:
         if func(v1, v2, eps):
-            print "OK"
+            print("OK")
             return True;
         else:
-            print "NG, check fail ", v1, " vs ", v2
+            print("NG, check fail ", v1, " vs ", v2)
             return False;
     else:
-        print "NG, data missing among ", v1, " ", v2
+        print("NG, data missing among ", v1, " ", v2)
         return False;
 
 def check_str_var (t1, t2, prop_name):
@@ -45,28 +45,28 @@ def check_str_var (t1, t2, prop_name):
     v2 = t2.get(prop_name)
     if v1 and v2:
         if v1 == v2:
-            print "OK"
+            print("OK")
             return True;
         else:
-            print "NG", v1, v2
+            print("NG", v1, v2)
             return False;
     else:
-        print None
+        print(None)
         return True
 
 import unittest
 class TestRobotModelYaml(unittest.TestCase):
     def check_var(self, prop_name, param_name='Links', check_func=check_var):
-        print "  check", param_name
+        print("  check", param_name)
         ret = []
         for f in test2.get(param_name).keys():
             t2 = test2.get(param_name).get(f)
             t1 = test1.get(param_name).get(f)
-            print "    ", f, prop_name,
+            print("    ", f, prop_name, end=' ')
             if t1 and t2:
                 ret.append(check_func(t1, t2, prop_name))
             else:
-                print None
+                print(None)
         return all(ret)
 
     # def test_total_joints (self):
@@ -74,16 +74,16 @@ class TestRobotModelYaml(unittest.TestCase):
     # def test_total_actjoints (self):
     #     self.assertTrue(check_str_var(test1.get('total'), test2.get('total'), 'actjoints'))
     def test_Total_Mass (self):
-        print 'check Total'
-        print '  Mass ',
+        print('check Total')
+        print('  Mass ', end=' ')
         self.assertTrue(check_var(test1.get('Total'), test2.get('Total'), 'Mass', 1e-3))
     def test_Total_GlobalCom (self):
-        print 'check Total'
-        print '  GlobalCom ',
+        print('check Total')
+        print('  GlobalCom ', end=' ')
         self.assertTrue(check_var(test1.get('Total'), test2.get('Total'), 'GlobalCom'))
     def test_Total_GlobalInertia (self):
-        print 'check Total'
-        print '  GlobalInertia ',
+        print('check Total')
+        print('  GlobalInertia ', end=' ')
         self.assertTrue(check_var(test1.get('Total'), test2.get('Total'), 'GlobalInertia', 1e-4))
     def test_Link_Mass (self):
         self.assertTrue(self.check_var('Mass'))

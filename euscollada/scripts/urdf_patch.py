@@ -32,16 +32,16 @@ def jointDiff(original, new):
         pos_original[2] == pos_new[2]):
         pos_diff = None
     else:
-        print "old: ", pos_original
-        print "new: ", pos_new
+        print("old: ", pos_original)
+        print("new: ", pos_new)
         pos_diff = pos_new
     if (rpy_original[0] == rpy_new[0] and 
         rpy_original[1] == rpy_new[1] and 
         rpy_original[2] == rpy_new[2]):
         rpy_diff = None
     else:
-        print "old: ", rpy_original
-        print "new: ", rpy_new
+        print("old: ", rpy_original)
+        print("new: ", rpy_new)
         rpy_diff = rpy_new
     if not pos_diff and not rpy_diff:
         return None
@@ -67,7 +67,7 @@ def runDiff(original_file, new_file, output_file):
                 diffs[j.name] = diff
     with open(output_file, "w") as f:
         f.write(yaml.dump(diffs))
-        print yaml.dump(diffs)
+        print(yaml.dump(diffs))
 
 def runPatch(input_file, patch_yaml, output_file):
     input_robot = URDF.from_xml_file(input_file)
@@ -84,7 +84,7 @@ def runPatch(input_file, patch_yaml, output_file):
         with open(output_file, "w") as f:
             f.write(input_robot.to_xml_string())
     else:
-        print input_robot.to_xml_string()
+        print(input_robot.to_xml_string())
         
 def parser():
     p = argparse.ArgumentParser(description="Get and apply urdf patch")

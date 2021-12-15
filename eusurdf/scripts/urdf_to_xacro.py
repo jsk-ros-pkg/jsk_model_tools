@@ -14,7 +14,7 @@ class InvalidURDFException(Exception):
     pass
 
 def printf(*args):
-    print "[urdf_to_xacro.py] " + ' '.join(args)
+    print("[urdf_to_xacro.py] " + ' '.join(args))
 
 class GazeboModelPathResolver(object):
     def __init__(self):

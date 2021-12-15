@@ -17,7 +17,7 @@ def convert_all_eusscene ():
         eusmodel_file_name = os.path.basename(eusmodel_file_path)
         regexp_search_res = re.compile("(.*)\-scene\.l").search(eusmodel_file_name)
         if regexp_search_res:
-            print "[convert-all-eusmodel] converting %s" % eusmodel_file_name
+            print("[convert-all-eusmodel] converting %s" % eusmodel_file_name)
             eusmodel_function_name = regexp_search_res.group(1)
             os.system('mkdir -p %s' % urdfmodel_dir_path+eusmodel_function_name+"-scene")
             os.system('rosrun roseus roseus "(progn (load \\"package://pr2eus_moveit/euslisp/eus2scene.l\\") (load \\"package://euslisp/jskeus/eus/models/%s\\") (generate-scene-file-from-eusscene (%s) \\"%s\\") (exit))"' % (eusmodel_file_name, eusmodel_function_name, urdfmodel_dir_path+eusmodel_function_name+"-scene/model.scene"))

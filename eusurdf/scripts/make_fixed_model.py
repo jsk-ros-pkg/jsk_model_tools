@@ -15,7 +15,7 @@ def make_fixed_model (name, eusurdf_package_path=commands.getoutput('rospack fin
         os.system("rm -rf %s" % fixed_urdf_dir_path)
     else:
         if os.path.exists(fixed_urdf_dir_path):
-            print '[ERROR] the same name fixed model already exits'
+            print('[ERROR] the same name fixed model already exits')
             exit(1)
 
     os.system("cp -r %s %s" % (urdf_dir_path, fixed_urdf_dir_path))
