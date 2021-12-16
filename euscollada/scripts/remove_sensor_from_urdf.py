@@ -5,8 +5,8 @@ import sys
 import tf
 from tf.transformations import *
 def usage():
-    print "Usage:"
-    print "  remove_sensor_from_urdf.py link_name1 [link_name2, link_name3, ...] input_urdf output_urdf"
+    print("Usage:")
+    print("  remove_sensor_from_urdf.py link_name1 [link_name2, link_name3, ...] input_urdf output_urdf")
 
 def removeLink(xdoc, link_names):
     robot = xdoc.getElementsByTagName("robot")[0]
