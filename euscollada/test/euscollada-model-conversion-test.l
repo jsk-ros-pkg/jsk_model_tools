@@ -32,7 +32,7 @@
       (let ((strm (piped-fork "rosrun collada_urdf urdf_to_collada `rospack find pr2_mechanism_model`/pr2.urdf /tmp/pr2.dae")))
         (assert (select-stream (list strm) 120) ";; ;; faild to generate /tmp/pr2.dae within 120 second")
         (close strm))
-    (let ((strm (piped-fork "rosrun xacro xacro.py `rospack find pr2_description`/robots/pr2.urdf.xacro > /tmp/pr2.$$.urdf && rosrun collada_urdf urdf_to_collada /tmp/pr2.$$.urdf /tmp/pr2.dae")))
+    (let ((strm (piped-fork "rosrun xacro xacro `rospack find pr2_description`/robots/pr2.urdf.xacro > /tmp/pr2.$$.urdf && rosrun collada_urdf urdf_to_collada /tmp/pr2.$$.urdf /tmp/pr2.dae")))
       (format *error-output* ";; check /tmp/pr2.dae file is generetad within 120 second .. ~A~%" (select-stream (list strm) 120)) ;; not sure why but we need double check since https://travis-ci.org/jsk-ros-pkg/jsk_model_tools/builds/632871892
       (assert (select-stream (list strm) 120) ";; faild to generate /tmp/pr2.dae within 120 second")
       (close strm))
@@ -52,6 +52,7 @@
   (eusmodel-validity-check-one *pr2*))
 
 (deftest generate-sample-robot-model-test
+ (when (ros::rospack-find "openhrp3")
   (generate-eusmodel-from-collada
    "$(rospack find openhrp3)/share/OpenHRP-3.1/sample/model/sample1.dae"
    "/tmp/samplerobot.l" :yaml-file "$(rospack find euscollada)/test/samplerobot.yaml")
@@ -67,9 +68,10 @@
   (assert (eps-v= #f(2.32416 0.0 791.942) (send *samplerobot* :centroid))
           ";; sample robot has not valid centroid ~A" (send *samplerobot* :centroid))
   (assert (equal (send-all (send *samplerobot* :force-sensors) :name) (list "lfsensor" "rfsensor" "lhsensor" "rhsensor"))) ;; See https://github.com/jsk-ros-pkg/jsk_model_tools/pull/236
-  )
+  ))
 
 (deftest generate-sample-robot-no-yaml-test
+ (when (ros::rospack-find "openhrp3")
   (generate-eusmodel-from-collada
    "$(rospack find openhrp3)/share/OpenHRP-3.1/sample/model/sample1.dae"
    "/tmp/samplerobot_no_yaml.l")
@@ -85,7 +87,7 @@
           ";; sample robot has not valid weight ~A" (send *samplerobot* :weight))
   (assert (eps-v= #f(2.32416 0.0 68.4419) (send *samplerobot* :centroid))
           ";; sample robot has not valid centroid ~A" (send *samplerobot* :centroid))
-  )
+  ))
 
 (run-all-tests)
 (exit)
