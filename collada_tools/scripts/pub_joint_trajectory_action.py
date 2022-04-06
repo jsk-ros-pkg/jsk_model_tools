@@ -36,7 +36,7 @@ if __name__ == "__main__":
     if options.joints is not None:
         jlist = options.joints.split(',')
     else:
-        print 'There is no joint inputs'
+        print('There is no joint inputs')
         exit(0)
 
     plist = None
@@ -83,11 +83,11 @@ if __name__ == "__main__":
     client.wait_for_result( )
     #client.wait_for_result( rospy.Duration.from_sec(10.0) )
 
-    print client.get_state()
+    print(client.get_state())
 
     if client.get_state() == GoalStatus.SUCCEEDED:
-        print "action succeeded"
+        print("action succeeded")
         exit(0)
     else:
-        print "action failed"
+        print("action failed")
         exit(1)

@@ -270,7 +270,6 @@ public:
   daeDocument *g_document;
   //boost::shared_ptr< DAE> dae;
   DAE dae;
-  string getSensorType (const domExtraRef pextra);
   domLink* findLinkfromKinematics (domLink* thisLink, const string& link_name);
   void parseSensors();
   class daeSensor {
@@ -286,6 +285,7 @@ public:
     }
   };
   vector<daeSensor> m_sensors;
+  void getSensorInfo (const domExtraRef pextra, daeSensor& dsensor);
 
 private:
 #if URDFDOM_1_0_0_API
@@ -1387,8 +1387,8 @@ void ModelEuslisp::printEndCoords () {
   }
 }
 
-string ModelEuslisp::getSensorType (const domExtraRef pextra) {
-  // get sensor_type from extra tag
+void ModelEuslisp::getSensorInfo (const domExtraRef pextra, daeSensor& dsensor) {
+  // get sensor_type and sensor_id from extra tag
   string sensor_type;
   for (size_t ii = 0; ii < dae.getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
     domExtra *tmpextra;
@@ -1397,12 +1397,13 @@ string ModelEuslisp::getSensorType (const domExtraRef pextra) {
       for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
         if ((string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
             pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
-          sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
+          dsensor.sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
+          dsensor.sensor_id = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("sid");
         }
       }
     }
   }
-  return sensor_type;
+  return;
 }
 domLink* ModelEuslisp::findLinkfromKinematics (domLink* thisLink, const string& link_name) {
   if (thisLink->getName()==link_name) return thisLink;
@@ -1540,9 +1541,7 @@ void ModelEuslisp::parseSensors () {
             daeSensor dsensor;
             dsensor.name = pextra->getName();
             dsensor.parent_link = link->second->name;
-            dsensor.sensor_type = getSensorType(pextra);
-            string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
-            dsensor.sensor_id = sensor_url.erase(sensor_url.find( "#sensor" ), 7);
+            getSensorInfo(pextra, dsensor);
             daeTArray<daeElementRef> children;
             frame_origin->getChildren(children);
             for(size_t i = 0; i < children.getCount(); ++i) {
@@ -1550,7 +1549,7 @@ void ModelEuslisp::parseSensors () {
             }
             m_sensors.push_back(dsensor);
             ROS_WARN_STREAM("Sensor " << pextra->getName() << " is attached to " << link->second->name
-                            << " " << dsensor.sensor_type << " " << sensor_url);
+                            << " " << dsensor.sensor_type << " " << dsensor.sensor_id);
           }
         }
       }
