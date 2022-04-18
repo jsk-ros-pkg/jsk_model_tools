@@ -1292,7 +1292,7 @@ void ModelEuslisp::printEndCoords () {
         string limb_name = limbs[i].first;
         fprintf(fp,
                 "\n"
-                "          (:%s (send self :limb limb :angle-vector (float-vector",
+                "          (:%s (send self limb :angle-vector (float-vector",
                 limb_name.c_str());
         vector<string> joint_names = limbs[i].second.second;
         size_t j;
