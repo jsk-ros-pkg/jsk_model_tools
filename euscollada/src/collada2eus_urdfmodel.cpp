@@ -1705,6 +1705,67 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
         if (!!a->mNormals) { a->mNormals = NULL; }
       }
     }
+    if (use_simple_geometry) {
+      // remove normal for reducing vertices
+      for (unsigned int m = 0; m < raw_scene->mNumMeshes; m++) {
+        aiMesh *a = raw_scene->mMeshes[m];
+        aiVector3D min, max;
+
+        min.x = min.y = min.z =  1e10f;
+        max.x = max.y = max.z = -1e10f;
+
+#define aisgl_min(x,y) (x<y?x:y)
+#define aisgl_max(x,y) (y>x?y:x)
+        for (uint32_t n = 0; n < a->mNumVertices; n++) {
+          aiVector3D tmp = a->mVertices[n];
+          min.x = aisgl_min(min.x,tmp.x);
+          min.y = aisgl_min(min.y,tmp.y);
+          min.z = aisgl_min(min.z,tmp.z);
+
+          max.x = aisgl_max(max.x,tmp.x);
+          max.y = aisgl_max(max.y,tmp.y);
+          max.z = aisgl_max(max.z,tmp.z);
+        }
+        // copied from assimp/code/StandardShapes.cpp aiMesh* StandardShapes::MakeMesh(const std::vector<aiVector3D>& positions, unsigned int numIndices)
+        std::vector<aiVector3D> positions;
+        aiVector3D v0 = aiVector3D(min.x, min.y, min.z);
+        aiVector3D v1 = aiVector3D(max.x, min.y, min.z);
+        aiVector3D v2 = aiVector3D(max.x, max.y, min.z);
+        aiVector3D v3 = aiVector3D(min.x, max.y, min.z);
+        aiVector3D v4 = aiVector3D(min.x, min.y, max.z);
+        aiVector3D v5 = aiVector3D(max.x, min.y, max.z);
+        aiVector3D v6 = aiVector3D(max.x, max.y, max.z);
+        aiVector3D v7 = aiVector3D(min.x, max.y, max.z);
+
+#define ADD_QUAD(n0,n1,n2,n3) \
+        {  positions.push_back(n0); positions.push_back(n1); positions.push_back(n2); positions.push_back(n3); }
+
+        ADD_QUAD(v0,v3,v2,v1);
+        ADD_QUAD(v0,v1,v5,v4);
+        ADD_QUAD(v0,v4,v7,v3);
+        ADD_QUAD(v6,v5,v1,v2);
+        ADD_QUAD(v6,v2,v3,v7);
+        ADD_QUAD(v6,v7,v4,v5);
+
+        int numIndices = 4;
+        aiMesh *out = new aiMesh();
+        out->mPrimitiveTypes = aiPrimitiveType_POLYGON;
+        out->mNumFaces = positions.size() / numIndices;
+        out->mFaces = new aiFace[out->mNumFaces];
+        for (unsigned int i = 0, a = 0; i < out->mNumFaces;++i)
+        {
+          aiFace& f = out->mFaces[i];
+          f.mNumIndices = numIndices;
+          f.mIndices = new unsigned int[numIndices];
+          for (unsigned int i = 0; i < numIndices;++i,++a)
+            f.mIndices[i] = a;
+        }
+        out->mNumVertices = (unsigned int)positions.size();
+        out->mVertices = new aiVector3D[out->mNumVertices];
+        ::memcpy(out->mVertices,&positions[0],out->mNumVertices*sizeof(aiVector3D));
+        raw_scene->mMeshes[m] = out;
+      }
+    }
     const aiScene* scene = importer.ApplyPostProcessing (aiProcessPreset_TargetRealtime_MaxQuality &
                                                          ((~aiProcess_GenNormals) & (~aiProcess_GenSmoothNormals)));
 
