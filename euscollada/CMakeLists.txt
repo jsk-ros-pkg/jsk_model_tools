@@ -7,6 +7,15 @@ execute_process(
   COMMAND python -c "import sys; sys.exit(ord('$ENV{ROS_DISTRO}'[0]) >= ord('indigo'[0]))"
   RESULT_VARIABLE rosversion_ge_indigo)
 
+# noetic collada_urdf could not find_packag-ed due to https://github.com/ros/collada_urdf/issues/43
+if("$ENV{ROS_DISTRO}" STREQUAL "noetic")
+  set(collada_urdf_CONFIG_INCLUDED TRUE)
+  set(libraries "collada_urdf")
+  foreach(library ${libraries})
+    list(APPEND collada_urdf_LIBRARIES ${library})
+  endforeach(library ${libraries})
+endif("$ENV{ROS_DISTRO}" STREQUAL "noetic")
+
 IF(${rosversion_ge_indigo})
 find_package(catkin REQUIRED COMPONENTS collada_urdf rospack collada_parser resource_retriever rostest)
 ELSE()
@@ -67,4 +76,9 @@ file(GLOB _install_sh_files RELATIVE ${PROJECT_SOURCE_DIR} *.sh)
 install(PROGRAMS ${_install_sh_files}
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-add_rostest(test/euscollada-model-conversion.test)
+
+if (CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  add_rostest(test/euscollada-model-conversion.test)
+  add_rostest(test/test-mimic.test)
+endif(CATKIN_ENABLE_TESTING)

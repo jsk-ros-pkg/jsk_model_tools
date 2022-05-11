@@ -252,6 +252,7 @@ public:
 #endif
   void printLinks ();
   void printJoints ();
+  void printMimicJoints ();
   void printEndCoords();
   void printSensors();
   void printSensorLists();
@@ -269,7 +270,6 @@ public:
   daeDocument *g_document;
   //boost::shared_ptr< DAE> dae;
   DAE dae;
-  string getSensorType (const domExtraRef pextra);
   domLink* findLinkfromKinematics (domLink* thisLink, const string& link_name);
   void parseSensors();
   class daeSensor {
@@ -285,6 +285,7 @@ public:
     }
   };
   vector<daeSensor> m_sensors;
+  void getSensorInfo (const domExtraRef pextra, daeSensor& dsensor);
 
 private:
 #if URDFDOM_1_0_0_API
@@ -761,6 +762,8 @@ void ModelEuslisp::printRobotMethods() {
 
   printJoints();
 
+  printMimicJoints();
+
   printEndCoords();
 
   printSensors();
@@ -996,6 +999,58 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
   }
   fprintf(fp, "                     ))\n");
 }
+
+void ModelEuslisp::printMimicJoints () {
+  fprintf(fp, "\n     ;; mimic joint re-definition\n");
+#if URDFDOM_1_0_0_API
+  map<JointSharedPtr, list<JointSharedPtr> > mimic_joint_list;
+#else
+  map<boost::shared_ptr<Joint>, list<boost::shared_ptr<Joint> > > mimic_joint_list;
+#endif
+#if URDFDOM_1_0_0_API
+  for (map<string, JointSharedPtr>::iterator joint = robot->joints_.begin();
+#else
+  for (map<string, boost::shared_ptr<Joint> >::iterator joint = robot->joints_.begin();
+#endif
+       joint != robot->joints_.end(); joint++) {
+    if (joint->second->mimic) {
+      mimic_joint_list[robot->joints_[joint->second->mimic->joint_name]].push_back(joint->second);
+    }
+  }
+
+#if URDFDOM_1_0_0_API
+  for (map<JointSharedPtr, list<JointSharedPtr> >::iterator mimic = mimic_joint_list.begin();
+#else
+  for (map<boost::shared_ptr<Joint>, list<boost::shared_ptr<Joint> > >::iterator mimic = mimic_joint_list.begin();
+#endif
+       mimic != mimic_joint_list.end(); mimic++){
+    bool linear = (mimic->first->type==Joint::PRISMATIC);
+    fprintf(fp, "     ;; re-define %s as mimic-joint\n", mimic->first->name.c_str());
+    fprintf(fp, "     (let (tmp-mimic-joint)\n");
+    fprintf(fp, "       (setq tmp-mimic-joint (replace-object (instance %s :init :parent-link (make-cascoords) :child-link (make-cascoords) :max-joint-velocity 0 :max-joint-torque 0) %s_jt))\n", linear?"linear-mimic-joint":"rotational-mimic-joint", mimic->first->name.c_str());
+    fprintf(fp, "       (setq %s_jt tmp-mimic-joint))\n", mimic->first->name.c_str());
+    fprintf(fp, "     (setq (%s_jt . mimic-joints)\n", mimic->first->name.c_str());
+    fprintf(fp, "           (list\n");
+#if URDFDOM_1_0_0_API
+    for (list<JointSharedPtr>::iterator joint = mimic->second.begin();
+#else
+    for (list<boost::shared_ptr<Joint> >::iterator joint = mimic->second.begin();
+#endif
+         joint != mimic->second.end(); joint++){
+      fprintf(fp, "            (instance mimic-joint-param :init %s_jt :multiplier %f :offset %f)\n", (*joint)->name.c_str(), (*joint)->mimic->multiplier, (*joint)->mimic->offset);
+    }
+    fprintf(fp, "            ))\n");
+    fprintf(fp, "     ;; set offset as default-coords\n");
+    fprintf(fp, "     (dolist (j (%s_jt . mimic-joints))\n", mimic->first->name.c_str());
+    fprintf(fp, "       (cond ((derivedp (send j :joint) rotational-joint)\n");
+    fprintf(fp, "              (send (send j :joint :child-link) :rotate (send j :offset) ((send j :joint) . axis)))\n");
+    fprintf(fp, "             ((derivedp (send j :joint) linear-joint)\n");
+    fprintf(fp, "              (send (send j :joint :child-link) :translate (scale (* 1000 (send j :offset)) ((send j :joint) . axis))))\n");
+    fprintf(fp, "             (t (error \"unsupported mimic joint ~A\" (send j :joint))))\n");
+    fprintf(fp, "       (setq ((send j :joint) . default-coords) (send j :joint :child-link :copy-coords)))\n");
+  }
+}
+
 
 void ModelEuslisp::printEndCoords () {
   // TODO: end coords from collada ...
@@ -1327,8 +1382,8 @@ void ModelEuslisp::printEndCoords () {
   }
 }
 
-string ModelEuslisp::getSensorType (const domExtraRef pextra) {
-  // get sensor_type from extra tag
+void ModelEuslisp::getSensorInfo (const domExtraRef pextra, daeSensor& dsensor) {
+  // get sensor_type and sensor_id from extra tag
   string sensor_type;
   for (size_t ii = 0; ii < dae.getDatabase()->getElementCount(NULL, "extra", NULL); ii++) {
     domExtra *tmpextra;
@@ -1337,12 +1392,13 @@ string ModelEuslisp::getSensorType (const domExtraRef pextra) {
       for (size_t icon = 0; icon < tmpextra->getTechnique_array()[0]->getContents().getCount(); icon++) {
         if ((string("#") + tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("id")) ==
             pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url")) {
-          sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
+          dsensor.sensor_type = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("type");
+          dsensor.sensor_id = tmpextra->getTechnique_array()[0]->getContents()[icon]->getAttribute("sid");
         }
       }
     }
   }
-  return sensor_type;
+  return;
 }
 domLink* ModelEuslisp::findLinkfromKinematics (domLink* thisLink, const string& link_name) {
   if (thisLink->getName()==link_name) return thisLink;
@@ -1480,9 +1536,7 @@ void ModelEuslisp::parseSensors () {
             daeSensor dsensor;
             dsensor.name = pextra->getName();
             dsensor.parent_link = link->second->name;
-            dsensor.sensor_type = getSensorType(pextra);
-            string sensor_url(pextra->getTechnique_array()[0]->getChild("instance_sensor")->getAttribute("url"));
-            dsensor.sensor_id = sensor_url.erase(sensor_url.find( "#sensor" ), 7);
+            getSensorInfo(pextra, dsensor);
             daeTArray<daeElementRef> children;
             frame_origin->getChildren(children);
             for(size_t i = 0; i < children.getCount(); ++i) {
@@ -1490,7 +1544,7 @@ void ModelEuslisp::parseSensors () {
             }
             m_sensors.push_back(dsensor);
             ROS_WARN_STREAM("Sensor " << pextra->getName() << " is attached to " << link->second->name
-                            << " " << dsensor.sensor_type << " " << sensor_url);
+                            << " " << dsensor.sensor_type << " " << dsensor.sensor_id);
           }
         }
       }
@@ -1659,6 +1713,67 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       for (unsigned int m = 0; m < raw_scene->mNumMeshes; m++) {
         aiMesh *a = raw_scene->mMeshes[m];
         if (!!a->mNormals) { a->mNormals = NULL; }
+      }
+    }
+    if (use_simple_geometry) {
+      // remove normal for reducing vertices
+      for (unsigned int m = 0; m < raw_scene->mNumMeshes; m++) {
+        aiMesh *a = raw_scene->mMeshes[m];
+        aiVector3D min, max;
+
+        min.x = min.y = min.z =  1e10f;
+        max.x = max.y = max.z = -1e10f;
+
+#define aisgl_min(x,y) (x<y?x:y)
+#define aisgl_max(x,y) (y>x?y:x)
+        for (uint32_t n = 0; n < a->mNumVertices; n++) {
+          aiVector3D tmp = a->mVertices[n];
+          min.x = aisgl_min(min.x,tmp.x);
+          min.y = aisgl_min(min.y,tmp.y);
+          min.z = aisgl_min(min.z,tmp.z);
+
+          max.x = aisgl_max(max.x,tmp.x);
+          max.y = aisgl_max(max.y,tmp.y);
+          max.z = aisgl_max(max.z,tmp.z);
+        }
+        // copied from assimp/code/StandardShapes.cpp aiMesh* StandardShapes::MakeMesh(const std::vector<aiVector3D>& positions, unsigned int numIndices)
+        std::vector<aiVector3D> positions;
+        aiVector3D v0 = aiVector3D(min.x, min.y, min.z);
+        aiVector3D v1 = aiVector3D(max.x, min.y, min.z);
+        aiVector3D v2 = aiVector3D(max.x, max.y, min.z);
+        aiVector3D v3 = aiVector3D(min.x, max.y, min.z);
+        aiVector3D v4 = aiVector3D(min.x, min.y, max.z);
+        aiVector3D v5 = aiVector3D(max.x, min.y, max.z);
+        aiVector3D v6 = aiVector3D(max.x, max.y, max.z);
+        aiVector3D v7 = aiVector3D(min.x, max.y, max.z);
+
+#define ADD_QUAD(n0,n1,n2,n3) \
+        {  positions.push_back(n0); positions.push_back(n1); positions.push_back(n2); positions.push_back(n3); }
+
+        ADD_QUAD(v0,v3,v2,v1);
+        ADD_QUAD(v0,v1,v5,v4);
+        ADD_QUAD(v0,v4,v7,v3);
+        ADD_QUAD(v6,v5,v1,v2);
+        ADD_QUAD(v6,v2,v3,v7);
+        ADD_QUAD(v6,v7,v4,v5);
+
+        int numIndices = 4;
+        aiMesh *out = new aiMesh();
+        out->mPrimitiveTypes = aiPrimitiveType_POLYGON;
+        out->mNumFaces = positions.size() / numIndices;
+        out->mFaces = new aiFace[out->mNumFaces];
+        for (unsigned int i = 0, a = 0; i < out->mNumFaces;++i)
+        {
+          aiFace& f = out->mFaces[i];
+          f.mNumIndices = numIndices;
+          f.mIndices = new unsigned int[numIndices];
+          for (unsigned int i = 0; i < numIndices;++i,++a)
+            f.mIndices[i] = a;
+        }
+        out->mNumVertices = (unsigned int)positions.size();
+        out->mVertices = new aiVector3D[out->mNumVertices];
+        ::memcpy(out->mVertices,&positions[0],out->mNumVertices*sizeof(aiVector3D));
+        raw_scene->mMeshes[m] = out;
       }
     }
     const aiScene* scene = importer.ApplyPostProcessing (aiProcessPreset_TargetRealtime_MaxQuality &

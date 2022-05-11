@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import sys, os, math
 from xml.dom.minidom import parse, parseString
@@ -411,8 +412,8 @@ class yamlParser:
     def add_sensor(self, xml_obj):
         if 'sensors' in self.yaml_data and self.yaml_data['sensors']:
             for sensor in self.yaml_data['sensors']:
-                translate = sensor['translate'] if sensor.has_key('translate') else None
-                rotate = sensor['rotate'] if sensor.has_key('rotate') else None
+                translate = sensor['translate'] if 'translate' in sensor else None
+                rotate = sensor['rotate'] if 'rotate' in sensor else None
                 xml_obj.add_sensor(sensor['sensor_name'],
                                    sensor['parent_link'],
                                    sensor['sensor_type'],
@@ -428,8 +429,8 @@ class yamlParser:
                 parent  = eff['parent'] if 'parent' in eff else None
                 root  = eff['root'] if 'root' in eff else 'BODY'
                 if not parent:
-                    if not self.yaml_data.has_key(limb):
-                        print >>sys.stderr, "cannot find limb: %s" %(limb)
+                    if limb not in self.yaml_data:
+                        print("cannot find limb: %s" %(limb), file=sys.stderr)
                         return
                     limb_lst = self.yaml_data[limb]
                     parent = limb_lst[-1].keys()[0].replace("JOINT", "LINK") # not goood!
@@ -439,8 +440,8 @@ class yamlParser:
     def add_links(self, xml_obj):
         if xml_obj.objtype == 'urdf' and 'links' in self.yaml_data:
             for sensor in self.yaml_data['links']:
-                translate = sensor['translate'] if sensor.has_key('translate') else None
-                rotate = sensor['rotate'] if sensor.has_key('rotate') else None
+                translate = sensor['translate'] if 'translate' in sensor else None
+                rotate = sensor['rotate'] if 'rotate' in sensor else None
                 xml_obj.add_sensor(sensor['name'],
                                    sensor['parent_link'],
                                    None,
@@ -450,25 +451,25 @@ class yamlParser:
             for replace_xml in self.yaml_data['replace_xmls']:
                 match_rule = replace_xml['match_rule']
                 target_tags = []
-                if match_rule.has_key('tag'):
+                if 'tag' in match_rule:
                     tags = xml_obj.doc.getElementsByTagName(match_rule['tag'])
-                    if match_rule.has_key('attribute_name'):
+                    if 'attribute_name' in match_rule:
                         attribute_name = str(match_rule['attribute_name'])
                         attribute_value = str(match_rule['attribute_value'])
                         matched_tags = [tag for tag in tags if tag.getAttribute(attribute_name) == attribute_value]
                         target_tags = target_tags + matched_tags
-                    elif match_rule.has_key('sub_attribute_name'):
+                    elif 'sub_attribute_name' in match_rule:
                         sub_attribute_name = str(match_rule['sub_attribute_name'])
                         sub_attribute_value = str(match_rule['sub_attribute_value'])
                         for tag in tags:
                             for sub_tag in tag.getElementsByTagName(match_rule['sub_tag']):
                                 if sub_tag.getAttribute(sub_attribute_name) == sub_attribute_value:
                                     target_tags.append(tag)
-                    elif match_rule.has_key('parent_attribute_name'):
+                    elif 'parent_attribute_name' in match_rule:
                         parent_attribute_name = str(match_rule['parent_attribute_name'])
                         parent_attribute_value = str(match_rule['parent_attribute_value'])
                         parent_depth = 1
-                        if match_rule.has_key("parent_depth"):
+                        if "parent_depth" in match_rule:
                             parent_depth = match_rule["parent_depth"]
                         
                         target_tags.extend([tag for tag in tags
@@ -479,10 +480,10 @@ class yamlParser:
                     for tag in target_tags:
                         parent = tag.parentNode
                         # remove the tag
-                        if replace_xml.has_key('replaced_xml'):
+                        if 'replaced_xml' in replace_xml:
                             parent.removeChild(tag)
                             parent.appendChild(parseString(str(replace_xml['replaced_xml'])).documentElement)
-                        elif replace_xml.has_key('replaced_attribute_value'):
+                        elif 'replaced_attribute_value' in replace_xml:
                             tag.setAttribute(str(match_rule['attribute_name']),
                                              str(replace_xml['replaced_attribute_value']))
                         else:
