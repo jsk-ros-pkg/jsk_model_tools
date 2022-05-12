@@ -2,6 +2,21 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add world-file-path on README (`#230 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/230>`_)
+* noetic support  (`#238 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/238>`_)
+
+  * use subprocess.getoutput if import commands fail
+  * turn package format 3 and use python3-lxml for noetic
+  * more fix on python3: fix str/byte problem : TypeError: a bytes-like object is required, not 'str' ,TypeError: write() argument must be str, not bytes
+  * fix for python3 with 2to3 -w -f print
+  * eusurdf.cmake : manually set collada_urdf_LIBRARIES due to https://github.com/ros/collada_urdf/issues/43
+  * eusurdf.cmake : invoike python2/python3 using ROS_PYTHON=VERSION
+
+
+* Contributors: Kei Okada, Yoshiki Obinata
+
 0.4.3 (2018-12-05)
 ------------------
 * Fix for being deprecated tag: cfmDamping -> implicitSpringDamper (`#222 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/222>`_)

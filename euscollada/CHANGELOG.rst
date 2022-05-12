@@ -2,6 +2,28 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* support use_simple_geometry, with bounding box (`#244 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/244>`_)
+* keep sensor_id correctly from collada (`#236 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/236>`_)
+* Noetic support (`#238 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/238>`_)
+
+  * fix for python3: use a in b, instead of b.has_key(a)
+  * fix for python3 with 2to3 -w -f print
+    add from __future_\_ import print_function
+  * noetic does not have xacro.py, use xacro, skip teset if openhrp3 is not found
+  * fix for python3 with 2to3 -w -f print
+  * manually set collada_urdf_LIBRARIES due to https://github.com/ros/collada_urdf/issues/43
+
+* add mimic joint support for collada2eus (`#225 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/225>`_)
+
+  * not sure why but we need double check 'strm' since  https://travis-ci.org/jsk-ros-pkg/jsk_model_tools/builds/632871892
+  * suport calc-jacobian for mimnic joints, with tests
+  * support mimic joints
+  * introduce mimic-joint-parmas, rotational-mimic-joint, linear-mimic-joint class
+
+* Contributors: Kei Okada, Naoki Hiraoka
+
 0.4.3 (2018-12-05)
 ------------------
 * fix for urdfmodel 1.0.0 (melodic) (`#221 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/221>`_)
