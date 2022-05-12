@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.4 (2022-05-12)
+------------------
 * support use_simple_geometry, with bounding box (`#244 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/244>`_)
 * keep sensor_id correctly from collada (`#236 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/236>`_)
 * Noetic support (`#238 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/238>`_)
