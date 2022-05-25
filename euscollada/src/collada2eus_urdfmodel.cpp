@@ -1730,6 +1730,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
                 << std::endl;
 #endif
       double radius = ((Sphere *)g.get())->radius;
+      fprintf(fp, "#+:gl\n");
       fprintf(fp, "      (let ((bdy (make-sphere %f)))\n", 1000*radius);
       fprintf(fp, "         (setq qhull bdy)\n");
       fprintf(fp, "         (setq glv (gl::make-glvertices-from-faceset bdy\n");
@@ -1738,6 +1739,10 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       fprintf(fp, "         (send glv :transform local-cds)\n");
       fprintf(fp, "         (send bdy :transform local-cds)\n");
       fprintf(fp, "         (send glv :calc-normals))\n");
+      fprintf(fp, "#-:gl\n");
+      fprintf(fp, "      (let ((bdy (make-sphere %f)))\n", 1000*radius);
+      fprintf(fp, "         (setq qhull bdy)\n");
+      fprintf(fp, "         (send bdy :transform local-cds))\n");
     } else if (g->type == Geometry::BOX) {
       Vector3 vec = ((Box *)g.get())->dim;
 #if 0
@@ -1745,6 +1750,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
                 << ", dim = " << vec.x << " " << vec.y << " " << vec.z
                 << std::endl;
 #endif
+      fprintf(fp, "#+:gl\n");
       fprintf(fp, "      (let ((bdy (make-cube %f %f %f)))\n", 1000*vec.x, 1000*vec.y, 1000*vec.z);
       fprintf(fp, "         (setq qhull bdy)\n");
       fprintf(fp, "         (setq glv (gl::make-glvertices-from-faceset bdy\n");
@@ -1753,6 +1759,10 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       fprintf(fp, "         (send glv :transform local-cds)\n");
       fprintf(fp, "         (send bdy :transform local-cds)\n");
       fprintf(fp, "         (send glv :calc-normals))\n");
+      fprintf(fp, "#-:gl\n");
+      fprintf(fp, "      (let ((bdy (make-cube %f %f %f)))\n", 1000*vec.x, 1000*vec.y, 1000*vec.z);
+      fprintf(fp, "         (setq qhull bdy)\n");
+      fprintf(fp, "         (send bdy :transform local-cds))\n");
     } else if (g->type == Geometry::CYLINDER) {
 #if 0
       std::cerr << "CYLINDER: " << name
@@ -1762,6 +1772,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
 #endif
       double length = ((Cylinder *)g.get())->length;
       double radius = ((Cylinder *)g.get())->radius;
+      fprintf(fp, "#+:gl\n");
       fprintf(fp, "      (let ((bdy (make-cylinder %f %f :segments 24)))\n", 1000*radius, 1000*length);
       fprintf(fp, "         (send bdy :translate-vertices (float-vector 0 0 %f))\n", -500*length);
       fprintf(fp, "         (setq qhull bdy)\n");
@@ -1771,6 +1782,10 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       fprintf(fp, "         (send glv :transform local-cds)\n");
       fprintf(fp, "         (send bdy :transform local-cds)\n");
       fprintf(fp, "         (send glv :calc-normals))\n");
+      fprintf(fp, "#-:gl\n");
+      fprintf(fp, "      (let ((bdy (make-cylinder %f %f :segments 24)))\n", 1000*radius, 1000*length);
+      fprintf(fp, "         (send bdy :translate-vertices (float-vector 0 0 %f))\n", -500*length);
+      fprintf(fp, "         (setq qhull bdy))\n");
     } else {
       std::cerr << "unknown geometry type: " << name << std::endl;
     }
@@ -1853,6 +1868,8 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
     Vector3 scale = ((Mesh *)(g.get()))->scale;
     vector<coordT> points;
     if (scene && scene->HasMeshes() && !use_loadable_mesh) {
+      fprintf(fp, "#+:gl\n");
+      fprintf(fp, "    (progn\n");
       fprintf(fp, "      (setq glv\n");
       fprintf(fp, "       (instance gl::glvertices :init\n");
       fprintf(fp, "                 (list ;; mesh list\n");
@@ -1862,6 +1879,7 @@ void ModelEuslisp::printGeometry (boost::shared_ptr<Geometry> g, const Pose &pos
       fprintf(fp, "                 ))\n");
       fprintf(fp, "      (send glv :transform local-cds)\n");
       fprintf(fp, "      (send glv :calc-normals)\n");
+      fprintf(fp, "     )");
     } else if (scene && scene->HasMeshes()) {
       fprintf(fp, "      (setq glv (load-mesh-file (ros::resolve-ros-path \"%s\")\n", gname.c_str());
       fprintf(fp, "                                       :scale %f :process-max-quality t))\n", scale.x*1000);
