@@ -19,6 +19,7 @@
 #include <algorithm>
 
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -257,6 +258,7 @@ public:
   void printSensors();
   void printSensorLists();
   void printGeometries();
+  void printUniqueLimbs();
 
   // print methods
   void copyRobotClassDefinition ();
@@ -591,7 +593,7 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
 bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>& right) { return left.second < right.second; }
 void ModelEuslisp::readYaml (string &config_file) {
   // read yaml
-  string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head"}; // candidates of limb names
+  std::vector<string> limb_candidates;  // limb names is given from yaml fiels
 
   vector<pair<string, size_t> > limb_order;
 #ifndef USE_CURRENT_YAML
@@ -607,6 +609,15 @@ void ModelEuslisp::readYaml (string &config_file) {
     // yaml-cpp is greater than 0.5.0
     doc = YAML::LoadFile(config_file.c_str());
 #endif
+    // set limb_candidates from yaml fiels
+    for(YAML::const_iterator it=doc.begin();it != doc.end();++it) {
+      // -end-coords, *-vector
+      if ( boost::algorithm::ends_with(it->first.as<std::string>(), "-coords") ||
+           boost::algorithm::ends_with(it->first.as<std::string>(), "-vector") ) {
+      } else {
+        limb_candidates.push_back(it->first.as<std::string>());
+      }
+    }
     /* re-order limb name by lines of yaml */
     BOOST_FOREACH(string& limb, limb_candidates) {
 #ifdef USE_CURRENT_YAML
@@ -742,6 +753,14 @@ void ModelEuslisp::printRobotDefinition() {
   for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
     fprintf(fp, " %s-sensor-coords", it->name.c_str());
   }
+  fprintf(fp, "\n         ;; non-default limb names\n");
+  fprintf(fp, "         ");
+  BOOST_FOREACH(link_joint_pair& limb, limbs) {
+    if( limb.first == "torso" || limb.first == "larm" || limb.first == "rarm" || limb.first == "lleg" || limb.first == "rleg" || limb.first == "head" ) {
+      continue;
+    }
+    fprintf(fp, " %s %s-end-coords %s-root-link", limb.first.c_str(), limb.first.c_str(), limb.first.c_str());
+  }
   fprintf(fp, "\n         )\n  )\n");
   // TODO: add openrave manipulator tip frame
 }
@@ -767,6 +786,8 @@ void ModelEuslisp::printRobotMethods() {
   printEndCoords();
 
   printSensors();
+
+  printUniqueLimbs();
 
   printGeometries();
 
@@ -1581,6 +1602,19 @@ void ModelEuslisp::printSensorLists() {
   }
   fprintf(fp, "))\n");
 }
+
+void ModelEuslisp::printUniqueLimbs() {
+  fprintf(fp, "\n  ;; non-default limbs\n");
+  BOOST_FOREACH(link_joint_pair& limb, limbs) {
+    if( limb.first == "torso" || limb.first == "larm" || limb.first == "rarm" || limb.first == "lleg" || limb.first == "rleg" || limb.first == "head" ) {
+      continue;
+    }
+    fprintf(fp, "  (:%s (&rest args) (unless args (setq args (list nil))) (send* self :limb :%s args))\n", limb.first.c_str(), limb.first.c_str());
+    fprintf(fp, "  (:%s-end-coords () %s-end-coords)\n", limb.first.c_str(), limb.first.c_str());
+    fprintf(fp, "  (:%s-root-link () %s-root-link)\n", limb.first.c_str(), limb.first.c_str());
+  }
+}
+
 
 #if URDFDOM_1_0_0_API
 void ModelEuslisp::printGeometry (GeometrySharedPtr g, const Pose &pose,
