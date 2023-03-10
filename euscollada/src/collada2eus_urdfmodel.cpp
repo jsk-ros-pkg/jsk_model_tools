@@ -644,8 +644,8 @@ void ModelEuslisp::readYaml (string &config_file) {
   }
 
   // generate limbs including limb_name, link_names, and joint_names
-  for (size_t i = 0; i < limb_order.size(); i++) {
-    string limb_name = limb_order[i].first;
+  for (size_t l = 0; l < limb_order.size(); l++) {
+    string limb_name = limb_order[l].first;
     vector<string> tmp_link_names, tmp_joint_names;
     try {
       const YAML::Node& limb_doc = doc[limb_name];
