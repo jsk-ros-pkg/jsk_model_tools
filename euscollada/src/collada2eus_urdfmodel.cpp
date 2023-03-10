@@ -613,7 +613,8 @@ void ModelEuslisp::readYaml (string &config_file) {
     for(YAML::const_iterator it=doc.begin();it != doc.end();++it) {
       // -end-coords, *-vector
       if ( boost::algorithm::ends_with(it->first.as<std::string>(), "-coords") ||
-           boost::algorithm::ends_with(it->first.as<std::string>(), "-vector") ) {
+           boost::algorithm::ends_with(it->first.as<std::string>(), "-vector") ||
+           it->first.as<std::string>() == "sensors") {
       } else {
         limb_candidates.push_back(it->first.as<std::string>());
       }
@@ -646,11 +647,17 @@ void ModelEuslisp::readYaml (string &config_file) {
   // generate limbs including limb_name, link_names, and joint_names
   for (size_t l = 0; l < limb_order.size(); l++) {
     string limb_name = limb_order[l].first;
-    vector<string> tmp_link_names, tmp_joint_names;
+    vector<string> tmp_link_names, tmp_joint_names, tmp_method_names;
+    bool is_valid_limb = true;
     try {
       const YAML::Node& limb_doc = doc[limb_name];
       for(unsigned int i = 0; i < limb_doc.size(); i++) {
         const YAML::Node& n = limb_doc[i];
+        if(n.Type() != YAML::NodeType::Map) {
+          ROS_WARN_STREAM("invalid yaml representation. ignore limb " << limb_name);
+          is_valid_limb = false;
+          goto endloop;
+        }
 #ifdef USE_CURRENT_YAML
         for(YAML::const_iterator it=n.begin();it!=n.end();it++) {
           string key, value;
@@ -660,21 +667,29 @@ void ModelEuslisp::readYaml (string &config_file) {
         for(YAML::Iterator it=n.begin();it!=n.end();it++) {
           string key, value; it.first() >> key; it.second() >> value;
 #endif
-          tmp_joint_names.push_back(key);
 #if URDFDOM_1_0_0_API
           JointConstSharedPtr jnt = robot->getJoint(key);
 #else
           boost::shared_ptr<const Joint> jnt = robot->getJoint(key);
 #endif
           if (!!jnt) {
+            tmp_joint_names.push_back(key);
+            tmp_method_names.push_back(value);
             tmp_link_names.push_back(jnt->child_link_name);
           } else {
-            // error
+            ROS_WARN_STREAM("joint " << key << " is not found. ignore limb " << limb_name);
+            is_valid_limb = false;
+            goto endloop;
           }
-          g_all_link_names.push_back(pair<string, string>(key, value));
         }
       }
-      limbs.push_back(link_joint_pair(limb_name, link_joint(tmp_link_names, tmp_joint_names)));
+      endloop:
+      if(is_valid_limb) {
+        for(unsigned int j = 0; j < limb_doc.size(); j++) {
+          g_all_link_names.push_back(pair<string, string>(tmp_joint_names[j], tmp_method_names[j]));
+        }
+        limbs.push_back(link_joint_pair(limb_name, link_joint(tmp_link_names, tmp_joint_names)));
+      }
     } catch(YAML::RepresentationException& e) {
     }
   }
