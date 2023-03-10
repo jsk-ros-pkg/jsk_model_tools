@@ -220,7 +220,7 @@ public:
   void addLinkCoords();
   void printMesh(const aiScene* scene, const aiNode* node, const Vector3 &scale,
                  const string &material_name, vector<coordT> &store_pt, bool printq);
-  void readYaml(string &config_file);
+  void readYaml(std::vector<string> &config_file);
 
 #if URDFDOM_1_0_0_API
   Pose getLinkPose(LinkConstSharedPtr link) {
@@ -591,24 +591,36 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
 }
 
 bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>& right) { return left.second < right.second; }
-void ModelEuslisp::readYaml (string &config_file) {
+ void ModelEuslisp::readYaml (std::vector<string> &config_files) {
   // read yaml
   std::vector<string> limb_candidates;  // limb names is given from yaml fiels
 
   vector<pair<string, size_t> > limb_order;
-#ifndef USE_CURRENT_YAML
-  ifstream fin(config_file.c_str());
-  if (fin.fail()) {
-    fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, config_file.c_str(), 0x1b);
-  } else {
-    YAML::Parser parser(fin);
-    parser.GetNextDocument(doc);
 
+  doc = YAML::Node(YAML::NodeType::Map);
+  for(int i = config_files.size() - 1; i >= 0; i--) { // override values from later config_file with values from earlier config_file
+    YAML::Node tmp_doc;
+#ifndef USE_CURRENT_YAML
+    ifstream fin(config_files[i].c_str());
+    if (fin.fail()) {
+      fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, config_files[i].c_str(), 0x1b);
+    } else {
+      YAML::Parser parser(fin);
+      parser.GetNextDocument(tmp_doc);
+      for(YAML::const_iterator it=tmp_doc.begin();it != tmp_doc.end();++it) {
+        doc[it->first] = it->second;
+      }
+    }
 #else
-  {
     // yaml-cpp is greater than 0.5.0
-    doc = YAML::LoadFile(config_file.c_str());
+    tmp_doc = YAML::LoadFile(config_files[i].c_str());
+    for(YAML::const_iterator it=tmp_doc.begin();it != tmp_doc.end();++it) {
+      doc[it->first] = it->second;
+    }
 #endif
+  }
+
+  {
     // set limb_candidates from yaml fiels
     for(YAML::const_iterator it=doc.begin();it != doc.end();++it) {
       // -end-coords, *-vector
@@ -624,13 +636,19 @@ void ModelEuslisp::readYaml (string &config_file) {
 #ifdef USE_CURRENT_YAML
       if (doc[limb]) {
         int line=0;
-        ifstream fin2(config_file.c_str()); // super ugry hack until yaml-cpp 0.5.2
-        string buffer;
-        for (;fin2;) {
-          getline(fin2, buffer); line++;
-          if(buffer == limb+":") break;
+        bool found = false;
+        for(int i = 0; i < config_files.size() && !found; i++) { // super ugry hack until yaml-cpp 0.5.2
+          ifstream fin2(config_files[i].c_str());
+          string buffer;
+          for (;fin2;) {
+            getline(fin2, buffer); line++;
+            if(buffer == limb+":") {
+              found = true;
+              break;
+            }
+          }
+          fin2.close();
         }
-        fin2.close();
         std::cerr << limb << "@" << line << std::endl;
         limb_order.push_back(pair<string, size_t>(limb, line));
       }
@@ -1984,7 +2002,7 @@ int main(int argc, char** argv)
   string arobot_name;
 
   string input_file;
-  string config_file;
+  std::vector<string> config_files;
   string pconfig_file; // backward compatibility (positional option)
   string output_file;
 
@@ -1997,7 +2015,7 @@ int main(int argc, char** argv)
     ("use_collision,U", "use collision geometry (default collision is the same as visual)")
     ("robot_name,N", po::value< vector<string> >(), "output robot name")
     ("input_file,I", po::value< vector<string> >(), "input file")
-    ("config_file,C", po::value< vector<string> >(), "configuration yaml file")
+    ("config_file,C", po::value< vector<string> >()->multitoken(), "configuration yaml files")
     ("pconfig_file", po::value< vector<string> >(), "not used (used internally)")
     ("output_file,O", po::value< vector<string> >(), "output file")
     ;
@@ -2027,7 +2045,7 @@ int main(int argc, char** argv)
   }
   if (vm.count("config_file")) {
     vector<string> aa = vm["config_file"].as< vector<string> >();
-    config_file = aa[0];
+    config_files = aa;
   }
   if (vm.count("pconfig_file")) {
     vector<string> aa = vm["pconfig_file"].as< vector<string> >();
@@ -2104,12 +2122,14 @@ int main(int argc, char** argv)
       pconfig_file.clear();
     }
   }
-  if (config_file.empty() && !pconfig_file.empty()) {
-    config_file = pconfig_file;
+  if (config_files.empty() && !pconfig_file.empty()) {
+    config_files.push_back(pconfig_file);
   }
-  if (!config_file.empty()) {
-    cerr << ";; Config file is: "
-	 <<  config_file << endl;
+  if(!config_files.empty()) {
+    cerr << ";; Config file is:" << endl;;
+    for(int i = 0; i < config_files.size(); i++) {
+      cerr << ";;   " << config_files[i]  << endl;
+    }
   }
   cerr << ";; Output file is: "
        <<  output_file << endl;
@@ -2126,8 +2146,8 @@ int main(int argc, char** argv)
   //eusmodel.setAddJointSuffix();
   //eusmodel.setAddLinkSuffix();
 
-  if (!config_file.empty()) {
-    eusmodel.readYaml(config_file);
+  if (!config_files.empty()) {
+    eusmodel.readYaml(config_files);
   }
   eusmodel.writeToFile (output_file);
 }
