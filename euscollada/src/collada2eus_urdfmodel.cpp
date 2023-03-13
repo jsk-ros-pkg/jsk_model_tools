@@ -591,9 +591,9 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
 }
 
 bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>& right) { return left.second < right.second; }
- void ModelEuslisp::readYaml (std::vector<string> &config_files) {
+void ModelEuslisp::readYaml (std::vector<string> &config_files) {
   // read yaml
-  std::vector<string> limb_candidates;  // limb names is given from yaml fiels
+  std::vector<string> limb_candidates;  // limb names is given from yaml files
 
   vector<pair<string, size_t> > limb_order;
 
@@ -621,9 +621,9 @@ bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>
   }
 
   {
-    // set limb_candidates from yaml fiels
+    // set limb_candidates from yaml files
     for(YAML::const_iterator it=doc.begin();it != doc.end();++it) {
-      // -end-coords, *-vector
+      // -end-coords, *-vector, sensors
       if ( boost::algorithm::ends_with(it->first.as<std::string>(), "-coords") ||
            boost::algorithm::ends_with(it->first.as<std::string>(), "-vector") ||
            it->first.as<std::string>() == "sensors") {
