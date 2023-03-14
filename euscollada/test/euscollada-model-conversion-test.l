@@ -58,6 +58,18 @@
 (deftest pr2-eusmodel-validity-check
   (eusmodel-validity-check-one *pr2*))
 
+(deftest generate-pr2-custom-limb-test
+  (generate-eusmodel-from-collada "/tmp/pr2.dae" "/tmp/pr2_custom_limb.l"
+                                  :yaml-file "$(rospack find euscollada)/pr2_custom_limb.yaml")
+  (assert (probe-file "/tmp/pr2_custom_limb.l") ";; faild to generate /tmp/pr2_custom_limb.l, file does not exist")
+  (load "/tmp/pr2_custom_limb.l")
+  (pr2)
+  (eusmodel-validity-check-one *pr2*)
+  (send *pr2* :reset-pose)
+  (assert (equal (send-all (send *pr2* :rhand :joint-list) :name) (list "r_gripper_r_finger_joint" "r_gripper_r_finger_tip_joint" "r_gripper_l_finger_joint" "r_gripper_l_finger_tip_joint")))
+  (assert (subsetp (send *pr2* :rhand :joint-list) (send *pr2* :joint-list) :test #'equal))
+  )
+
 (deftest generate-sample-robot-model-test
  (when (ros::rospack-find "openhrp3")
   (generate-eusmodel-from-collada
