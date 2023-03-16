@@ -5,9 +5,9 @@ from xml.dom.minidom import parse, parseString
 import xml.dom
 import yaml
 import argparse
+import importlib
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
+importlib.reload(sys)
 
 from parseColladaBase import parseXmlBase
 from parseColladaBase import yamlParser
@@ -47,7 +47,7 @@ if __name__ == '__main__':
             sys.stderr.write('no configuration file !\n')
 
         if args.output:
-            f = open(args.output, 'wb')
+            f = open(args.output, 'w')
             obj.writeDocument(f)
             f.close()
         else:
