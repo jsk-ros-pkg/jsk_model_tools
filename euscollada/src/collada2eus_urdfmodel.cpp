@@ -666,23 +666,29 @@ void ModelEuslisp::readYaml (std::vector<string> &config_files) {
   for (size_t l = 0; l < limb_order.size(); l++) {
     string limb_name = limb_order[l].first;
     vector<string> tmp_link_names, tmp_joint_names, tmp_method_names;
-    bool is_valid_limb = true;
     try {
       const YAML::Node& limb_doc = doc[limb_name];
       for(unsigned int i = 0; i < limb_doc.size(); i++) {
         const YAML::Node& n = limb_doc[i];
         if(n.Type() != YAML::NodeType::Map) {
           ROS_WARN_STREAM("invalid yaml representation. ignore limb " << limb_name);
-          is_valid_limb = false;
-          goto endloop;
+          goto nextlimb;
         }
 #ifdef USE_CURRENT_YAML
         for(YAML::const_iterator it=n.begin();it!=n.end();it++) {
+          if(it->second.Type() != YAML::NodeType::Scalar) {
+            ROS_WARN_STREAM("invalid yaml representation. ignore limb " << limb_name);
+            goto nextlimb;
+          }
           string key, value;
           key = it->first.as<std::string>();
           value = it->second.as<std::string>();
 #else
         for(YAML::Iterator it=n.begin();it!=n.end();it++) {
+          if(it->second.Type() != YAML::NodeType::Scalar) {
+            ROS_WARN_STREAM("invalid yaml representation. ignore limb " << limb_name);
+            goto nextlimb;
+          }
           string key, value; it.first() >> key; it.second() >> value;
 #endif
 #if URDFDOM_1_0_0_API
@@ -696,18 +702,16 @@ void ModelEuslisp::readYaml (std::vector<string> &config_files) {
             tmp_link_names.push_back(jnt->child_link_name);
           } else {
             ROS_WARN_STREAM("joint " << key << " is not found. ignore limb " << limb_name);
-            is_valid_limb = false;
-            goto endloop;
+            goto nextlimb;
           }
         }
       }
-      endloop:
-      if(is_valid_limb) {
-        for(unsigned int j = 0; j < limb_doc.size(); j++) {
-          g_all_link_names.push_back(pair<string, string>(tmp_joint_names[j], tmp_method_names[j]));
-        }
-        limbs.push_back(link_joint_pair(limb_name, link_joint(tmp_link_names, tmp_joint_names)));
+      for(unsigned int j = 0; j < limb_doc.size(); j++) {
+        g_all_link_names.push_back(pair<string, string>(tmp_joint_names[j], tmp_method_names[j]));
       }
+      limbs.push_back(link_joint_pair(limb_name, link_joint(tmp_link_names, tmp_joint_names)));
+      nextlimb:
+      ;
     } catch(YAML::RepresentationException& e) {
     }
   }
