@@ -307,14 +307,24 @@ private:
 #endif
   string arobot_name;
 #if URDFDOM_1_0_0_API
-  map <LinkConstSharedPtr, Pose > m_link_coords;
-  map <LinkConstSharedPtr, MapVisual > m_link_visual;
-  map <LinkConstSharedPtr, MapCollision > m_link_collision;
+  struct LinkPtrComparator {
+    bool operator()(const LinkConstSharedPtr & left, const LinkConstSharedPtr & right) const {
+      return (left->name < right->name);
+    }
+  };
+  map <LinkConstSharedPtr, Pose, LinkPtrComparator > m_link_coords;
+  map <LinkConstSharedPtr, MapVisual, LinkPtrComparator > m_link_visual;
+  map <LinkConstSharedPtr, MapCollision, LinkPtrComparator > m_link_collision;
   map <string, MaterialConstSharedPtr> m_materials;
 #else
-  map <boost::shared_ptr<const Link>, Pose > m_link_coords;
-  map <boost::shared_ptr<const Link>, MapVisual > m_link_visual;
-  map <boost::shared_ptr<const Link>, MapCollision > m_link_collision;
+  struct LinkPtrComparator {
+    bool operator()(const boost::shared_ptr<const Link> & left, const boost::shared_ptr<const Link> & right) const {
+      return (left->name < right->name);
+    }
+  };
+  map <boost::shared_ptr<const Link>, Pose, LinkPtrComparator > m_link_coords;
+  map <boost::shared_ptr<const Link>, MapVisual, LinkPtrComparator > m_link_visual;
+  map <boost::shared_ptr<const Link>, MapCollision, LinkPtrComparator > m_link_collision;
   map <string, boost::shared_ptr<const Material> > m_materials;
 #endif
   vector<pair<string, string> > g_all_link_names;
