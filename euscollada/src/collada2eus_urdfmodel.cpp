@@ -1038,6 +1038,16 @@ void ModelEuslisp::printJoint (boost::shared_ptr<const Joint> joint) {
     if (joint->type ==Joint::CONTINUOUS) {
       fprintf(fp, "                     :min *-inf* :max *inf*\n");
     } else {
+      if (joint->mimic) {
+        if (joint->mimic->multiplier < 0) {
+          float min_tmp = max * joint->mimic->multiplier;
+          max = min * joint->mimic->multiplier;
+          min = min_tmp;
+        } else {
+          min = min * joint->mimic->multiplier;
+          max = max * joint->mimic->multiplier;
+        }
+      }
       fprintf(fp, ":min ");
       if (min == -FLT_MAX) fprintf(fp, "*-inf*"); else
         fprintf(fp, "%f", joint->type ==Joint::PRISMATIC ? min * 1000 : min * 180.0 / M_PI);
