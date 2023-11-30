@@ -8,8 +8,8 @@ import yaml
 
 import tf
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
+import importlib
+importlib.reload(sys)
 
 #### >>> copied from xacro/src/xacro.py
 # Better pretty printing of xml
@@ -22,7 +22,7 @@ def fixed_writexml(self, writer, indent="", addindent="", newl=""):
 
     attrs = self._get_attributes()
     a_names = attrs.keys()
-    a_names.sort()
+    sorted(a_names)
 
     for a_name in a_names:
         writer.write(" %s=\"" % a_name)
@@ -115,7 +115,7 @@ class parseURDFBase(parseXmlBase):
     def parseRotate (self, rotate):
         if not rotate:
             return '0 0 1 0'
-        if isinstance(rotate, basestring):
+        if isinstance(rotate, str):
             rotate = self.StringToList(rotate)
         q = tf.transformations.quaternion_about_axis(math.radians(rotate[3]), rotate[:3])
         rpy = tf.transformations.euler_from_quaternion(q)
