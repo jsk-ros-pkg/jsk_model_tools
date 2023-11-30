@@ -2,6 +2,23 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [collada2eus_urdfmodel.cpp] print links in the order of link names (`#252 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/252>`_)
+* enable to read custom limb name from .yaml file (fix for `#249 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/249>`_) (`#250 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/250>`_)
+
+  * [collada2eus_urdfmodel.cpp] refactor code
+  * [euscollada] add generate-pr2-custom-limb-test
+  * [collada2eus_urdfmodel.cpp] fix comment. fix indent
+  * [collada2eus_urdfmodel.cpp] support multiple config_files
+  * enable to read custom limb name from .yaml file: ignore sensors key. ignore limb with invalid joint
+  * [collada2eus_urdfmodel.cpp] change duplicated variable name
+  * enable to read custom limb name from .yaml file: if the limb name is other than head,torso,larm,rarm,lleg,rleg, we set limb name to robot models
+
+* On Noetic build environment, only python3 is available (`#247 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/247>`_)
+
+* Contributors: Kei Okada, Naoki-Hiraoka
+
 0.4.4 (2022-05-12)
 ------------------
 * support use_simple_geometry, with bounding box (`#244 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/244>`_)
