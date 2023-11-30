@@ -2,8 +2,8 @@
 Changelog for package euscollada
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.5 (2023-11-30)
+------------------
 * [collada2eus_urdfmodel.cpp] print links in the order of link names (`#252 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/252>`_)
 * enable to read custom limb name from .yaml file (fix for `#249 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/249>`_) (`#250 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/250>`_)
 
