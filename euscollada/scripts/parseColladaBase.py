@@ -407,7 +407,7 @@ class yamlParser:
     yaml_data = None
 
     def load(self, fname):
-        self.yaml_data = yaml.load(open(fname).read())
+        self.yaml_data = yaml.load(open(fname).read(), Loader=yaml.SafeLoader)
 
     def add_sensor(self, xml_obj):
         if 'sensors' in self.yaml_data and self.yaml_data['sensors']:
