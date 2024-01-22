@@ -4,8 +4,12 @@ import sys, os
 from xml.dom.minidom import parse, parseString
 import xml.dom
 
-import importlib
-importlib.reload(sys)
+if sys.version_info.major == 2:
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+else:
+    import importlib
+    importlib.reload(sys)
 
 from parseColladaBase import replaceLibraryNode
 
