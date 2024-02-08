@@ -1,0 +1,28 @@
+<package format="3">
+
+  <name>urdf_mesh_converter</name>
+  <version>0.4.5</version>
+  <description>
+    Convert urdf mesh.
+  </description>
+
+  <license>BSD</license>
+  <maintainer email="yanokura@jsk.imi.i.u-tokyo.ac.jp">Iori Yanokura</maintainer>
+  <author email="yanokura@jsk.imi.i.u-tokyo.ac.jp">Iori Yanokura</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>catkin_virtualenv</build_depend>
+
+  <!-- ALPHABETICAL ORDER -->
+  <!-- ALPHABETICAL ORDER -->
+
+  <!-- ALPHABETICAL ORDER -->
+  <!-- ALPHABETICAL ORDER -->
+
+  <test_depend>rostest</test_depend>
+
+  <export>
+    <pip_requirements>requirements.txt</pip_requirements>
+  </export>
+
+</package>
