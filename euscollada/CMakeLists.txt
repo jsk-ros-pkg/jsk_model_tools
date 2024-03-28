@@ -4,7 +4,7 @@ project(euscollada)
 
 # check rosversion if >=indigo
 execute_process(
-  COMMAND python -c "import sys; sys.exit(ord('$ENV{ROS_DISTRO}'[0]) >= ord('indigo'[0]))"
+  COMMAND python$ENV{ROS_PYTHON_VERSION} -c "import sys; sys.exit(ord('$ENV{ROS_DISTRO}'[0]) >= ord('indigo'[0]))"
   RESULT_VARIABLE rosversion_ge_indigo)
 
 # noetic collada_urdf could not find_packag-ed due to https://github.com/ros/collada_urdf/issues/43

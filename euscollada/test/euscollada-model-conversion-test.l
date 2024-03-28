@@ -4,11 +4,18 @@
 
 (defun generate-eusmodel-from-collada (col-file eus-file &key (yaml-file))
   (let ((strm (piped-fork
-               (if yaml-file
-                   (format nil "rosrun euscollada collada2eus ~A ~A ~A && echo finished"
-                           col-file yaml-file eus-file)
-                 (format nil "rosrun euscollada collada2eus ~A ~A && echo finished"
-                         col-file eus-file)))))
+               (cond ((stringp yaml-file)
+                      (format nil "rosrun euscollada collada2eus ~A ~A ~A && echo finished"
+                              col-file yaml-file eus-file))
+                     ((null yaml-file)
+                      (format nil "rosrun euscollada collada2eus ~A ~A && echo finished"
+                              col-file eus-file))
+                     (t ;; list of filename
+                      (concatenate string
+                                   (format nil "rosrun euscollada collada2eus -I ~A -O ~A -C "
+                                           col-file eus-file)
+                                   (apply #'concatenate string (mapcar #'(lambda (f) (format nil "~A " f)) yaml-file))
+                                   "&& echo finished"))))))
     ;; (assert (select-stream (list strm) 240) (format nil ";; faild to generate ~A within 240 second" eus-file)) ;; why return nil immidiately
     (dotimes (i 240)
       (when
@@ -51,6 +58,18 @@
 (deftest pr2-eusmodel-validity-check
   (eusmodel-validity-check-one *pr2*))
 
+(deftest generate-pr2-custom-limb-test
+  (generate-eusmodel-from-collada "/tmp/pr2.dae" "/tmp/pr2_custom_limb.l"
+                                  :yaml-file "$(rospack find euscollada)/pr2_custom_limb.yaml")
+  (assert (probe-file "/tmp/pr2_custom_limb.l") ";; faild to generate /tmp/pr2_custom_limb.l, file does not exist")
+  (load "/tmp/pr2_custom_limb.l")
+  (pr2)
+  (eusmodel-validity-check-one *pr2*)
+  (send *pr2* :reset-pose)
+  (assert (equal (send-all (send *pr2* :rhand :joint-list) :name) (list "r_gripper_r_finger_joint" "r_gripper_r_finger_tip_joint" "r_gripper_l_finger_joint" "r_gripper_l_finger_tip_joint")))
+  (assert (subsetp (send *pr2* :rhand :joint-list) (send *pr2* :joint-list) :test #'equal))
+  )
+
 (deftest generate-sample-robot-model-test
  (when (ros::rospack-find "openhrp3")
   (generate-eusmodel-from-collada
@@ -86,6 +105,24 @@
   (assert (eps= 1.308000e+05 (send *samplerobot* :weight))
           ";; sample robot has not valid weight ~A" (send *samplerobot* :weight))
   (assert (eps-v= #f(2.32416 0.0 68.4419) (send *samplerobot* :centroid))
+          ";; sample robot has not valid centroid ~A" (send *samplerobot* :centroid))
+  ))
+
+(deftest generate-sample-robot-multi-yaml-test
+ (when (ros::rospack-find "openhrp3")
+  (generate-eusmodel-from-collada
+   "$(rospack find openhrp3)/share/OpenHRP-3.1/sample/model/sample1.dae"
+   "/tmp/samplerobot_multi_yaml.l" :yaml-file (list "$(rospack find euscollada)/test/samplerobot1.yaml" "$(rospack find euscollada)/test/samplerobot2.yaml"))
+
+  (assert (probe-file "/tmp/samplerobot_multi_yaml.l") ";; faild to generate /tmp/samplerobot_multi_yaml.l, file does not exist")
+  (load "/tmp/samplerobot_multi_yaml.l")
+  (samplerobot)
+  (send *samplerobot* :init-pose)
+  (eusmodel-validity-check-one *samplerobot*)
+  (send *samplerobot* :fix-leg-to-coords (make-coords))
+  (assert (eps= 1.308000e+05 (send *samplerobot* :weight))
+          ";; sample robot has not valid weight ~A" (send *samplerobot* :weight))
+  (assert (eps-v= #f(2.32416 0.0 791.942) (send *samplerobot* :centroid))
           ";; sample robot has not valid centroid ~A" (send *samplerobot* :centroid))
   ))
 
