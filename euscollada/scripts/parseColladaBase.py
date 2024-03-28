@@ -8,8 +8,12 @@ import yaml
 
 import tf
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
+if sys.version_info.major == 2:
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+else:
+    import importlib
+    importlib.reload(sys)
 
 #### >>> copied from xacro/src/xacro.py
 # Better pretty printing of xml
@@ -115,8 +119,12 @@ class parseURDFBase(parseXmlBase):
     def parseRotate (self, rotate):
         if not rotate:
             return '0 0 1 0'
-        if isinstance(rotate, basestring):
-            rotate = self.StringToList(rotate)
+        try:
+            if isinstance(rotate, basestring):
+                rotate = self.StringToList(rotate)
+        except NameError:
+            if isinstance(rotate, str):
+                rotate = self.StringToList(rotate)
         q = tf.transformations.quaternion_about_axis(math.radians(rotate[3]), rotate[:3])
         rpy = tf.transformations.euler_from_quaternion(q)
         return '%f %f %f' % (rpy[0], rpy[1], rpy[2])
@@ -407,7 +415,7 @@ class yamlParser:
     yaml_data = None
 
     def load(self, fname):
-        self.yaml_data = yaml.load(open(fname).read())
+        self.yaml_data = yaml.load(open(fname).read(), Loader=yaml.SafeLoader)
 
     def add_sensor(self, xml_obj):
         if 'sensors' in self.yaml_data and self.yaml_data['sensors']:
