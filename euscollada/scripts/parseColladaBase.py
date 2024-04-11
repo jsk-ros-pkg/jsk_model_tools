@@ -25,7 +25,7 @@ def fixed_writexml(self, writer, indent="", addindent="", newl=""):
     writer.write(indent+"<" + self.tagName)
 
     attrs = self._get_attributes()
-    a_names = attrs.keys()
+    a_names = list(attrs.keys())
     a_names.sort()
 
     for a_name in a_names:
@@ -441,7 +441,7 @@ class yamlParser:
                         print("cannot find limb: %s" %(limb), file=sys.stderr)
                         return
                     limb_lst = self.yaml_data[limb]
-                    parent = limb_lst[-1].keys()[0].replace("JOINT", "LINK") # not goood!
+                    parent = list(limb_lst[-1].keys())[0].replace("JOINT", "LINK") # not goood!
                 xml_obj.add_manipulator('%s_end_coords'%limb, root, parent,
                                         translate = translate, rotate = rotate)
 
