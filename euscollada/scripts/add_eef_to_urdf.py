@@ -17,7 +17,7 @@ def addEEF(xdoc, end_effector_info, limb_info, limb_name):
     if "parent" in end_effector_info:
         parent = end_effector_info["parent"]
     else:
-        parent = limb_info[-1].keys()[0].replace("JOINT", "LINK") # not goood!
+        parent = list(limb_info[-1].keys())[0].replace("JOINT", "LINK") # not goood!
     if "translate" in end_effector_info:
         pos = end_effector_info["translate"]
     else:
