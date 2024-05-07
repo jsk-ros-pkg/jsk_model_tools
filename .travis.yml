@@ -25,9 +25,9 @@ env:
   matrix:
     - CHECK_PYTHON2_COMPILE=true
     - CHECK_PYTHON3_COMPILE=true
-    - ROS_DISTRO=indigo ROSWS=wstool BUILDER=catkin USE_DEB=true
-    - ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=true
-    - ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=true
+    - ROS_DISTRO=indigo ROSWS=wstool BUILDER=catkin USE_DEB=true BUILD_PKGS="eus_assimp euscollada eusurdf"
+    - ROS_DISTRO=kinetic   ROSWS=wstool BUILDER=catkin USE_DEB=true BUILD_PKGS="eus_assimp euscollada eusurdf"
+    - ROS_DISTRO=melodic   ROSWS=wstool BUILDER=catkin USE_DEB=true BUILD_PKGS="eus_assimp euscollada eusurdf"
     - ROS_DISTRO=noetic   ROSWS=wstool BUILDER=catkin USE_DEB=true
     - ROS_DISTRO=noetic   ROSWS=wstool BUILDER=catkin USE_DEB=false
 # matrix:
