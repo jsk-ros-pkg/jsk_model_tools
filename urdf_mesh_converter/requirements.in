@@ -1,0 +1,6 @@
+Pillow==8.4.0
+networkx==2.2.0
+numpy==1.22.1
+pycollada!=0.7
+scipy==1.10.1
+trimesh==4.1.3

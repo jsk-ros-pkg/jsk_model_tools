@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<robot name="pitch_yaw_2axis_camera_module">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.0030968582117174 -0.00381496109163032 0.027711937828682" rpy="0.0 -0.0 0.0"/>
+      <mass value="0.0682292397189439"/>
+      <inertia ixx="9.27862298038848e-06" ixy="4.58521565230999e-08" ixz="-2.68929981081431e-07" iyy="3.35812259147818e-05" iyz="4.66579090352429e-07" izz="3.6331870862003e-05"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://urdf_mesh_converter/samples/base_link.3dxml"/>
+      </geometry>
+      <material name=""/>
+      <origin xyz="0.0 0.0 0.0" rpy="1.5707963267949003 -0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://urdf_mesh_converter/samples/base_link.3dxml"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="1.5707963267949003 -0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="pitch_link">
+    <inertial>
+      <origin xyz="-0.00981401741340481 -0.0414747351942303 -0.0326143199247289" rpy="0.0 -0.0 0.0"/>
+      <mass value="0.141426885579653"/>
+      <inertia ixx="1.54543707592918e-05" ixy="2.34946530791964e-07" ixz="-5.87896546063817e-08" iyy="1.83424706964747e-05" iyz="1.12710091549266e-08" izz="1.76834355841634e-05"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://urdf_mesh_converter/samples/pitch_link.3dxml"/>
+      </geometry>
+      <material name=""/>
+      <origin xyz="0.00136170022636987 -0.0339042649699961 -0.0327500000000025" rpy="0.0 -0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://urdf_mesh_converter/samples/pitch_link.3dxml"/>
+      </geometry>
+      <origin xyz="0.00136170022636987 -0.0339042649699961 -0.0327500000000025" rpy="0.0 -0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="camera_link">
+    <inertial>
+      <origin xyz="0.00559224708423062 -0.00721019581194205 -0.0219474030843726" rpy="0.0 -0.0 0.0"/>
+      <mass value="0.0586571261750076"/>
+      <inertia ixx="2.8140032038824e-05" ixy="4.26191163781089e-07" ixz="3.34782886550784e-08" iyy="4.21333471155768e-06" iyz="-6.94990252252355e-09" izz="2.80689681677695e-05"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://urdf_mesh_converter/samples/camera_link.3dxml"/>
+      </geometry>
+      <material name=""/>
+      <origin xyz="0.00136170022636931 -0.00640426496999501 -0.048025" rpy="0.0 -0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://urdf_mesh_converter/samples/camera_link.3dxml"/>
+      </geometry>
+      <origin xyz="0.00136170022636931 -0.00640426496999501 -0.048025" rpy="0.0 -0.0 0.0"/>
+    </collision>
+  </link>
+  <joint name="pitch_joint" type="continuous">
+    <limit effort="0.0" velocity="0.0" lower="0.0" upper="0.0"/>
+    <parent link="base_link"/>
+    <child link="pitch_link"/>
+    <axis xyz=" 0. -1.  0."/>
+    <origin xyz="-0.00136170022636987 -0.0327500000000025 0.0339042649699961" rpy="1.5707963267949003 -0.0 0.0"/>
+  </joint>
+  <joint name="yaw_joint" type="continuous">
+    <limit effort="0.0" velocity="0.0" lower="0.0" upper="0.0"/>
+    <parent link="pitch_link"/>
+    <child link="camera_link"/>
+    <axis xyz=" 0.  0. -1."/>
+    <origin xyz="0.0 -0.0275000000000011 0.0152749999999975" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <material name="">
+    <color rgba="0.48627451 0.48627451 0.48627451 1.        "/>
+  </material>
+</robot>
