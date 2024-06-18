@@ -1,6 +1,7 @@
 # URDF Mesh Converter
 
-This package leverages the URDF Exporter plugin for SolidWorks to generate colored `.dae` models from `.3dxml` files.
+This package converts the colored output of the URDF Exporter plugin of SolidWorks into the format readable by ROS systems.
+Specifically, this package generates colored `.dae` models from `.3dxml` files.
 
 JSK users should refer to the URDF Exporter documentation for [guidance](https://docs.google.com/presentation/d/1c2fdw6f_ny4jizH5VS3M7yLNd60M3rzsZs-ACR1ghNI).
 
