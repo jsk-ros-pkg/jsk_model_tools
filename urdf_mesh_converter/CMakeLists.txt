@@ -7,7 +7,7 @@ Find_package(
 )
 
 if (${catkin_virtualenv_VERSION} VERSION_LESS "0.5.1")
-  message(STATUS "${PROJECT_NAME} requires catkin_virtualenv >= 0.5.1")
+  message(WARNING "${PROJECT_NAME} requires catkin_virtualenv >= 0.5.1")
   return()
 endif()
 
@@ -24,7 +24,8 @@ if($ENV{ROS_DISTRO} STREQUAL "noetic")
     PYTHON_INTERPRETER python3
   )
 else()
-  message(FATAL_ERROR "This package uses trimesh for model conversion. Trimesh has discontinued support for Python 2 quite some time ago. Please use Python 3 or later.")
+  message(WARNING "This package uses trimesh for model conversion. Trimesh has discontinued support for Python 2 quite some time ago. Please use Python 3 or later.")
+  return()
 endif()
 
 file(GLOB SCRIPTS_FILES scripts/*)
