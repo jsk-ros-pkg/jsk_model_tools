@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<launch>
+
+  <test test-name="test_urdf_mesh_converter"
+        pkg="urdf_mesh_converter" type="test_urdf_mesh_converter.py"
+        time-limit="360.0" />
+
+</launch>
