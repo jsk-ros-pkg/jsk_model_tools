@@ -107,14 +107,16 @@
   :super gl::glbody
   :slots (glvertices) ;; glvertices slot for backward compatibility
   )
-#-:gl  ;; For euslisp without :gl features, may be we should put glbody/glvertices in irtgeo?
+;; For euslisp without :gl features, may be we should put glbody/glvertices in irtgeo?
+#-:gl
 (defclass collada-body
   :super body
   ;; glvertices slot for backward compatibility
   ;; aglvertices slot is defined in glbody
   :slots (gl::aglvertices glvertices)
   )
-#-:gl  ;; glbody defineds :gvertices methods
+;; glbody defineds :gvertices methods
+#-:gl
 (defmethod collada-body
   (:glvertices (&rest args) (user::forward-message-to glvertices args))
   )
