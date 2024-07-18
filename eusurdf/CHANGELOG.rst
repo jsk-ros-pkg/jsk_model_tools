@@ -2,6 +2,9 @@
 Changelog for package eusurdf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.5 (2023-11-30)
+------------------
+
 0.4.4 (2022-05-12)
 ------------------
 * add world-file-path on README (`#230 <https://github.com/jsk-ros-pkg/jsk_model_tools/issues/230>`_)

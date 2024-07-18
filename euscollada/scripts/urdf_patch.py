@@ -72,7 +72,7 @@ def runDiff(original_file, new_file, output_file):
 def runPatch(input_file, patch_yaml, output_file):
     input_robot = URDF.from_xml_file(input_file)
     patch_param = yaml.load(open(patch_yaml))
-    for joint_name in patch_param.keys():
+    for joint_name in list(patch_param.keys()):
         diff = patch_param[joint_name]
         if "xyz" in diff:
             j = input_robot.joint_map[joint_name]

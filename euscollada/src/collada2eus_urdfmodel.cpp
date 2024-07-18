@@ -19,6 +19,7 @@
 #include <algorithm>
 
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -219,7 +220,7 @@ public:
   void addLinkCoords();
   void printMesh(const aiScene* scene, const aiNode* node, const Vector3 &scale,
                  const string &material_name, vector<coordT> &store_pt, bool printq);
-  void readYaml(string &config_file);
+  void readYaml(std::vector<string> &config_file);
 
 #if URDFDOM_1_0_0_API
   Pose getLinkPose(LinkConstSharedPtr link) {
@@ -257,6 +258,7 @@ public:
   void printSensors();
   void printSensorLists();
   void printGeometries();
+  void printUniqueLimbs();
 
   // print methods
   void copyRobotClassDefinition ();
@@ -305,14 +307,24 @@ private:
 #endif
   string arobot_name;
 #if URDFDOM_1_0_0_API
-  map <LinkConstSharedPtr, Pose > m_link_coords;
-  map <LinkConstSharedPtr, MapVisual > m_link_visual;
-  map <LinkConstSharedPtr, MapCollision > m_link_collision;
+  struct LinkPtrComparator {
+    bool operator()(const LinkConstSharedPtr & left, const LinkConstSharedPtr & right) const {
+      return (left->name < right->name);
+    }
+  };
+  map <LinkConstSharedPtr, Pose, LinkPtrComparator > m_link_coords;
+  map <LinkConstSharedPtr, MapVisual, LinkPtrComparator > m_link_visual;
+  map <LinkConstSharedPtr, MapCollision, LinkPtrComparator > m_link_collision;
   map <string, MaterialConstSharedPtr> m_materials;
 #else
-  map <boost::shared_ptr<const Link>, Pose > m_link_coords;
-  map <boost::shared_ptr<const Link>, MapVisual > m_link_visual;
-  map <boost::shared_ptr<const Link>, MapCollision > m_link_collision;
+  struct LinkPtrComparator {
+    bool operator()(const boost::shared_ptr<const Link> & left, const boost::shared_ptr<const Link> & right) const {
+      return (left->name < right->name);
+    }
+  };
+  map <boost::shared_ptr<const Link>, Pose, LinkPtrComparator > m_link_coords;
+  map <boost::shared_ptr<const Link>, MapVisual, LinkPtrComparator > m_link_visual;
+  map <boost::shared_ptr<const Link>, MapCollision, LinkPtrComparator > m_link_collision;
   map <string, boost::shared_ptr<const Material> > m_materials;
 #endif
   vector<pair<string, string> > g_all_link_names;
@@ -589,36 +601,64 @@ void ModelEuslisp::printMesh(const aiScene* scene, const aiNode* node, const Vec
 }
 
 bool limb_order_asc(const pair<string, size_t>& left, const pair<string, size_t>& right) { return left.second < right.second; }
-void ModelEuslisp::readYaml (string &config_file) {
+void ModelEuslisp::readYaml (std::vector<string> &config_files) {
   // read yaml
-  string limb_candidates[] = {"torso", "larm", "rarm", "lleg", "rleg", "head"}; // candidates of limb names
+  std::vector<string> limb_candidates;  // limb names is given from yaml files
 
   vector<pair<string, size_t> > limb_order;
-#ifndef USE_CURRENT_YAML
-  ifstream fin(config_file.c_str());
-  if (fin.fail()) {
-    fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, config_file.c_str(), 0x1b);
-  } else {
-    YAML::Parser parser(fin);
-    parser.GetNextDocument(doc);
 
+  doc = YAML::Node(YAML::NodeType::Map);
+  for(int i = config_files.size() - 1; i >= 0; i--) { // override values from later config_file with values from earlier config_file
+    YAML::Node tmp_doc;
+#ifndef USE_CURRENT_YAML
+    ifstream fin(config_files[i].c_str());
+    if (fin.fail()) {
+      fprintf(stderr, "%c[31m;; Could not open %s%c[m\n", 0x1b, config_files[i].c_str(), 0x1b);
+    } else {
+      YAML::Parser parser(fin);
+      parser.GetNextDocument(tmp_doc);
+      for(YAML::const_iterator it=tmp_doc.begin();it != tmp_doc.end();++it) {
+        doc[it->first] = it->second;
+      }
+    }
 #else
-  {
     // yaml-cpp is greater than 0.5.0
-    doc = YAML::LoadFile(config_file.c_str());
+    tmp_doc = YAML::LoadFile(config_files[i].c_str());
+    for(YAML::const_iterator it=tmp_doc.begin();it != tmp_doc.end();++it) {
+      doc[it->first] = it->second;
+    }
 #endif
+  }
+
+  {
+    // set limb_candidates from yaml files
+    for(YAML::const_iterator it=doc.begin();it != doc.end();++it) {
+      // -end-coords, *-vector, sensors
+      if ( boost::algorithm::ends_with(it->first.as<std::string>(), "-coords") ||
+           boost::algorithm::ends_with(it->first.as<std::string>(), "-vector") ||
+           it->first.as<std::string>() == "sensors") {
+      } else {
+        limb_candidates.push_back(it->first.as<std::string>());
+      }
+    }
     /* re-order limb name by lines of yaml */
     BOOST_FOREACH(string& limb, limb_candidates) {
 #ifdef USE_CURRENT_YAML
       if (doc[limb]) {
         int line=0;
-        ifstream fin2(config_file.c_str()); // super ugry hack until yaml-cpp 0.5.2
-        string buffer;
-        for (;fin2;) {
-          getline(fin2, buffer); line++;
-          if(buffer == limb+":") break;
+        bool found = false;
+        for(int i = 0; i < config_files.size() && !found; i++) { // super ugry hack until yaml-cpp 0.5.2
+          ifstream fin2(config_files[i].c_str());
+          string buffer;
+          for (;fin2;) {
+            getline(fin2, buffer); line++;
+            if(buffer == limb+":") {
+              found = true;
+              break;
+            }
+          }
+          fin2.close();
         }
-        fin2.close();
         std::cerr << limb << "@" << line << std::endl;
         limb_order.push_back(pair<string, size_t>(limb, line));
       }
@@ -633,37 +673,55 @@ void ModelEuslisp::readYaml (string &config_file) {
   }
 
   // generate limbs including limb_name, link_names, and joint_names
-  for (size_t i = 0; i < limb_order.size(); i++) {
-    string limb_name = limb_order[i].first;
-    vector<string> tmp_link_names, tmp_joint_names;
+  for (size_t l = 0; l < limb_order.size(); l++) {
+    string limb_name = limb_order[l].first;
+    vector<string> tmp_link_names, tmp_joint_names, tmp_method_names;
     try {
       const YAML::Node& limb_doc = doc[limb_name];
       for(unsigned int i = 0; i < limb_doc.size(); i++) {
         const YAML::Node& n = limb_doc[i];
+        if(n.Type() != YAML::NodeType::Map) {
+          ROS_WARN_STREAM("invalid yaml representation. ignore limb " << limb_name);
+          goto nextlimb;
+        }
 #ifdef USE_CURRENT_YAML
         for(YAML::const_iterator it=n.begin();it!=n.end();it++) {
+          if(it->second.Type() != YAML::NodeType::Scalar) {
+            ROS_WARN_STREAM("invalid yaml representation. ignore limb " << limb_name);
+            goto nextlimb;
+          }
           string key, value;
           key = it->first.as<std::string>();
           value = it->second.as<std::string>();
 #else
         for(YAML::Iterator it=n.begin();it!=n.end();it++) {
+          if(it->second.Type() != YAML::NodeType::Scalar) {
+            ROS_WARN_STREAM("invalid yaml representation. ignore limb " << limb_name);
+            goto nextlimb;
+          }
           string key, value; it.first() >> key; it.second() >> value;
 #endif
-          tmp_joint_names.push_back(key);
 #if URDFDOM_1_0_0_API
           JointConstSharedPtr jnt = robot->getJoint(key);
 #else
           boost::shared_ptr<const Joint> jnt = robot->getJoint(key);
 #endif
           if (!!jnt) {
+            tmp_joint_names.push_back(key);
+            tmp_method_names.push_back(value);
             tmp_link_names.push_back(jnt->child_link_name);
           } else {
-            // error
+            ROS_WARN_STREAM("joint " << key << " is not found. ignore limb " << limb_name);
+            goto nextlimb;
           }
-          g_all_link_names.push_back(pair<string, string>(key, value));
         }
       }
+      for(unsigned int j = 0; j < limb_doc.size(); j++) {
+        g_all_link_names.push_back(pair<string, string>(tmp_joint_names[j], tmp_method_names[j]));
+      }
       limbs.push_back(link_joint_pair(limb_name, link_joint(tmp_link_names, tmp_joint_names)));
+      nextlimb:
+      ;
     } catch(YAML::RepresentationException& e) {
     }
   }
@@ -742,6 +800,14 @@ void ModelEuslisp::printRobotDefinition() {
   for (vector<daeSensor>::iterator it = m_sensors.begin(); it != m_sensors.end(); it++) {
     fprintf(fp, " %s-sensor-coords", it->name.c_str());
   }
+  fprintf(fp, "\n         ;; non-default limb names\n");
+  fprintf(fp, "         ");
+  BOOST_FOREACH(link_joint_pair& limb, limbs) {
+    if( limb.first == "torso" || limb.first == "larm" || limb.first == "rarm" || limb.first == "lleg" || limb.first == "rleg" || limb.first == "head" ) {
+      continue;
+    }
+    fprintf(fp, " %s %s-end-coords %s-root-link", limb.first.c_str(), limb.first.c_str(), limb.first.c_str());
+  }
   fprintf(fp, "\n         )\n  )\n");
   // TODO: add openrave manipulator tip frame
 }
@@ -767,6 +833,8 @@ void ModelEuslisp::printRobotMethods() {
   printEndCoords();
 
   printSensors();
+
+  printUniqueLimbs();
 
   printGeometries();
 
@@ -1582,6 +1650,19 @@ void ModelEuslisp::printSensorLists() {
   fprintf(fp, "))\n");
 }
 
+void ModelEuslisp::printUniqueLimbs() {
+  fprintf(fp, "\n  ;; non-default limbs\n");
+  BOOST_FOREACH(link_joint_pair& limb, limbs) {
+    if( limb.first == "torso" || limb.first == "larm" || limb.first == "rarm" || limb.first == "lleg" || limb.first == "rleg" || limb.first == "head" ) {
+      continue;
+    }
+    fprintf(fp, "  (:%s (&rest args) (unless args (setq args (list nil))) (send* self :limb :%s args))\n", limb.first.c_str(), limb.first.c_str());
+    fprintf(fp, "  (:%s-end-coords () %s-end-coords)\n", limb.first.c_str(), limb.first.c_str());
+    fprintf(fp, "  (:%s-root-link () %s-root-link)\n", limb.first.c_str(), limb.first.c_str());
+  }
+}
+
+
 #if URDFDOM_1_0_0_API
 void ModelEuslisp::printGeometry (GeometrySharedPtr g, const Pose &pose,
 #else
@@ -1935,7 +2016,7 @@ int main(int argc, char** argv)
   string arobot_name;
 
   string input_file;
-  string config_file;
+  std::vector<string> config_files;
   string pconfig_file; // backward compatibility (positional option)
   string output_file;
 
@@ -1948,7 +2029,7 @@ int main(int argc, char** argv)
     ("use_collision,U", "use collision geometry (default collision is the same as visual)")
     ("robot_name,N", po::value< vector<string> >(), "output robot name")
     ("input_file,I", po::value< vector<string> >(), "input file")
-    ("config_file,C", po::value< vector<string> >(), "configuration yaml file")
+    ("config_file,C", po::value< vector<string> >()->multitoken(), "configuration yaml files")
     ("pconfig_file", po::value< vector<string> >(), "not used (used internally)")
     ("output_file,O", po::value< vector<string> >(), "output file")
     ;
@@ -1978,7 +2059,7 @@ int main(int argc, char** argv)
   }
   if (vm.count("config_file")) {
     vector<string> aa = vm["config_file"].as< vector<string> >();
-    config_file = aa[0];
+    config_files = aa;
   }
   if (vm.count("pconfig_file")) {
     vector<string> aa = vm["pconfig_file"].as< vector<string> >();
@@ -2055,12 +2136,14 @@ int main(int argc, char** argv)
       pconfig_file.clear();
     }
   }
-  if (config_file.empty() && !pconfig_file.empty()) {
-    config_file = pconfig_file;
+  if (config_files.empty() && !pconfig_file.empty()) {
+    config_files.push_back(pconfig_file);
   }
-  if (!config_file.empty()) {
-    cerr << ";; Config file is: "
-	 <<  config_file << endl;
+  if(!config_files.empty()) {
+    cerr << ";; Config file is:" << endl;;
+    for(int i = 0; i < config_files.size(); i++) {
+      cerr << ";;   " << config_files[i]  << endl;
+    }
   }
   cerr << ";; Output file is: "
        <<  output_file << endl;
@@ -2077,8 +2160,8 @@ int main(int argc, char** argv)
   //eusmodel.setAddJointSuffix();
   //eusmodel.setAddLinkSuffix();
 
-  if (!config_file.empty()) {
-    eusmodel.readYaml(config_file);
+  if (!config_files.empty()) {
+    eusmodel.readYaml(config_files);
   }
   eusmodel.writeToFile (output_file);
 }

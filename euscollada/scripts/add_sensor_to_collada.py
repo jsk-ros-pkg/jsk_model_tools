@@ -6,8 +6,12 @@ import xml.dom
 import yaml
 import argparse
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
+if sys.version_info.major == 2:
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+else:
+    import importlib
+    importlib.reload(sys)
 
 from parseColladaBase import parseXmlBase
 from parseColladaBase import yamlParser
@@ -47,7 +51,7 @@ if __name__ == '__main__':
             sys.stderr.write('no configuration file !\n')
 
         if args.output:
-            f = open(args.output, 'wb')
+            f = open(args.output, 'w')
             obj.writeDocument(f)
             f.close()
         else:
