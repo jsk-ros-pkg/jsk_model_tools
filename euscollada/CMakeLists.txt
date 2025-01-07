@@ -37,6 +37,12 @@ IF(${yaml_cpp_VERSION} VERSION_GREATER "0.5.0")
   add_definitions("-DUSE_CURRENT_YAML")
 ENDIF()
 pkg_check_modules(assimpdevel assimp_devel REQUIRED)
+## qhull >= 0.29.2 uses /usr/include/libqhull instead of /usr/linclude/qhull
+pkg_check_modules(qhull qhull)
+if("${qhull_FOUND}" AND "${qhull_VERSION}" VERSION_GREATER "0.29.1")
+  add_definitions("-DQHULL_INCLUDE_LIBQHULL")
+endif()
+
 
 pkg_check_modules(URDFDOM REQUIRED urdfdom)
 message(STATUS "Find URDFDOM ${URDFDOM_VERSION}")

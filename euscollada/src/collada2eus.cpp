@@ -17,7 +17,7 @@ using namespace ColladaDOM150;
 #include <boost/filesystem/path.hpp>
 
 extern "C" {
-#ifdef __APPLE__
+#if (defined __APPLE__) || (defined  QHULL_INCLUDE_LIBQHULL)
 #include <libqhull/qhull_a.h>
 #else
 #include <qhull/qhull_a.h>
