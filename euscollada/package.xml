@@ -1,4 +1,4 @@
-<package>
+<package format="3">
   <name>euscollada</name>
   <version>0.4.5</version>
   <description>euscollada</description>
@@ -34,19 +34,19 @@
   <build_depend>collada_urdf</build_depend>
   <build_depend>rostest</build_depend>
 
-  <run_depend>roscpp</run_depend>
-  <run_depend>rospack</run_depend>
-  <run_depend>yaml-cpp</run_depend>
-  <run_depend>assimp_devel</run_depend>
-  <run_depend>urdf</run_depend>
-  <run_depend>liburdfdom-dev</run_depend> <!-- for indigo -->
-  <run_depend>resource_retriever</run_depend>
-  <run_depend>collada-dom</run_depend>
-  <run_depend>collada_parser</run_depend>
-  <run_depend>libqhull</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>collada_urdf</run_depend>
-  <run_depend>rostest</run_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospack</exec_depend>
+  <exec_depend>yaml-cpp</exec_depend>
+  <exec_depend>assimp_devel</exec_depend>
+  <exec_depend>urdf</exec_depend>
+  <exec_depend>liburdfdom-dev</exec_depend> <!-- for indigo -->
+  <exec_depend>resource_retriever</exec_depend>
+  <exec_depend>collada-dom</exec_depend>
+  <exec_depend>collada_parser</exec_depend>
+  <exec_depend>libqhull</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>collada_urdf</exec_depend>
+  <exec_depend>rostest</exec_depend>
 
   <test_depend>roseus</test_depend>
   <test_depend>openhrp3</test_depend>
