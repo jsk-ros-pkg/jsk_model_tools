@@ -8,7 +8,7 @@ execute_process(
   RESULT_VARIABLE rosversion_ge_indigo)
 
 # noetic collada_urdf could not find_packag-ed due to https://github.com/ros/collada_urdf/issues/43
-if("$ENV{ROS_DISTRO}" STREQUAL "noetic")
+if("$ENV{ROS_DISTRO}" STREQUAL "noetic" OR "$ENV{ROS_DISTRO}" STREQUAL "one")
   set(collada_urdf_CONFIG_INCLUDED TRUE)
   set(libraries "collada_urdf")
   foreach(library ${libraries})
