@@ -6,9 +6,14 @@ find_package(catkin REQUIRED)
 catkin_package()
 
 include(cmake/eusurdf.cmake)
+find_package(catkin QUIET COMPONENTS gazebo_ros)
+if(gazebo_ros_FOUND)
 convert_eusmodel_to_urdf()
 convert_eusscene_to_gazebo_world()
 convert_eusscene_to_urdf_xacro()
+else()
+message(WARNING "gazebo_ros package is not found, skip converting eusmodel to urdf")
+endif()
 
 set(INSTALL_DIRS models textured_models worlds launch euslisp)
 
