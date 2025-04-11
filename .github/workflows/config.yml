@@ -144,6 +144,9 @@ jobs:
               rosdep init
           fi
           echo ${{ matrix.ROSDEP_PACKAGE_MAPPING }} | tee /etc/ros/rosdep/sources.list.d/1-ros-o-builder.list
+          if [[ "${{ matrix.DISTRO }}" == "ubuntu:24.04"  ]]; then
+              echo "yaml file://$GITHUB_WORKSPACE/.github/workflows/rosdep-24.04.yaml ubuntu" | tee /etc/ros/rosdep/sources.list.d/00-custom-rosdep.list
+          fi
           rosdep update
         shell: bash
 
