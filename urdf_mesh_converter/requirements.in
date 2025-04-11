@@ -1,6 +1,10 @@
 Pillow==8.4.0
 networkx==2.2.0
 numpy==1.22.1
-pycollada!=0.7
+pycollada==0.8
 scipy==1.10.1
 trimesh==4.1.3
+decorator==5.1.1          # via networkx
+python-dateutil==2.9.0.post0  # via pycollada
+scipy==1.10.1             # via -r requirements.in
+six==1.17.0               # via python-dateutil
