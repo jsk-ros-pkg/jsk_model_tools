@@ -204,3 +204,17 @@ jobs:
           catkin test --no-status -sv ${{ matrix.CATKIN_OPTIONS }} --cmake-args -DCATKIN_ENABLE_TESTING=OFF -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON ${{ matrix.CMAKE_OPTIONS }}
            catkin_test_results --verbose --all
         shell: bash
+
+      - name: Test spoteus, see https://github.com/jsk-ros-pkg/jsk_model_tools/pull/260
+        run: |
+          source /opt/ros/one/setup.bash
+          set -x
+          cd ~/ws/src
+          apt install -qq -y git curl ros-one-xacro
+          git clone https://github.com/k-okada/spot_ros-arm -b arm
+          curl -sLO https://raw.githubusercontent.com/k-okada/jsk_robot/refs/heads/spot_arm/jsk_spot_robot/spoteus/spot.yaml
+          catkin build  spot_description --no-status -sv ${{ matrix.CATKIN_OPTIONS }} --cmake-args -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON ${{ matrix.CMAKE_OPTIONS }}
+          source ~/ws/devel/setup.bash
+          rosrun xacro xacro $(rospack find spot_description)/urdf/spot.urdf.xacro -o /tmp/spot.urdf
+          rosrun euscollada collada2eus /tmp/spot.urdf ./spot.yaml /tmp/spot.l
+        shell: bash
