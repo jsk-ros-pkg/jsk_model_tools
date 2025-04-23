@@ -15,7 +15,10 @@ else()
 message(WARNING "gazebo_ros package is not found, skip converting eusmodel to urdf")
 endif()
 
-set(INSTALL_DIRS models textured_models worlds launch euslisp)
+set(INSTALL_DIRS  textured_models launch euslisp)
+if(gazebo_ros_FOUND)
+  LIST(APPEND INSTALL_DIRS models worlds)
+endif()
 
 find_package(knowrob_map_tools)
 if(${knowrob_map_tools_FOUND})
