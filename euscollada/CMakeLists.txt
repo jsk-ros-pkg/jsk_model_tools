@@ -48,7 +48,7 @@ pkg_check_modules(URDFDOM REQUIRED urdfdom)
 message(STATUS "Find URDFDOM ${URDFDOM_VERSION}")
 
 include_directories(${catkin_INCLUDE_DIRS} ${colladadom_INCLUDE_DIRS} ${yaml_cpp_INCLUDE_DIRS} ${assimpdevel_INCLUDE_DIRS} ${urdf_dom_INCLUDE_DIRS})
-link_directories(${catkin_LIBRARY_DIRS} ${assimpdevel_LIBRARY_DIRS})
+link_directories(${catkin_LIBRARY_DIRS} ${yaml_cpp_LIBRARY_DIRS} ${colladadom_LIBRARY_DIRS} ${assimpdevel_LIBRARY_DIRS} ${urdf_dom_LIBRARY_DIRS})
 
 ### original collada2eus until ver 0.3.5
 add_executable(collada2eus.orig src/collada2eus.cpp)
