@@ -75,6 +75,7 @@
            (push (send bd :faces) fs)))
        (setq fs (flatten fs))
        (cond
+#+:gl
         ((and (not fs) glv) ;; if there is no faces, use glvertices for creating pqpmodel
          (setq usefs (instance gl::glvertices :init nil))
          (send usefs :transform (send ll :worldcoords))
@@ -101,9 +102,23 @@
 
 ;; copy euscollada-body class definition from euscollada/src/euscollada-robot.l
 ;; This euscollada-body class is for bodies in robot model converted from collada files.
+#+:gl
 (defclass collada-body
   :super gl::glbody
   :slots (glvertices) ;; glvertices slot for backward compatibility
+  )
+;; For euslisp without :gl features, may be we should put glbody/glvertices in irtgeo?
+#-:gl
+(defclass collada-body
+  :super body
+  ;; glvertices slot for backward compatibility
+  ;; aglvertices slot is defined in glbody
+  :slots (gl::aglvertices glvertices)
+  )
+;; glbody defineds :gvertices methods
+#-:gl
+(defmethod collada-body
+  (:glvertices (&rest args) (user::forward-message-to glvertices args))
   )
 (defmethod collada-body
   (:init (&key (name) (replace-obj))
