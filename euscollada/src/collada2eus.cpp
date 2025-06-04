@@ -205,7 +205,7 @@ void writeTriangle(FILE *fp, domGeometry *thisGeometry, const char* robot_name) 
       if (verbose) {
         fprintf(stderr, "numberOfVertices = %d\n", numberOfVertices);
       }
-      fprintf(fp, "            (list :vertices (let ((mat (make-matrix %d 3))) (fvector-replace (array-entity mat) #f(", numberOfVertices / 3);
+      fprintf(fp, "            (list :vertices (let ((mat (make-matrix %d 3))) (fvector-replace (array-entity mat) (float-vector ", numberOfVertices / 3);
       for(int i = 0; i < numberOfVertices / 3; i++) {
         // vertex vector
         float a0, a1, a2;
